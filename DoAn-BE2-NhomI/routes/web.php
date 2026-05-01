@@ -110,6 +110,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::patch('vouchers/{id}/toggle-status', [VoucherController::class, 'toggleStatus'])->name('vouchers.toggleStatus');
     Route::resource('vouchers', VoucherController::class);
 
+    // Quản lý Backup/Restore
+    Route::get('backups', [App\Http\Controllers\Admin\BackupController::class, 'index'])->name('backups.index');
+    Route::post('backups', [App\Http\Controllers\Admin\BackupController::class, 'create'])->name('backups.create');
+    Route::post('backups/upload', [App\Http\Controllers\Admin\BackupController::class, 'uploadRestore'])->name('backups.upload');
+    Route::get('backups/{id}/download', [App\Http\Controllers\Admin\BackupController::class, 'download'])->name('backups.download');
+    Route::post('backups/{id}/restore', [App\Http\Controllers\Admin\BackupController::class, 'restore'])->name('backups.restore');
+    Route::delete('backups/{id}', [App\Http\Controllers\Admin\BackupController::class, 'destroy'])->name('backups.destroy');
+
 });
 
 
@@ -118,11 +126,3 @@ Route::get('/password/change', [CrudUserController::class, 'showChangePassword']
 
 // xử lý đổi mật khẩu
 Route::post('/password/change', [CrudUserController::class, 'changePassword'])->middleware('auth');
-
-
-// quản lí Voucher 
-Route::prefix('admin')->middleware(['auth'])->group(function () {
-    Route::resource('vouchers', App\Http\Controllers\Admin\VoucherController::class);
-});
-
-
