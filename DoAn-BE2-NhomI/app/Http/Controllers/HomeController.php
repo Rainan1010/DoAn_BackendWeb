@@ -20,7 +20,17 @@ class HomeController extends Controller
             ->limit(8) // Chỉ lấy 8 sản phẩm để hiển thị lưới 2x4 hoặc 4x2
             ->get();
 
-        return view('home.index', compact('newProducts'));
+        // Lấy danh sách sản phẩm trending từ database (được update định kỳ bởi cronjob)
+        $trendingProducts = DB::table('products')
+            ->join('product_images', 'products.product_id', '=', 'product_images.product_id')
+            ->where('product_images.is_primary', 1)
+            ->where('products.is_active', 1)
+            ->where('products.is_trending', 1)
+            ->select('products.*', 'product_images.image_url')
+            ->orderBy('products.view_count', 'desc')
+            ->get();
+
+        return view('home.index', compact('newProducts', 'trendingProducts'));
     }
     public function detail($id)
     {

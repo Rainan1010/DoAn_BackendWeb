@@ -2,6 +2,90 @@
 
 @section('content')
 
+    {{-- ==================== SẢN PHẨM TRENDING ==================== --}}
+    @if($trendingProducts->count() > 0)
+    <section class="max-w-[1600px] mx-auto px-6" id="trending">
+        <div class="rounded-2xl overflow-hidden" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);">
+            <div class="p-6 md:p-8">
+                {{-- Header --}}
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-5 py-2.5 rounded-full">
+                            <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+                            <span class="font-black text-sm uppercase tracking-wider">Trending</span>
+                        </div>
+                    </div>
+                    
+                    {{-- Nút điều hướng Slider --}}
+                    <div class="flex gap-2">
+                        <button onclick="scrollTrending(-1)" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
+                            <span class="material-symbols-outlined">chevron_left</span>
+                        </button>
+                        <button onclick="scrollTrending(1)" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
+                            <span class="material-symbols-outlined">chevron_right</span>
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Product Slider --}}
+                <div class="flex overflow-x-auto gap-4 snap-x snap-mandatory pb-4 hide-scrollbar" id="trending-slider">
+                    @foreach($trendingProducts as $index => $product)
+                        <div class="snap-start shrink-0 w-[85vw] md:w-[calc(33.333%-0.67rem)] lg:w-[calc(25%-0.75rem)]">
+                            <a href="{{ url('/product/' . $product->product_id) }}" class="flex h-full w-full">
+                                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/20 hover:border-white/30 transition-all duration-300 flex flex-col flex-1 group h-full w-full">
+                                {{-- Trending Rank Badge --}}
+                                <div class="relative h-40 md:h-52 mb-4 bg-white/5 rounded-lg flex items-center justify-center p-2">
+                                    <img alt="{{ $product->name }}" class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                                        src="{{ asset(str_replace('public/', '', $product->image_url)) }}" />
+
+                                    <span class="absolute top-0 left-0 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-black w-7 h-7 rounded-full flex items-center justify-center shadow-lg">
+                                        #{{ $index + 1 }}
+                                    </span>
+
+                                    @if($product->view_count > 0)
+                                        <span class="absolute bottom-0 right-0 bg-black/60 text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[11px]">visibility</span>
+                                            {{ number_format($product->view_count) }}
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <h4 class="text-sm font-bold text-white line-clamp-2 mb-2 flex-1">{{ $product->name }}</h4>
+                                <div class="mb-4">
+                                    <p class="text-orange-400 font-black text-lg">
+                                        {{ number_format($product->base_price, 0, ',', '.') }}₫</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button class="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-black py-2.5 rounded uppercase tracking-wider hover:from-orange-600 hover:to-red-600 transition-all">
+                                        Mua ngay
+                                    </button>
+                                    <button class="w-10 h-10 border border-white/30 text-white rounded flex items-center justify-center hover:bg-white/10 transition-colors">
+                                        <span class="material-symbols-outlined text-xl">shopping_cart</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </a>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <style>
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+    <script>
+        function scrollTrending(direction) {
+            const slider = document.getElementById('trending-slider');
+            const cardWidth = slider.firstElementChild.offsetWidth + 16; // 16px for gap-4
+            slider.scrollBy({ left: direction * cardWidth, behavior: 'smooth' });
+        }
+    </script>
+    @endif
+
+    {{-- ==================== SẢN PHẨM MỚI ==================== --}}
     <section class="max-w-[1600px] mx-auto px-6 space-y-6" id="dien-thoai">
         <div class="flex items-center justify-between border-b border-slate-200 pb-2">
             <div class="flex items-center gap-8">
@@ -35,11 +119,11 @@
 
             <div class="md:col-span-9 grid grid-cols-2 lg:grid-cols-4 gap-4">
                 @foreach($newProducts as $product)
-                    <a href="{{ url('/product/' . $product->product_id) }}">
+                    <a href="{{ url('/product/' . $product->product_id) }}" class="flex h-full">
                         <div
-                            class="bg-white rounded-xl p-4 border border-slate-100 hover:shadow-xl transition-shadow flex flex-col">
+                            class="bg-white rounded-xl p-4 border border-slate-100 hover:shadow-xl transition-shadow flex flex-col flex-1 h-full">
 
-                            <div class="relative aspect-square mb-4">
+                            <div class="relative h-40 md:h-52 mb-4 bg-slate-50/50 rounded-lg flex items-center justify-center p-2">
                                 <img alt="{{ $product->name }}" class="w-full h-full object-contain"
                                     src="{{ asset(str_replace('public/', '', $product->image_url)) }}" />
 
