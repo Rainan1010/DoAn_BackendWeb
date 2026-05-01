@@ -31,13 +31,34 @@ public function login(Request $request)
     ])) {
         $user = Auth::user();
         
-        // Nếu là admin -> vào trang quản trị
-        if ($user->role === 'admin') {
-            return redirect('/admin/categories');
+        // KIỂM TRA OTP: Nếu chưa xác thực thì bắt buộc phải nhập OTP
+        if ($user->is_verified == 0) {
+            Auth::logout(); // Đăng xuất ra lại
+            session(['otp_user_id' => $user->user_id]); // Lưu session để gửi OTP
+            
+            // Xóa OTP cũ và tạo mã OTP mới
+            DB::table('otp_verifications')
+                ->where('user_id', $user->user_id)
+                ->where('purpose', 'register')
+                ->where('used', 0)
+                ->delete();
+                
+            $otpCode = rand(100000, 999999);
+            DB::table('otp_verifications')->insert([
+                'user_id' => $user->user_id,
+                'otp_code' => $otpCode,
+                'purpose' => 'register',
+                'expires_at' => now()->addMinutes(10),
+            ]);
+            
+            // Gửi lại email
+            Mail::to($user->email)->send(new \App\Mail\VerifyOTPMail($otpCode));
+            
+            return redirect()->route('otp.view')->with('error', 'Tài khoản chưa xác thực OTP. Chúng tôi đã gửi lại mã mới qua email.');
         }
 
-        // kiểm tra role, nếu là admin thì chuyển đến trang quản lý danh mục
-        if (Auth::user()->role === 'admin') {
+        // Nếu là admin -> vào trang quản trị
+        if ($user->role === 'admin') {
             return redirect('/admin/categories');
         }
 
