@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-
 <html class="light" lang="vi">
 
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Đổi mật khẩu - B-Tris</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&amp;display=swap"
@@ -80,18 +80,18 @@
                 },
             },
         }
-        function togglePassword() {
-    const input = document.getElementById("password");
-    const icon = document.getElementById("eyeIcon");
+        function togglePassword(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
 
-    if (input.type === "password") {
-        input.type = "text";
-        icon.textContent = "visibility_off"; // đổi icon
-    } else {
-        input.type = "password";
-        icon.textContent = "visibility";
-    }
-}
+            if (input.type === "password") {
+                input.type = "text";
+                icon.textContent = "visibility_off";
+            } else {
+                input.type = "password";
+                icon.textContent = "visibility";
+            }
+        }
     </script>
     <style>
         .material-symbols-outlined {
@@ -172,23 +172,22 @@
                 <img alt="B-Tris Logo" class="w-full max-w-sm drop-shadow-[0_0_30px_rgba(167,200,255,0.5)]"
                     src="https://lh3.googleusercontent.com/aida/ADBb0ujkfzLNdx7XZSZitQlk5uvj58AaPKD3Q4a8s-N0jif1cx4oHslaKAX8G2ZSnAHlcRzadbQdewYZKqoFk1mOb5nMlQ2IWE1LEkOPhgpQ_f3OAsi4xeTMJ3iOTa-_8eU52P20jiTjhhO_DVQY61OFzUJM8oDLw2QCxhc4jgJbee-3YfHibnbR1pzW15EedKEEkwJ2jT6xWslOUKe8XEFuUs5-rwpt-cQ8hs_cqBxpbSAhnRVFQyjHx3mj4QEwzI1P6AkPg2IpZ6OgwCA" />
                 <div class="space-y-4">
-                    <h2 class="text-5xl font-black text-white tracking-tighter uppercase">Precision Engineering</h2>
-                    <p class="text-primary-fixed-dim text-lg leading-relaxed font-medium">Hệ thống quản trị và vận hành
-                        toàn diện dành cho hệ sinh thái kỹ thuật chính xác B-Tris.</p>
+                    <h2 class="text-5xl font-black text-white tracking-tighter uppercase">Security Protocol</h2>
+                    <p class="text-primary-fixed-dim text-lg leading-relaxed font-medium">Bảo vệ tài khoản và dữ liệu của bạn trên hệ sinh thái B-Tris.</p>
                 </div>
                 <div class="flex gap-4">
                     <span class="material-symbols-outlined text-white/20 text-6xl"
-                        data-icon="precision_manufacturing">precision_manufacturing</span>
+                        data-icon="shield_person">shield_person</span>
                     <span class="material-symbols-outlined text-white/20 text-6xl"
-                        data-icon="account_tree">account_tree</span>
+                        data-icon="lock_reset">lock_reset</span>
                     <span class="material-symbols-outlined text-white/20 text-6xl"
-                        data-icon="shield_with_heart">shield_with_heart</span>
+                        data-icon="verified_user">verified_user</span>
                 </div>
             </div>
             <!-- Decorative Large Icons -->
             <div class="absolute -bottom-10 -right-10 opacity-10 pointer-events-none">
                 <span class="material-symbols-outlined text-[300px] font-thin text-white"
-                    data-icon="memory">memory</span>
+                    data-icon="enhanced_encryption">enhanced_encryption</span>
             </div>
         </div>
         <!-- Login Section -->
@@ -204,44 +203,57 @@
                         </p>
                     </div>
                 </div>
-                <!-- Login Card -->
+                <!-- Form Card -->
                 <div class="glass-panel p-8 md:p-12 rounded-[2rem]">
                     <div class="mb-10 hidden lg:block">
-                        <h3 class="text-2xl font-black text-primary uppercase tracking-tight">Đăng nhập</h3>
-                        <p class="text-sm text-on-surface-variant font-medium mt-1">Vui lòng nhập thông tin tài khoản
-                            của bạn</p>
+                        <h3 class="text-2xl font-black text-primary uppercase tracking-tight">Đổi mật khẩu</h3>
+                        <p class="text-sm text-on-surface-variant font-medium mt-1">Cập nhật mật khẩu để bảo vệ tài khoản của bạn</p>
                     </div>
-                    @if(session('error'))
-                        <div style="color:red; margin-bottom:10px;">
-                            {{ session('error') }}
-                        </div>
-                    @endif
+                    
                     @if(session('success'))
-                        <div style="color:#0FAF62; margin-bottom:10px; font-weight:bold;">
-                            {{ session('success') }}
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                            <span class="block sm:inline font-bold">{{ session('success') }}</span>
                         </div>
                     @endif
-                    <form method="POST" action="/login" class="space-y-8">
+
+                    @if($errors->any())
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                            <ul class="list-disc pl-5">
+                                @foreach($errors->all() as $error)
+                                    <li class="font-bold text-sm">{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    <form method="POST" action="{{ url('/password/change') }}" class="space-y-6">
                         @csrf
-                        <!-- Identifier Field -->
+                        
+                        <!-- Current Password -->
                         <div class="space-y-2">
                             <label class="block text-[11px] font-black uppercase tracking-[0.2em] text-primary"
-                                for="identifier">Email</label>
+                                for="current_password">Mật khẩu hiện tại</label>
                             <div class="relative group">
                                 <div
                                     class="absolute inset-y-0 left-0 flex items-center pl-0 pointer-events-none text-outline-variant group-focus-within:text-primary transition-colors">
-                                    <span class="material-symbols-outlined text-xl"
-                                        data-icon="alternate_email">alternate_email</span>
+                                    <span class="material-symbols-outlined text-xl" data-icon="lock_open">lock_open</span>
                                 </div>
                                 <input
                                     class="w-full bg-transparent border-b-2 border-outline-variant/30 focus:border-primary focus:ring-0 transition-all pl-8 py-3 text-on-surface placeholder:text-outline-variant/50 outline-none font-medium"
-                                    name="identifier" id="identifier" placeholder="admin@b-tris.com" type="text" />
+                                    name="current_password" id="current_password" placeholder="Nhập mật khẩu hiện tại" type="password" required />
+                                <span
+                                    onclick="togglePassword('current_password', 'eyeIconCurrent')"
+                                    id="eyeIconCurrent"
+                                    class="material-symbols-outlined absolute right-0 top-3 text-outline cursor-pointer hover:text-primary transition-colors text-xl">
+                                    visibility
+                                </span>
                             </div>
                         </div>
-                        <!-- Password Field -->
+
+                        <!-- New Password -->
                         <div class="space-y-2">
                             <label class="block text-[11px] font-black uppercase tracking-[0.2em] text-primary"
-                                for="password">Mật khẩu</label>
+                                for="new_password">Mật khẩu mới</label>
                             <div class="relative group">
                                 <div
                                     class="absolute inset-y-0 left-0 flex items-center pl-0 pointer-events-none text-outline-variant group-focus-within:text-primary transition-colors">
@@ -249,40 +261,48 @@
                                 </div>
                                 <input
                                     class="w-full bg-transparent border-b-2 border-outline-variant/30 focus:border-primary focus:ring-0 transition-all pl-8 py-3 text-on-surface placeholder:text-outline-variant/50 outline-none font-medium"
-                                    name="password" id="password" placeholder="••••••••" type="password" />
-                               <span
-    onclick="togglePassword()"
-    id="eyeIcon"
-    class="material-symbols-outlined absolute right-0 top-3 text-outline cursor-pointer hover:text-primary transition-colors text-xl">
-    visibility
-</span>
+                                    name="new_password" id="new_password" placeholder="Nhập mật khẩu mới" type="password" required />
+                                <span
+                                    onclick="togglePassword('new_password', 'eyeIconNew')"
+                                    id="eyeIconNew"
+                                    class="material-symbols-outlined absolute right-0 top-3 text-outline cursor-pointer hover:text-primary transition-colors text-xl">
+                                    visibility
+                                </span>
                             </div>
                         </div>
-                        <!-- Remember & Forgot -->
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
+
+                        <!-- New Password Confirm -->
+                        <div class="space-y-2">
+                            <label class="block text-[11px] font-black uppercase tracking-[0.2em] text-primary"
+                                for="new_password_confirmation">Xác nhận mật khẩu mới</label>
+                            <div class="relative group">
+                                <div
+                                    class="absolute inset-y-0 left-0 flex items-center pl-0 pointer-events-none text-outline-variant group-focus-within:text-primary transition-colors">
+                                    <span class="material-symbols-outlined text-xl" data-icon="lock_clock">lock_clock</span>
+                                </div>
                                 <input
-                                    class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary-container bg-white"
-                                    id="remember" type="checkbox" />
-                                <label
-                                    class="text-xs text-on-surface-variant font-bold uppercase tracking-wide cursor-pointer"
-                                    for="remember">Ghi nhớ</label>
+                                    class="w-full bg-transparent border-b-2 border-outline-variant/30 focus:border-primary focus:ring-0 transition-all pl-8 py-3 text-on-surface placeholder:text-outline-variant/50 outline-none font-medium"
+                                    name="new_password_confirmation" id="new_password_confirmation" placeholder="Nhập lại mật khẩu mới" type="password" required />
+                                <span
+                                    onclick="togglePassword('new_password_confirmation', 'eyeIconConfirm')"
+                                    id="eyeIconConfirm"
+                                    class="material-symbols-outlined absolute right-0 top-3 text-outline cursor-pointer hover:text-primary transition-colors text-xl">
+                                    visibility
+                                </span>
                             </div>
-                            <a class="text-xs font-bold text-primary hover:underline uppercase tracking-wide"
-                                href="#">Quên mật khẩu?</a>
                         </div>
+
                         <!-- Submit Button -->
                         <button
-                            class="vibrant-btn w-full text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-sm transition-all duration-300 active:scale-[0.98]"
+                            class="vibrant-btn w-full text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-sm transition-all duration-300 active:scale-[0.98] mt-4"
                             type="submit">
-                            Đăng nhập Hệ thống
+                            Xác nhận đổi mật khẩu
                         </button>
                     </form>
+                    
                     <!-- Form Footer -->
-                    <div class="mt-10 pt-10 border-t border-surface-container flex flex-col items-center space-y-4">
-                        <a href="/register" class="text-sm text-primary font-bold hover:underline">Bạn chưa có tài khoản?</a>
-                        <a class="text-primary font-black hover:underline uppercase tracking-widest text-[11px]"
-                            href="#">Liên hệ Quản trị viên</a>
+                    <div class="mt-8 pt-8 border-t border-surface-container flex flex-col items-center space-y-4">
+                        <a href="{{ url('/') }}" class="text-sm text-primary font-bold hover:underline">Về trang chủ</a>
                     </div>
                 </div>
                 <!-- Page Footer -->
@@ -306,8 +326,7 @@
     <!-- Floating Tech Symbols -->
     <div class="fixed top-12 right-12 hidden lg:block opacity-5 pointer-events-none">
         <span class="material-symbols-outlined text-[200px] font-thin text-white"
-            data-icon="engineering">engineering</span>
+            data-icon="admin_panel_settings">admin_panel_settings</span>
     </div>
 </body>
-
 </html>
