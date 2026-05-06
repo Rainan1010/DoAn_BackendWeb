@@ -1,4 +1,3 @@
-```blade
 @extends('layouts.app')
 
 @section('content')
@@ -57,6 +56,24 @@
 
                 </a>
 
+
+                {{-- địa chỉ --}}
+                <a href="{{ route('addresses.index') }}"
+                    class="flex items-center gap-4 py-4 text-gray-500 pl-8 hover:bg-gray-100 transition">
+
+                    <span class="material-symbols-outlined">
+
+                        location_on
+
+                    </span>
+
+                    <span class="text-sm uppercase tracking-widest">
+
+                        Địa chỉ giao hàng
+
+                    </span>
+
+                </a>
 
 
                 {{-- logout --}}
@@ -208,7 +225,6 @@
 
 
                                 {{-- FULL NAME --}}
-                                {{-- FULL NAME --}}
                                 <div>
 
                                     <label class="block text-xs font-bold uppercase tracking-widest text-blue-900 mb-2">
@@ -217,7 +233,7 @@
 
                                     <input type="text" name="full_name" id="full_name" maxlength="50"
                                         value="{{ old('full_name', Auth::user()->full_name) }}" class="w-full border-0 border-b-2 rounded-md transition border-gray-200
-                            focus:border-blue-900 focus:ring-0 py-3 px-0">
+                                        focus:border-blue-900 focus:ring-0 py-3 px-0">
 
                                     {{-- ERROR --}}
                                     <p id="full_name_error" class="text-red-500 text-sm mt-2 hidden">
@@ -237,7 +253,7 @@
 
                                     <input type="text" name="phone" id="phone" maxlength="10"
                                         value="{{ old('phone', Auth::user()->phone) }}" class="w-full border-0 border-b-2 rounded-md transition border-gray-200
-                            focus:border-blue-900 focus:ring-0 py-3 px-0">
+                                        focus:border-blue-900 focus:ring-0 py-3 px-0">
 
                                     {{-- ERROR --}}
                                     <p id="phone_error" class="text-red-500 text-sm mt-2 hidden">
