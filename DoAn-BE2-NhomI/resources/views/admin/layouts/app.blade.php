@@ -40,8 +40,12 @@
                 <i data-lucide="boxes" class="w-5 h-5"></i> Danh mục
             </a>
          
-            <a href="{{ route('admin.vouchers.index') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.vouchers.*') ? 'bg-[#0A2540] text-white' : 'text-gray-600 hover:bg-gray-50' }} rounded-lg transition-colors">
+            <a href="{{ route('admin.vouchers.index') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.vouchers.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
                 <i data-lucide="ticket" class="w-5 h-5"></i> Voucher
+            </a>
+            
+            <a href="{{ route('admin.backups.index') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.backups.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
+                <i data-lucide="database-backup" class="w-5 h-5"></i> Sao lưu Dữ liệu
             </a>
         </nav>
 
@@ -76,12 +80,12 @@
         <div class="flex-1 overflow-y-auto p-8 relative">
             @if(session('success'))
             <div class="mb-4 p-4 bg-[#E2F6EA] text-[#0FAF62] rounded-lg font-medium text-sm flex items-center gap-2 shadow-sm border border-[#0FAF62]/20">
-                <i data-lucide="check-circle" class="w-5 h-5"></i> {{ session('success') }}
+                <i data-lucide="check-circle" class="w-5 h-5"></i> {!! session('success') !!}
             </div>
             @endif
             @if(session('error'))
             <div class="mb-4 p-4 bg-red-50 text-red-600 rounded-lg font-medium text-sm flex items-center gap-2 shadow-sm border border-red-200">
-                <i data-lucide="alert-triangle" class="w-5 h-5"></i> {{ session('error') }}
+                <i data-lucide="alert-triangle" class="w-5 h-5"></i> {!! session('error') !!}
             </div>
             @endif
 
