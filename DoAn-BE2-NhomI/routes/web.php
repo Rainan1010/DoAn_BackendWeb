@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\HomeController; 
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CrudUserController;
 use App\Http\Controllers\Admin\VoucherController;
 use App\Http\Controllers\Admin\CategoryController;
@@ -37,7 +37,7 @@ Route::get('/login', [CrudUserController::class, 'showLogin'])->name('login');
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);
-    
+
     // Quản lý Thương hiệu
     Route::patch('brands/{id}/toggle-status', [App\Http\Controllers\Admin\BrandController::class, 'toggleStatus'])->name('brands.toggleStatus');
     Route::resource('brands', App\Http\Controllers\Admin\BrandController::class);
@@ -97,7 +97,7 @@ Route::middleware(['auth'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
-    
+
     // Quản lý Danh mục (Categories)
     Route::resource('categories', CategoryController::class);
 
@@ -105,7 +105,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::view('/brands/create', 'admin.brands.create')->name('brands.create'); // Ưu tiên route cụ thể trước resource
     Route::patch('brands/{id}/toggle-status', [BrandController::class, 'toggleStatus'])->name('brands.toggleStatus');
     Route::resource('brands', BrandController::class);
-    
+
     // Quản lý Voucher (Vouchers)
     Route::patch('vouchers/{id}/toggle-status', [VoucherController::class, 'toggleStatus'])->name('vouchers.toggleStatus');
     Route::resource('vouchers', VoucherController::class);
@@ -126,3 +126,17 @@ Route::get('/password/change', [CrudUserController::class, 'showChangePassword']
 
 // xử lý đổi mật khẩu
 Route::post('/password/change', [CrudUserController::class, 'changePassword'])->middleware('auth');
+
+// =====================================================
+// PROFILE
+// =====================================================
+
+// trang profile
+Route::get('/profile', [CrudUserController::class, 'profile'])
+    ->middleware('auth')
+    ->name('profile');
+    
+// update profile
+Route::post('/profile/update', [CrudUserController::class, 'updateProfile'])
+    ->name('profile.update')
+    ->middleware('auth');
