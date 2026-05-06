@@ -10,7 +10,7 @@ use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\OTPController;
-
+use App\Http\Controllers\ShippingAddressController;
 
 
 /*
@@ -140,3 +140,19 @@ Route::get('/profile', [CrudUserController::class, 'profile'])
 Route::post('/profile/update', [CrudUserController::class, 'updateProfile'])
     ->name('profile.update')
     ->middleware('auth');
+
+
+// =====================================================
+// SHIPPING ADDRESS
+// =====================================================
+Route::middleware('auth')->group(function () {
+
+    Route::get(
+
+    '/change-address',
+
+    [ShippingAddressController::class, 'index']
+
+)->name('addresses.index');
+
+});
