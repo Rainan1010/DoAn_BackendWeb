@@ -11,6 +11,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\OTPController;
 use App\Http\Controllers\ShippingAddressController;
+use App\Http\Controllers\CartController;
 
 
 /*
@@ -156,3 +157,9 @@ Route::middleware('auth')->group(function () {
 )->name('addresses.index');
 
 });
+
+// CART
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
+Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
