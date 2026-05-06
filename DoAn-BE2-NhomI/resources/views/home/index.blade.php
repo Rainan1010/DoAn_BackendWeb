@@ -1,80 +1,92 @@
 @extends('layouts.app')
 
 @section('content')
-
-    <section class="max-w-[1600px] mx-auto px-6 space-y-6" id="dien-thoai">
-        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-            <div class="flex items-center gap-8">
-                <h2 class="text-xl font-bold text-brand-blue uppercase tracking-tight">Sản phẩm mới</h2>
-                <div class="hidden md:flex gap-6">
-                    <button class="text-sm font-bold category-tab-active pb-2">Apple</button>
-                    <button class="text-sm font-semibold text-slate-500 pb-2 hover:text-brand-blue">Samsung</button>
-                    <button class="text-sm font-semibold text-slate-500 pb-2 hover:text-brand-blue">Xiaomi</button>
-                    <button class="text-sm font-semibold text-slate-500 pb-2 hover:text-brand-blue">Google</button>
-                </div>
+<section class="max-w-[1600px] mx-auto px-6 py-10 space-y-6" id="dien-thoai">
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+        <div class="flex items-center gap-8">
+            <h2 class="text-2xl font-extrabold text-brand-blue uppercase tracking-tight">Sản phẩm mới</h2>
+            <div class="hidden md:flex gap-6">
+                <button class="text-sm font-bold border-b-2 border-brand-blue pb-2 text-brand-blue">Apple</button>
+                <button class="text-sm font-semibold text-slate-500 pb-2 hover:text-brand-blue transition-colors">Samsung</button>
+                <button class="text-sm font-semibold text-slate-500 pb-2 hover:text-brand-blue transition-colors">Xiaomi</button>
             </div>
-            <a class="text-brand-blue text-xs font-bold hover:underline flex items-center gap-1" href="#">Xem tất cả <span
-                    class="material-symbols-outlined text-sm">chevron_right</span></a>
         </div>
+        <a class="text-brand-blue text-sm font-bold hover:gap-2 transition-all flex items-center gap-1" href="#">
+            Xem tất cả <span class="material-symbols-outlined text-sm">chevron_right</span>
+        </a>
+    </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
-            <div class="md:col-span-3">
-                <div class="relative rounded-xl overflow-hidden h-full group">
-                    <img alt="Phone Promo"
-                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5Yrwgbu1xQj8yUsW99S16HFfIGR_2_saZBI2FHypSxM8Npf8X15JK2d_7h99tuup0kvAnSbkY6HFBWOPelwMDw5bvTF2T7kc4egoUGSC0QOyJ60FvI8zHLe8xME4jcyx33T7OlyEc_ydfrVyuQfHu9wXRkxkQ67JAKkyM_KSeRlS9n3qEE4ohYza7LToaJr2_PuWN6fYrgGRJZYKubD2h78rNExSxAoXfsfshUT4xztJPCxV_KE7iY4CrWxVEGAKrd5uywo0IGvLe" />
-                    <div class="absolute inset-0 bg-brand-blue/40 flex flex-col justify-end p-6 text-white">
-                        <p class="text-sm font-bold">Giá từ</p>
-                        <h3 class="text-3xl font-black mb-4">12.990.000₫</h3>
-                        <button
-                            class="w-full py-2 bg-white text-brand-blue font-black rounded-lg uppercase text-xs tracking-wider">Mua
-                            ngay</button>
+    <!-- Main Content -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+        
+        <!-- Cột Banner Trái: Khắc phục lỗi giãn kịch -->
+        <div class="md:col-span-3 sticky top-4 hidden md:block">
+            <div class="relative rounded-2xl overflow-hidden aspect-[4/5] shadow-2xl group bg-brand-blue">
+                @if(isset($promoProduct))
+                    <img alt="{{ $promoProduct->name }}"
+                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-80"
+                        src="{{ asset(str_replace('public/', '', $promoProduct->image_url)) }}" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-8 text-white">
+                        <span class="bg-red-600 w-fit px-3 py-1 rounded-full text-[10px] font-bold mb-3 uppercase tracking-widest">Hot Deal</span>
+                        <h3 class="text-2xl font-bold mb-2 leading-tight">{{ $promoProduct->name }}</h3>
+                        <p class="text-xl font-light mb-6 text-slate-200">{{ number_format($promoProduct->base_price, 0, ',', '.') }}₫</p>
+                        <a href="{{ url('/product/' . $promoProduct->product_id) }}" 
+                           class="w-full py-3 bg-white text-brand-blue text-center font-bold rounded-xl hover:bg-brand-blue hover:text-white transition-all uppercase text-xs">
+                           Mua ngay
+                        </a>
                     </div>
-                </div>
-            </div>
-
-            <div class="md:col-span-9 grid grid-cols-2 lg:grid-cols-4 gap-4">
-                @foreach($newProducts as $product)
-                    <a href="{{ url('/product/' . $product->product_id) }}">
-                        <div
-                            class="bg-white rounded-xl p-4 border border-slate-100 hover:shadow-xl transition-shadow flex flex-col">
-
-                            <div class="relative aspect-square mb-4">
-                                <img alt="{{ $product->name }}" class="w-full h-full object-contain"
-                                    src="{{ asset(str_replace('public/', '', $product->image_url)) }}" />
-
-                                {{-- Nhãn NEW: Tự động hiện nếu tạo trong vòng 7 ngày --}}
-                                @if(isset($product->created_at) && \Carbon\Carbon::parse($product->created_at)->diffInDays(now()) <= 7)
-                                    <span
-                                        class="absolute top-0 left-0 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">NEW</span>
-                                @endif
-
-                                {{-- Nhãn HOT: Hiện nếu is_hot = 1 trong DB --}}
-                                @if($product->is_hot == 1)
-                                    <span
-                                        class="absolute top-0 right-0 bg-error text-white text-[10px] font-bold px-2 py-0.5 rounded">HOT</span>
-                                @endif
-                            </div>
-
-                            <h4 class="text-sm font-bold text-slate-800 line-clamp-2 mb-2 flex-1">{{ $product->name }}</h4>
-                            <div class="mb-4">
-                                <p class="text-brand-blue font-black text-lg">
-                                    {{ number_format($product->base_price, 0, ',', '.') }}₫</p>
-                            </div>
-                            <div class="flex gap-2">
-                                <button
-                                    class="flex-1 bg-brand-blue text-white text-[10px] font-black py-2.5 rounded uppercase tracking-wider">Mua
-                                    ngay</button>
-                                <button
-                                    class="w-10 h-10 border border-brand-blue text-brand-blue rounded flex items-center justify-center hover:bg-brand-blue/5">
-                                    <span class="material-symbols-outlined text-xl">shopping_cart</span>
-                                </button>
-                            </div>
-                        </div>
-                    </a>
-                @endforeach
+                @else
+                    <!-- Fallback khi không có sp promo -->
+                    <div class="flex items-center justify-center h-full text-white/20 font-bold">BTRIS STORE</div>
+                @endif
             </div>
         </div>
-    </section>
 
+        <!-- Danh sách sản phẩm phải -->
+        <div class="md:col-span-9 grid grid-cols-2 lg:grid-cols-4 gap-5">
+            @foreach($newProducts as $product)
+            <div class="group bg-white rounded-2xl p-4 border border-slate-100 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full">
+                <a href="{{ url('/product/' . $product->product_id) }}" class="relative aspect-square mb-4 block overflow-hidden rounded-xl">
+                    <img alt="{{ $product->name }}" 
+                         class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
+                         src="{{ asset(str_replace('public/', '', $product->image_url)) }}" />
+                    
+                    <div class="absolute top-2 left-2 flex flex-col gap-1">
+                        @if(isset($product->created_at) && \Carbon\Carbon::parse($product->created_at)->diffInDays(now()) <= 7)
+                            <span class="bg-emerald-500 text-white text-[9px] font-bold px-2 py-1 rounded-lg shadow-sm w-fit">NEW</span>
+                        @endif
+                        @if($product->is_hot == 1)
+                            <span class="bg-orange-500 text-white text-[9px] font-bold px-2 py-1 rounded-lg shadow-sm w-fit">HOT</span>
+                        @endif
+                    </div>
+                </a>
+
+                <h4 class="text-sm font-semibold text-slate-800 line-clamp-2 mb-3 flex-1">
+                    <a href="{{ url('/product/' . $product->product_id) }}" class="hover:text-brand-blue transition-colors">
+                        {{ $product->name }}
+                    </a>
+                </h4>
+                
+                <div class="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
+                    <div>
+                        <p class="text-xs text-slate-400 line-through">45.000.000₫</p>
+                        <p class="text-brand-blue font-bold text-base leading-none">
+                            {{ number_format($product->base_price, 0, ',', '.') }}₫
+                        </p>
+                    </div>
+                    <button class="w-10 h-10 bg-slate-50 text-brand-blue rounded-xl flex items-center justify-center hover:bg-brand-blue hover:text-white transition-all shadow-sm">
+                        <span class="material-symbols-outlined text-xl">add_shopping_cart</span>
+                    </button>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    
+    <!-- Pagination (Nếu bạn dùng paginate) -->
+    <div class="py-10">
+        {{ $newProducts->links() }}
+    </div>
+</section>
 @endsection
