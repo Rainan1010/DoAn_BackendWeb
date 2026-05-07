@@ -289,6 +289,7 @@
             }
         });
     </script>
+    @stack('scripts')
 </body>
 
 </html>

@@ -135,10 +135,6 @@ Route::get('/password/change', [CrudUserController::class, 'showChangePassword']
 // xử lý đổi mật khẩu
 Route::post('/password/change', [CrudUserController::class, 'changePassword'])->middleware('auth');
 
-// =====================================================
-// PROFILE
-// =====================================================
-
 // trang profile
 Route::get('/profile', [CrudUserController::class, 'profile'])
     ->middleware('auth')
@@ -147,6 +143,11 @@ Route::get('/profile', [CrudUserController::class, 'profile'])
 // update profile
 Route::post('/profile/update', [CrudUserController::class, 'updateProfile'])
     ->name('profile.update')
+    ->middleware('auth');
+
+// submit review
+Route::post('/product/{id}/review', [App\Http\Controllers\ProductController::class, 'storeReview'])
+    ->name('product.review.store')
     ->middleware('auth');
 
 
