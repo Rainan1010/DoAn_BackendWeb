@@ -505,66 +505,6 @@
 
 </div>
 
-
-
-
-
-{{-- ===================================================== --}}
-{{-- SUCCESS MODAL --}}
-{{-- ===================================================== --}}
-@if(session('success'))
-
-    <div
-        id="successModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-
-        <div
-            class="bg-white rounded-3xl p-8 w-[90%] max-w-md text-center">
-
-            <div
-                class="w-20 h-20 rounded-full bg-green-100 mx-auto flex items-center justify-center mb-5">
-
-                <span
-                    class="material-symbols-outlined text-green-600 text-5xl">
-
-                    check_circle
-
-                </span>
-
-            </div>
-
-            <h3
-                class="text-2xl font-bold text-green-600 mb-3">
-
-                Thành công
-
-            </h3>
-
-            <p
-                class="text-gray-500 leading-relaxed">
-
-                {{ session('success') }}
-
-            </p>
-
-            <button
-                onclick="closeSuccessModal()"
-                class="mt-8 bg-green-600 hover:bg-green-700 transition text-white px-8 py-3 rounded-2xl font-bold">
-
-                OK
-
-            </button>
-
-        </div>
-
-    </div>
-
-@endif
-
-
-
-
-
 <script>
 
     // =====================================================

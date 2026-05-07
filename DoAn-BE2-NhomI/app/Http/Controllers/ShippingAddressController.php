@@ -21,17 +21,17 @@ class ShippingAddressController extends Controller
                 Auth::id()
             )
 
-            ->orderBy(
-                'is_default',
-                'desc'
-            )
+                ->orderBy(
+                    'is_default',
+                    'desc'
+                )
 
-            ->orderBy(
-                'address_id',
-                'desc'
-            )
+                ->orderBy(
+                    'address_id',
+                    'desc'
+                )
 
-            ->get();
+                ->get();
 
 
 
@@ -74,12 +74,12 @@ class ShippingAddressController extends Controller
                 Auth::id()
             )
 
-            ->where(
-                'address_id',
-                $id
-            )
+                ->where(
+                    'address_id',
+                    $id
+                )
 
-            ->firstOrFail();
+                ->firstOrFail();
 
 
 
@@ -112,45 +112,153 @@ class ShippingAddressController extends Controller
             str_replace(
 
                 [
-                    'à','á','ạ','ả','ã',
-                    'â','ầ','ấ','ậ','ẩ','ẫ',
-                    'ă','ằ','ắ','ặ','ẳ','ẵ',
+                    'à',
+                    'á',
+                    'ạ',
+                    'ả',
+                    'ã',
+                    'â',
+                    'ầ',
+                    'ấ',
+                    'ậ',
+                    'ẩ',
+                    'ẫ',
+                    'ă',
+                    'ằ',
+                    'ắ',
+                    'ặ',
+                    'ẳ',
+                    'ẵ',
 
-                    'è','é','ẹ','ẻ','ẽ',
-                    'ê','ề','ế','ệ','ể','ễ',
+                    'è',
+                    'é',
+                    'ẹ',
+                    'ẻ',
+                    'ẽ',
+                    'ê',
+                    'ề',
+                    'ế',
+                    'ệ',
+                    'ể',
+                    'ễ',
 
-                    'ì','í','ị','ỉ','ĩ',
+                    'ì',
+                    'í',
+                    'ị',
+                    'ỉ',
+                    'ĩ',
 
-                    'ò','ó','ọ','ỏ','õ',
-                    'ô','ồ','ố','ộ','ổ','ỗ',
-                    'ơ','ờ','ớ','ợ','ở','ỡ',
+                    'ò',
+                    'ó',
+                    'ọ',
+                    'ỏ',
+                    'õ',
+                    'ô',
+                    'ồ',
+                    'ố',
+                    'ộ',
+                    'ổ',
+                    'ỗ',
+                    'ơ',
+                    'ờ',
+                    'ớ',
+                    'ợ',
+                    'ở',
+                    'ỡ',
 
-                    'ù','ú','ụ','ủ','ũ',
-                    'ư','ừ','ứ','ự','ử','ữ',
+                    'ù',
+                    'ú',
+                    'ụ',
+                    'ủ',
+                    'ũ',
+                    'ư',
+                    'ừ',
+                    'ứ',
+                    'ự',
+                    'ử',
+                    'ữ',
 
-                    'ỳ','ý','ỵ','ỷ','ỹ',
+                    'ỳ',
+                    'ý',
+                    'ỵ',
+                    'ỷ',
+                    'ỹ',
 
                     'đ'
                 ],
 
                 [
-                    'a','a','a','a','a',
-                    'a','a','a','a','a','a',
-                    'a','a','a','a','a','a',
+                    'a',
+                    'a',
+                    'a',
+                    'a',
+                    'a',
+                    'a',
+                    'a',
+                    'a',
+                    'a',
+                    'a',
+                    'a',
+                    'a',
+                    'a',
+                    'a',
+                    'a',
+                    'a',
+                    'a',
 
-                    'e','e','e','e','e',
-                    'e','e','e','e','e','e',
+                    'e',
+                    'e',
+                    'e',
+                    'e',
+                    'e',
+                    'e',
+                    'e',
+                    'e',
+                    'e',
+                    'e',
+                    'e',
 
-                    'i','i','i','i','i',
+                    'i',
+                    'i',
+                    'i',
+                    'i',
+                    'i',
 
-                    'o','o','o','o','o',
-                    'o','o','o','o','o','o',
-                    'o','o','o','o','o','o',
+                    'o',
+                    'o',
+                    'o',
+                    'o',
+                    'o',
+                    'o',
+                    'o',
+                    'o',
+                    'o',
+                    'o',
+                    'o',
+                    'o',
+                    'o',
+                    'o',
+                    'o',
+                    'o',
+                    'o',
 
-                    'u','u','u','u','u',
-                    'u','u','u','u','u','u',
+                    'u',
+                    'u',
+                    'u',
+                    'u',
+                    'u',
+                    'u',
+                    'u',
+                    'u',
+                    'u',
+                    'u',
+                    'u',
 
-                    'y','y','y','y','y',
+                    'y',
+                    'y',
+                    'y',
+                    'y',
+                    'y',
 
                     'd'
                 ],
@@ -384,10 +492,9 @@ class ShippingAddressController extends Controller
 
 
 
-
         return redirect()
 
-            ->route('addresses.create')
+            ->route('addresses.index')
 
             ->with(
                 'success',
@@ -430,12 +537,12 @@ class ShippingAddressController extends Controller
                 Auth::id()
             )
 
-            ->where(
-                'address_id',
-                $id
-            )
+                ->where(
+                    'address_id',
+                    $id
+                )
 
-            ->firstOrFail();
+                ->firstOrFail();
 
 
 
@@ -477,5 +584,123 @@ class ShippingAddressController extends Controller
             );
 
     }
+    // =====================================================
+// DELETE ADDRESS
+// =====================================================
+    public function destroy($id)
+    {
 
+        $address =
+            ShippingAddress::where(
+                'user_id',
+                Auth::id()
+            )
+
+                ->where(
+                    'address_id',
+                    $id
+                )
+
+                ->firstOrFail();
+
+
+
+
+
+        // =================================================
+        // KHÔNG CHO XOÁ ĐỊA CHỈ MẶC ĐỊNH
+        // =================================================
+        if ($address->is_default) {
+
+            return redirect()
+
+                ->route('addresses.index')
+
+                ->with(
+                    'error',
+                    'Không thể xoá địa chỉ mặc định.'
+                );
+
+        }
+
+
+
+
+
+        // =================================================
+        // DELETE
+        // =================================================
+        $address->delete();
+
+
+
+
+
+        return redirect()
+
+            ->route('addresses.index')
+
+            ->with(
+                'success',
+                'Xoá địa chỉ thành công.'
+            );
+
+    }
+
+    // =====================================================
+// SET DEFAULT ADDRESS
+// =====================================================
+    public function setDefault($id)
+    {
+
+        $address =
+            ShippingAddress::where(
+                'user_id',
+                Auth::id()
+            )
+
+                ->where(
+                    'address_id',
+                    $id
+                )
+
+                ->firstOrFail();
+
+
+
+
+
+        // bỏ mặc định cũ
+        ShippingAddress::where(
+            'user_id',
+            Auth::id()
+        )
+
+            ->update([
+                'is_default' => 0
+            ]);
+
+
+
+
+
+        // set mặc định mới
+        $address->update([
+            'is_default' => 1
+        ]);
+
+
+
+
+
+        return redirect()
+
+            ->route('addresses.index')
+
+            ->with(
+                'success',
+                'Thiết lập địa chỉ mặc định thành công.'
+            );
+
+    }
 }
