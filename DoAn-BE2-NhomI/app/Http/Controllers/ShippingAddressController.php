@@ -584,5 +584,67 @@ class ShippingAddressController extends Controller
             );
 
     }
+    // =====================================================
+// DELETE ADDRESS
+// =====================================================
+    public function destroy($id)
+    {
+
+        $address =
+            ShippingAddress::where(
+                'user_id',
+                Auth::id()
+            )
+
+                ->where(
+                    'address_id',
+                    $id
+                )
+
+                ->firstOrFail();
+
+
+
+
+
+        // =================================================
+        // KHÔNG CHO XOÁ ĐỊA CHỈ MẶC ĐỊNH
+        // =================================================
+        if ($address->is_default) {
+
+            return redirect()
+
+                ->route('addresses.index')
+
+                ->with(
+                    'error',
+                    'Không thể xoá địa chỉ mặc định.'
+                );
+
+        }
+
+
+
+
+
+        // =================================================
+        // DELETE
+        // =================================================
+        $address->delete();
+
+
+
+
+
+        return redirect()
+
+            ->route('addresses.index')
+
+            ->with(
+                'success',
+                'Xoá địa chỉ thành công.'
+            );
+
+    }
 
 }
