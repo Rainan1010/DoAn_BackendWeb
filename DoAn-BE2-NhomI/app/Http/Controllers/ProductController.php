@@ -39,4 +39,41 @@ class ProductController extends Controller
         // 4. Truyền đầy đủ cả 3 biến sang View
         return view('products.show', compact('product', 'images', 'variants'));
     }
+
+    public function storeReview(Request $request, $id)
+    {
+        $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'required|string|max:1000',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ]);
+
+        $review = new \App\Models\Review();
+        $review->product_id = $id;
+        $review->user_id = \Illuminate\Support\Facades\Auth::id();
+        $review->order_item_id = 0; // Set default 0 để fix lỗi 'order_item_id' doesn't have a default value
+        $review->rating = $request->rating;
+        $review->comment = $request->comment;
+        $review->status = 'pending';
+        $review->created_at = now();
+        $review->save();
+
+        if ($request->hasFile('images')) {
+            $sortOrder = 1;
+            foreach ($request->file('images') as $file) {
+                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('images/reviews'), $filename);
+
+                $reviewImage = new \App\Models\ReviewImage();
+                $reviewImage->review_id = $review->review_id;
+                // Lưu đường dẫn theo đúng format dự án (có thể có public/ hoặc không)
+                // View đang dùng str_replace('public/', '', ...) nên lưu thế nào cũng được
+                $reviewImage->image_url = 'images/reviews/' . $filename; 
+                $reviewImage->sort_order = $sortOrder++;
+                $reviewImage->save();
+            }
+        }
+
+        return back()->with('success', 'Đánh giá của bạn đã được gửi và đang chờ duyệt.');
+    }
 }

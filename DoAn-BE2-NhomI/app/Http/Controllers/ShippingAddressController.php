@@ -584,5 +584,123 @@ class ShippingAddressController extends Controller
             );
 
     }
+    // =====================================================
+// DELETE ADDRESS
+// =====================================================
+    public function destroy($id)
+    {
 
+        $address =
+            ShippingAddress::where(
+                'user_id',
+                Auth::id()
+            )
+
+                ->where(
+                    'address_id',
+                    $id
+                )
+
+                ->firstOrFail();
+
+
+
+
+
+        // =================================================
+        // KHÔNG CHO XOÁ ĐỊA CHỈ MẶC ĐỊNH
+        // =================================================
+        if ($address->is_default) {
+
+            return redirect()
+
+                ->route('addresses.index')
+
+                ->with(
+                    'error',
+                    'Không thể xoá địa chỉ mặc định.'
+                );
+
+        }
+
+
+
+
+
+        // =================================================
+        // DELETE
+        // =================================================
+        $address->delete();
+
+
+
+
+
+        return redirect()
+
+            ->route('addresses.index')
+
+            ->with(
+                'success',
+                'Xoá địa chỉ thành công.'
+            );
+
+    }
+
+    // =====================================================
+// SET DEFAULT ADDRESS
+// =====================================================
+    public function setDefault($id)
+    {
+
+        $address =
+            ShippingAddress::where(
+                'user_id',
+                Auth::id()
+            )
+
+                ->where(
+                    'address_id',
+                    $id
+                )
+
+                ->firstOrFail();
+
+
+
+
+
+        // bỏ mặc định cũ
+        ShippingAddress::where(
+            'user_id',
+            Auth::id()
+        )
+
+            ->update([
+                'is_default' => 0
+            ]);
+
+
+
+
+
+        // set mặc định mới
+        $address->update([
+            'is_default' => 1
+        ]);
+
+
+
+
+
+        return redirect()
+
+            ->route('addresses.index')
+
+            ->with(
+                'success',
+                'Thiết lập địa chỉ mặc định thành công.'
+            );
+
+    }
 }

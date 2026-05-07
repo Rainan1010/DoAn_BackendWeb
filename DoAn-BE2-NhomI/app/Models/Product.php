@@ -52,6 +52,6 @@ class Product extends Model
     // 🔥 1 sản phẩm có nhiều đánh giá
     public function reviews()
     {
-        return $this->hasMany(ProductReview::class, 'product_id');
+        return $this->hasMany(Review::class, 'product_id', 'product_id');
     }
 }
