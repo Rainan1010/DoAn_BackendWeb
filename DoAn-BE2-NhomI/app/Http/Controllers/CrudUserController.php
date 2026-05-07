@@ -59,8 +59,7 @@ class CrudUserController extends Controller
                     [
                         'otp_code' => $otpCode, 
                         'expires_at' => now()->addMinutes(10), 
-                        'used' => 0,
-                        'created_at' => now()
+                        'used' => 0
                     ]
                 );
 
@@ -118,8 +117,7 @@ class CrudUserController extends Controller
             'user_id' => $user->user_id,
             'otp_code' => $otpCode,
             'purpose' => 'register',
-            'expires_at' => now()->addMinutes(10),
-            'created_at' => now()
+            'expires_at' => now()->addMinutes(10)
         ]);
 
         Mail::to($user->email)->send(new VerifyOTPMail($otpCode));
