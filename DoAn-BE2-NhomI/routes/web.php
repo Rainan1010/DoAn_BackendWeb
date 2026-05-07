@@ -147,12 +147,26 @@ Route::post('/profile/update', [CrudUserController::class, 'updateProfile'])
 // =====================================================
 Route::middleware('auth')->group(function () {
 
+    // danh sách địa chỉ
     Route::get(
+        '/change-address',
+        [ShippingAddressController::class, 'index']
+    )->name('addresses.index');
 
-    '/change-address',
 
-    [ShippingAddressController::class, 'index']
 
-)->name('addresses.index');
+    // form thêm địa chỉ
+    Route::get(
+        '/change-address/create',
+        [ShippingAddressController::class, 'create']
+    )->name('addresses.create');
+
+
+
+    // lưu địa chỉ
+    Route::post(
+        '/change-address/store',
+        [ShippingAddressController::class, 'store']
+    )->name('addresses.store');
 
 });
