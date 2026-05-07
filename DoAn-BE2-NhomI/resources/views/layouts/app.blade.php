@@ -5,12 +5,14 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>B-Tris Precision Tech | Thiết Bị Công Nghệ Cao Cấp</title>
-    
+
     {{-- Scripts & Fonts --}}
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-    
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     {{-- Lucide Icons (Dành cho trang Admin của Bảo) --}}
     <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -25,19 +27,37 @@
                         "error": "#ba1a1a",
                         "brand-blue": "#003366"
                     },
-                    "borderRadius": { "full": "0.75rem" },
-                    "fontFamily": { "body": ["Inter"] }
+                    "borderRadius": {
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "body": ["Inter"]
+                    },
+                    "primary": "#003366",
+                    "primary-container": "#004488"
                 },
             }
         }
     </script>
 
     <style>
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .glass-nav { backdrop-filter: blur(20px); background-color: rgba(0, 51, 102, 0.9); }
-        html { scroll-behavior: smooth; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .glass-nav {
+            backdrop-filter: blur(20px);
+            background-color: rgba(0, 51, 102, 0.9);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
         /* Hiệu ứng ẩn hiện mượt cho Flash Message */
-        .flash-message { transition: all 0.5s ease; }
+        .flash-message {
+            transition: all 0.5s ease;
+        }
     </style>
 </head>
 
@@ -70,15 +90,15 @@
                 {{-- GIỎ HÀNG (DYNAMC) --}}
                 <a href="{{ route('cart.index') }}" class="hover:opacity-80 transition-all active:scale-95 relative group">
                     <span class="material-symbols-outlined text-3xl">shopping_cart</span>
-                    
+
                     @php
-                        $totalQuantity = collect(session('cart', []))->sum('quantity');
+                    $totalQuantity = collect(session('cart', []))->sum('quantity');
                     @endphp
 
                     @if($totalQuantity > 0)
-                        <span class="absolute -top-1 -right-2 bg-red-600 text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold border-2 border-[#003366]">
-                            {{ $totalQuantity }}
-                        </span>
+                    <span class="absolute -top-1 -right-2 bg-red-600 text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold border-2 border-[#003366]">
+                        {{ $totalQuantity }}
+                    </span>
                     @endif
 
                     {{-- Tooltip Header --}}
@@ -90,29 +110,29 @@
 
                 {{-- USER AUTH --}}
                 @auth
-                    <div class="relative group">
-                        <div onclick="toggleDropdown()" class="flex items-center gap-2 cursor-pointer bg-white/10 px-3 py-1.5 rounded-full hover:bg-white/20 transition-all">
-                            @if(Auth::user()->avatar_url)
-                                <img src="{{ asset(Auth::user()->avatar_url) }}" class="w-7 h-7 rounded-full object-cover border border-white/50">
-                            @else
-                                <span class="material-symbols-outlined text-2xl">account_circle</span>
-                            @endif
-                            <span class="font-bold text-sm">{{ Auth::user()->full_name }}</span>
-                        </div>
-
-                        <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white text-[#0A2540] rounded-xl shadow-2xl p-2 font-bold text-sm">
-                            <a href="{{ route('profile') }}" class="block px-4 py-2 hover:bg-gray-100 rounded-lg">Hồ sơ cá nhân</a>
-                            <a href="#" class="block px-4 py-2 hover:bg-gray-100 rounded-lg border-b border-gray-50 mb-1">Đơn mua của tôi</a>
-                            <form action="{{ route('logout') }}" method="POST">
-                                @csrf
-                                <button class="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 rounded-lg">Đăng xuất</button>
-                            </form>
-                        </div>
+                <div class="relative group">
+                    <div onclick="toggleDropdown()" class="flex items-center gap-2 cursor-pointer bg-white/10 px-3 py-1.5 rounded-full hover:bg-white/20 transition-all">
+                        @if(Auth::user()->avatar_url)
+                        <img src="{{ asset(Auth::user()->avatar_url) }}" class="w-7 h-7 rounded-full object-cover border border-white/50">
+                        @else
+                        <span class="material-symbols-outlined text-2xl">account_circle</span>
+                        @endif
+                        <span class="font-bold text-sm">{{ Auth::user()->full_name }}</span>
                     </div>
+
+                    <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white text-[#0A2540] rounded-xl shadow-2xl p-2 font-bold text-sm">
+                        <a href="{{ route('profile') }}" class="block px-4 py-2 hover:bg-gray-100 rounded-lg">Hồ sơ cá nhân</a>
+                        <a href="#" class="block px-4 py-2 hover:bg-gray-100 rounded-lg border-b border-gray-50 mb-1">Đơn mua của tôi</a>
+                        <form action="{{ route('logout') }}" method="POST">
+                            @csrf
+                            <button class="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 rounded-lg">Đăng xuất</button>
+                        </form>
+                    </div>
+                </div>
                 @else
-                    <a href="{{ route('login') }}" class="flex items-center gap-2 hover:text-slate-300 font-bold">
-                        <span class="material-symbols-outlined">login</span> Đăng nhập
-                    </a>
+                <a href="{{ route('login') }}" class="flex items-center gap-2 hover:text-slate-300 font-bold">
+                    <span class="material-symbols-outlined">login</span> Đăng nhập
+                </a>
                 @endauth
             </div>
         </div>
@@ -120,21 +140,21 @@
 
     {{-- MAIN CONTENT --}}
     <main class="pt-24 min-h-screen">
-        
+
         {{-- FLASH MESSAGES --}}
         <div class="max-w-[1600px] mx-auto px-6">
             @if(session('success'))
-                <div class="flash-message bg-emerald-100 border-l-4 border-emerald-500 text-emerald-700 p-4 rounded-lg shadow-sm mb-6 flex justify-between items-center" role="alert">
-                    <p class="font-bold">{{ session('success') }}</p>
-                    <button onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700">✕</button>
-                </div>
+            <div class="flash-message bg-emerald-100 border-l-4 border-emerald-500 text-emerald-700 p-4 rounded-lg shadow-sm mb-6 flex justify-between items-center" role="alert">
+                <p class="font-bold">{{ session('success') }}</p>
+                <button onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700">✕</button>
+            </div>
             @endif
 
             @if(session('error'))
-                <div class="flash-message bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-sm mb-6 flex justify-between items-center" role="alert">
-                    <p class="font-bold">{{ session('error') }}</p>
-                    <button onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700">✕</button>
-                </div>
+            <div class="flash-message bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-sm mb-6 flex justify-between items-center" role="alert">
+                <p class="font-bold">{{ session('error') }}</p>
+                <button onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700">✕</button>
+            </div>
             @endif
         </div>
 
@@ -182,4 +202,5 @@
         }, 5000);
     </script>
 </body>
+
 </html>
