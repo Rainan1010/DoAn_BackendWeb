@@ -1,62 +1,50 @@
-<!DOCTYPE html>
-<html class="light" lang="vi">
-<head>
-    <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Thêm Voucher Mới - B-Tris</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
-    <script id="tailwind-config">
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: "#001e40",
-                        "primary-container": "#003366",
-                    },
-                    fontFamily: { body: ["Inter", "sans-serif"], }
-                }
-            }
-        }
-    </script>
-    <style>
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        body { font-family: 'Inter', sans-serif; background-color: #001e40; color: white; }
-        .main-gradient-bg { background: radial-gradient(circle at 70% 30%, #003366 0%, #001e40 100%); position: relative; min-height: 100vh; }
-        .grid-overlay { background-image: radial-gradient(rgba(167, 200, 255, 0.1) 1px, transparent 1px); background-size: 40px 40px; position: fixed; inset: 0; opacity: 0.5; z-index: 0; pointer-events: none; }
-        .glass-panel { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-radius: 1.5rem; }
-        .input-field { background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0.75rem; padding: 1rem; color: white; width: 100%; transition: all 0.3s ease; }
-        .input-field:focus { outline: none; border-color: #a7c8ff; background-color: rgba(255, 255, 255, 0.1); box-shadow: 0 0 0 4px rgba(167, 200, 255, 0.1); }
-        .input-label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #a7c8ff; margin-bottom: 0.5rem; }
-        .vibrant-btn { background: linear-gradient(90deg, #3a5f94 0%, #003366 100%); box-shadow: 0 10px 20px -5px rgba(0, 51, 102, 0.5); transition: all 0.3s ease; }
-        .vibrant-btn:hover { background: linear-gradient(90deg, #4b78b5 0%, #004080 100%); transform: translateY(-2px); }
-        /* Style cho select element để trông đẹp hơn trên nền tối */
-        select.input-field option { background-color: #001e40; color: white; }
-        /* For date inputs icon color */
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
-    </style>
-</head>
-<body class="main-gradient-bg antialiased flex items-center justify-center py-12 px-4">
-    <div class="grid-overlay"></div>
-    <div class="fixed top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-400 via-indigo-500 to-blue-600 z-50"></div>
+@extends('admin.layouts.app')
+
+@section('header_search')
+<div class="relative">
+    <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+    <input type="text" placeholder="Tìm kiếm voucher..." class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-[#0A2540]/10 text-sm">
+</div>
+@endsection
+
+@section('content')
+<div x-data="{ 
+    code: 'TECHSPRING20',
+    type: 'percent',
+    value: 15,
+    min_order: 500000,
+    max_discount: 100000,
+    start_at: '',
+    end_at: '2024-12-31',
+    is_active: true
+}" class="pb-10">
     
-    <div class="relative z-10 w-full max-w-2xl">
-        <div class="mb-8 flex items-center gap-4">
-            <a href="{{ route('vouchers.index') }}" class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/10">
-                <span class="material-symbols-outlined">arrow_back</span>
-            </a>
+    <form action="{{ route('admin.vouchers.store') }}" method="POST">
+        @csrf
+        
+        <!-- Header Actions -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
-                <h1 class="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
-                    Thêm Voucher Mới
-                </h1>
-                <p class="text-blue-200 mt-1 text-xs font-bold tracking-widest uppercase">Thiết lập khuyến mãi hệ thống</p>
+                <nav class="flex text-xs font-medium text-gray-400 mb-2 gap-2">
+                    <span>Khuyến mãi</span>
+                    <span>&rsaquo;</span>
+                    <span class="text-gray-600">Thêm Voucher Mới</span>
+                </nav>
+                <h1 class="text-4xl font-black text-[#0A2540] tracking-tight">Thêm Voucher Mới</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="{{ route('admin.vouchers.index') }}" class="px-8 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                    Hủy bỏ
+                </a>
+                <button type="submit" class="px-8 py-3 bg-[#0A2540] text-white rounded-xl text-sm font-bold hover:bg-[#113255] transition-colors shadow-lg shadow-[#0A2540]/20">
+                    Lưu Voucher
+                </button>
             </div>
         </div>
 
         @if($errors->any())
-            <div class="mb-6 p-4 rounded-xl bg-red-500/20 border border-red-500/50 text-red-200">
-                <ul class="list-disc list-inside text-sm font-medium">
+            <div class="mb-6 p-4 rounded-xl bg-red-50 text-red-600 border border-red-100">
+                <ul class="list-disc list-inside text-sm font-bold">
                     @foreach($errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
@@ -64,64 +52,190 @@
             </div>
         @endif
 
-        <div class="glass-panel p-8 md:p-10">
-            <form method="POST" action="{{ route('vouchers.store') }}" class="space-y-6">
-                @csrf
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Form -->
+            <div class="lg:col-span-2 space-y-6">
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Code -->
-                    <div class="md:col-span-2">
-                        <label class="input-label">Mã Voucher</label>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-white/40">
-                                <span class="material-symbols-outlined text-lg">tag</span>
-                            </span>
-                            <input type="text" name="code" class="input-field pl-12 uppercase font-mono font-bold tracking-wider" placeholder="VD: BTRIS2024" value="{{ old('code') }}" required>
+                <!-- Basic Info -->
+                <div class="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
+                    <div class="flex items-center gap-3 mb-8">
+                        <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-[#0A2540]">
+                            <i data-lucide="info" class="w-5 h-5"></i>
+                        </div>
+                        <h2 class="text-xl font-black text-[#0A2540]">Thông tin cơ bản</h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Voucher ID (Tự động)</label>
+                            <input type="text" value="VCH-2024-001" disabled class="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-bold text-gray-400 cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Mã Voucher (Code)</label>
+                            <input type="text" name="code" x-model="code" placeholder="Ví dụ: TECHSPRING20" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10 uppercase tracking-wider">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Loại Voucher</label>
+                            <select name="type" x-model="type" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10">
+                                <option value="percent">Phần trăm (%)</option>
+                                <option value="fixed">Số tiền cố định (VNĐ)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Giá trị giảm</label>
+                            <div class="relative">
+                                <input type="number" name="value" x-model="value" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10">
+                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold" x-text="type === 'percent' ? '%' : 'đ'"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conditions -->
+                <div class="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
+                    <div class="flex items-center gap-3 mb-8">
+                        <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-[#0A2540]">
+                            <i data-lucide="filter" class="w-5 h-5"></i>
+                        </div>
+                        <h2 class="text-xl font-black text-[#0A2540]">Điều kiện áp dụng</h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Giá trị đơn hàng tối thiểu</label>
+                            <div class="relative">
+                                <input type="number" name="min_order_value" x-model="min_order" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10">
+                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">đ</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Mức giảm tối đa</label>
+                            <div class="relative">
+                                <input type="number" name="max_discount" x-model="max_discount" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10">
+                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">đ</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Giới hạn sử dụng</label>
+                            <input type="number" name="usage_limit" placeholder="1000" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Đã sử dụng</label>
+                            <input type="text" value="0" disabled class="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-bold text-gray-400 cursor-not-allowed">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time & Status -->
+                <div class="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
+                    <div class="flex items-center gap-3 mb-8">
+                        <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-[#0A2540]">
+                            <i data-lucide="clock" class="w-5 h-5"></i>
+                        </div>
+                        <h2 class="text-xl font-black text-[#0A2540]">Thời gian & Trạng thái</h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Thời gian bắt đầu</label>
+                            <input type="datetime-local" name="start_at" x-model="start_at" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Thời gian kết thúc</label>
+                            <input type="datetime-local" name="end_at" x-model="end_at" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10">
                         </div>
                     </div>
 
-                    <!-- Discount Type -->
-                    <div>
-                        <label class="input-label">Loại giảm giá</label>
-                        <select name="discount_type" class="input-field cursor-pointer">
-                            <option value="percent" {{ old('discount_type') == 'percent' ? 'selected' : '' }}>Phần trăm (%)</option>
-                            <option value="amount" {{ old('discount_type') == 'amount' ? 'selected' : '' }}>Số tiền (VNĐ)</option>
-                        </select>
+                    <div class="bg-gray-50 rounded-2xl p-4 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#0A2540] border border-gray-200">
+                                <i data-lucide="power" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-[#0A2540]">Kích hoạt ngay</p>
+                                <p class="text-xs text-gray-500">Voucher sẽ có thể sử dụng ngay khi được lưu.</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="is_active" value="1" x-model="is_active" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0A2540]"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Preview & Tips -->
+            <div class="lg:col-span-1">
+                <div class="space-y-8 sticky top-8 self-start">
+                    <!-- Live Preview -->
+                    <div class="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
+                    <div class="flex items-center gap-3 mb-6">
+                        <i data-lucide="eye" class="w-4 h-4 text-gray-400"></i>
+                        <span class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Live Preview</span>
                     </div>
 
-                    <!-- Discount Value -->
-                    <div>
-                        <label class="input-label">Giá trị giảm</label>
-                        <input type="number" name="discount_value" class="input-field" placeholder="VD: 10 hoặc 50000" value="{{ old('discount_value') }}" required>
-                    </div>
+                    <div class="bg-[#F8FAFC] rounded-2xl p-6 relative">
+                        <!-- Voucher Card UI -->
+                        <div class="bg-[#0A2540] rounded-2xl p-8 text-white text-center relative overflow-hidden">
+                            <!-- Cutouts -->
+                            <div class="absolute left-[-10px] top-1/2 -translate-y-1/2 w-5 h-5 bg-[#F8FAFC] rounded-full"></div>
+                            <div class="absolute right-[-10px] top-1/2 -translate-y-1/2 w-5 h-5 bg-[#F8FAFC] rounded-full"></div>
+                            
+                            <div class="relative z-10 flex flex-col items-center">
+                                <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mb-4">
+                                    <i data-lucide="ticket" class="w-5 h-5 text-white"></i>
+                                </div>
+                                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-300 mb-2">Giảm ngay</p>
+                                <h4 class="text-4xl font-black mb-2" x-text="type === 'percent' ? value + '%' : new Intl.NumberFormat('vi-VN').format(value) + 'đ'"></h4>
+                                <p class="text-[10px] text-blue-100/60 font-medium leading-relaxed max-w-[150px]">
+                                    Tối đa <span x-text="new Intl.NumberFormat('vi-VN').format(max_discount)"></span>đ cho đơn từ <span x-text="new Intl.NumberFormat('vi-VN').format(min_order)"></span>đ
+                                </p>
 
-                    <!-- Start Date -->
-                    <div>
-                        <label class="input-label">Ngày bắt đầu</label>
-                        <input type="date" name="start_date" class="input-field" value="{{ old('start_date') }}" required>
-                    </div>
+                                <div class="mt-8 w-full">
+                                    <div class="bg-white/10 border border-white/20 rounded-xl p-3 flex items-center justify-between">
+                                        <span class="text-xs font-black tracking-widest uppercase" x-text="code"></span>
+                                        <i data-lucide="copy" class="w-3 h-3 text-white/40"></i>
+                                    </div>
+                                    <p class="text-[8px] text-white/30 uppercase font-bold tracking-widest mt-4">Hết hạn: <span x-text="end_at || '31/12/2024'"></span></p>
+                                </div>
+                            </div>
+                        </div>
 
-                    <!-- End Date -->
-                    <div>
-                        <label class="input-label">Ngày kết thúc</label>
-                        <input type="date" name="end_date" class="input-field" value="{{ old('end_date') }}" required>
-                    </div>
-
-                    <!-- Usage Limit -->
-                    <div class="md:col-span-2">
-                        <label class="input-label">Số lần sử dụng tối đa</label>
-                        <input type="number" name="usage_limit" class="input-field" placeholder="Bỏ trống nếu không giới hạn" value="{{ old('usage_limit') }}">
+                        <!-- Footer Specs -->
+                        <div class="mt-8 space-y-4">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-gray-400 font-bold uppercase tracking-wider">Phạm vi:</span>
+                                <span class="text-[#0A2540] font-black">Toàn sàn</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-gray-400 font-bold uppercase tracking-wider">Đối tượng:</span>
+                                <span class="text-[#0A2540] font-black">Khách hàng mới</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-gray-400 font-bold uppercase tracking-wider">Hình thức:</span>
+                                <span class="text-[#0A2540] font-black">Mã công khai</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="pt-6 mt-6 border-t border-white/10 flex justify-end">
-                    <button type="submit" class="vibrant-btn text-white px-8 py-4 rounded-xl font-black uppercase tracking-[0.1em] text-sm flex items-center gap-2 w-full md:w-auto justify-center">
-                        <span class="material-symbols-outlined">save</span>
-                        Lưu Voucher
-                    </button>
+                <!-- Editorial Tips -->
+                <div class="bg-gradient-to-br from-[#0A2540] to-[#113255] rounded-3xl p-8 text-white relative overflow-hidden shadow-xl">
+                    <div class="absolute right-[-20px] top-[-20px] opacity-10">
+                        <i data-lucide="lightbulb" class="w-32 h-32"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-3 mb-4">
+                            <i data-lucide="lightbulb" class="w-5 h-5 text-yellow-400"></i>
+                            <h3 class="text-lg font-black tracking-tight">Mẹo Editorial</h3>
+                        </div>
+                        <p class="text-xs leading-relaxed text-blue-100/80 font-medium">
+                            Sử dụng mã ngắn gọn, dễ nhớ như "SPRING24" thay vì mã tự động. Điều này giúp tăng tỷ lệ chuyển đổi đơn hàng lên tới 22% cho các chiến dịch theo mùa.
+                        </p>
+                    </div>
                 </div>
-            </form>
+            </div>
         </div>
-    </div>
-</body>
-</html>
+    </form>
+</div>
+@endsection

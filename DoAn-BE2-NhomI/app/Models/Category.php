@@ -17,6 +17,7 @@ class Category extends Model
         'icon_url',
         'sort_order',
         'is_active',
+        'version',
     ];
 
     public function parent()

@@ -12,11 +12,14 @@ class Voucher extends Model
 
     protected $fillable = [
         'code',
-        'discount_type',
-        'discount_value',
-        'start_date',
-        'end_date',
+        'type',
+        'value',
+        'min_order_value',
+        'max_discount',
         'usage_limit',
+        'used_count',
+        'start_at',
+        'end_at',
         'is_active'
     ];
 }

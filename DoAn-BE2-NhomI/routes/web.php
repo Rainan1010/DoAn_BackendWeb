@@ -1,15 +1,37 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\HomeController; 
+use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CrudUserController;
+use App\Http\Controllers\Admin\VoucherController;
+use App\Http\Controllers\Admin\ReviewController;
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\BrandController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\Auth\SocialAuthController;
+use App\Http\Controllers\OTPController;
+use App\Http\Controllers\ShippingAddressController;
+use App\Http\Controllers\CartController;
 
-// Khai báo đường dẫn trang chủ 
+
+/*
+|--------------------------------------------------------------------------
+| PUBLIC ROUTES (Trang chủ & Sản phẩm)
+|--------------------------------------------------------------------------
+*/
 Route::get('/', [HomeController::class, 'index'])->name('home');
-// Route dành riêng cho Ajax tìm kiếm
-Route::get('/search-ajax', [App\Http\Controllers\ProductController::class, 'searchAjax'])->name('search.ajax');
-// Route hiển thị trang chi tiết sản phẩm
-Route::get('/product/{id}', [App\Http\Controllers\ProductController::class, 'show'])->name('product.show');
+Route::get('/search-ajax', [ProductController::class, 'searchAjax'])->name('search.ajax');
+Route::get('/product/{id}', [ProductController::class, 'show'])->name('product.show');
+Route::get('/product-detail/{id}', [HomeController::class, 'detail'])->name('product.detail');
+
+
+/*
+|--------------------------------------------------------------------------
+| AUTHENTICATION (Đăng nhập, Đăng ký, Đăng xuất)
+|--------------------------------------------------------------------------
+*/
+Route::get('/login', [CrudUserController::class, 'showLogin'])->name('login');
 
 // ---------------------------------------------------
 // Các route của Trung
@@ -17,24 +39,98 @@ Route::get('/product/{id}', [App\Http\Controllers\ProductController::class, 'sho
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);
+
+    // Quản lý Thương hiệu
+    Route::patch('brands/{id}/toggle-status', [App\Http\Controllers\Admin\BrandController::class, 'toggleStatus'])->name('brands.toggleStatus');
+    Route::resource('brands', App\Http\Controllers\Admin\BrandController::class);
 });
 
 // ---------------------------------------------------
 // Các route của Trang, Thực sẽ viết tiếp xuống đây...
 // ---------------------------------------------------
-// hiển thị form login
-Route::get('/login', [CrudUserController::class, 'showLogin']);
+// Chặn người đã đăng nhập vào lại các trang auth
+Route::middleware('guest')->group(function () {
+    // hiển thị form login + xử lý login khi submit form
+    Route::get('/login', [CrudUserController::class, 'showLogin'])->name('login');
+    Route::post('/login', [CrudUserController::class, 'login']);
 
-// xử lý login khi submit form
-Route::post('/login', [CrudUserController::class, 'login']);
+    Route::get('/register', [CrudUserController::class, 'showRegister'])->name('register');
+    Route::post('/register', [CrudUserController::class, 'register']);
 
-// hiển thị form đăng ký
-Route::get('/register', [CrudUserController::class, 'showRegister']);
-// xử lý đăng ký
-Route::post('/register', [CrudUserController::class, 'register']);
+    //Login Google & Github
+    Route::get('auth/google', [SocialAuthController::class, 'redirectToGoogle'])->name('google.login');
+    Route::get('auth/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
+
+    Route::get('auth/github', [SocialAuthController::class, 'redirectToGithub'])->name('github.login');
+    Route::get('auth/github/callback', [SocialAuthController::class, 'handleGithubCallback']);
+
+    //Xác thực OTP - Bắt buộc phải có session đăng ký mới được vào
+    Route::middleware('otp.session')->group(function () {
+        Route::get('/verify-otp', [OTPController::class, 'showVerifyForm'])->name('otp.view');
+        Route::post('/verify-otp', [OTPController::class, 'verifyOTP'])->name('otp.verify');
+        Route::post('/resend-otp', [OTPController::class, 'resendOTP'])->name('otp.resend');
+    });
+});
 
 //chi tiết sản phẩm
 Route::get('/product/{id}', [HomeController::class, 'detail']);
+
+
+
+
+
+//xử lý logout
+
+Route::post('/logout', function () {
+    Auth::logout();
+    return redirect('/');
+})->name('logout');
+
+
+/*
+|--------------------------------------------------------------------------
+| USER ROUTES (Cần đăng nhập - Đổi mật khẩu)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth'])->group(function () {
+    Route::get('/password/change', [CrudUserController::class, 'showChangePassword'])->name('password.change');
+    Route::post('/password/change', [CrudUserController::class, 'changePassword'])->name('password.update');
+});
+
+/*
+|--------------------------------------------------------------------------
+| ADMIN ROUTES (Quản trị viên - Có Prefix 'admin' và Name 'admin.')
+|--------------------------------------------------------------------------
+*/
+Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
+
+    // Quản lý Danh mục (Categories)
+    Route::resource('categories', CategoryController::class);
+
+    // Quản lý Thương hiệu (Brands)
+    Route::view('/brands/create', 'admin.brands.create')->name('brands.create'); // Ưu tiên route cụ thể trước resource
+    Route::patch('brands/{id}/toggle-status', [BrandController::class, 'toggleStatus'])->name('brands.toggleStatus');
+    Route::resource('brands', BrandController::class);
+
+    // Quản lý Voucher (Vouchers)
+    Route::patch('vouchers/{id}/toggle-status', [VoucherController::class, 'toggleStatus'])->name('vouchers.toggleStatus');
+    Route::resource('vouchers', VoucherController::class);
+
+    // Quản lý Đánh giá (Reviews)
+    Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
+    Route::get('reviews/{id}', [ReviewController::class, 'show'])->name('reviews.show');
+    Route::patch('reviews/{id}/status', [ReviewController::class, 'updateStatus'])->name('reviews.updateStatus');
+    Route::delete('reviews/{id}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
+
+    // Quản lý Backup/Restore
+    Route::get('backups', [App\Http\Controllers\Admin\BackupController::class, 'index'])->name('backups.index');
+    Route::post('backups', [App\Http\Controllers\Admin\BackupController::class, 'create'])->name('backups.create');
+    Route::post('backups/upload', [App\Http\Controllers\Admin\BackupController::class, 'uploadRestore'])->name('backups.upload');
+    Route::get('backups/{id}/download', [App\Http\Controllers\Admin\BackupController::class, 'download'])->name('backups.download');
+    Route::post('backups/{id}/restore', [App\Http\Controllers\Admin\BackupController::class, 'restore'])->name('backups.restore');
+    Route::delete('backups/{id}', [App\Http\Controllers\Admin\BackupController::class, 'destroy'])->name('backups.destroy');
+
+});
 
 
 // hiển thị form đổi mật khẩu
@@ -43,8 +139,89 @@ Route::get('/password/change', [CrudUserController::class, 'showChangePassword']
 // xử lý đổi mật khẩu
 Route::post('/password/change', [CrudUserController::class, 'changePassword'])->middleware('auth');
 
+
 //xử lý logout
 Route::post('/logout', function () {
     Auth::logout();
     return redirect('/');
 })->name('logout');
+
+// trang profile
+Route::get('/profile', [CrudUserController::class, 'profile'])
+    ->middleware('auth')
+    ->name('profile');
+
+// update profile
+Route::post('/profile/update', [CrudUserController::class, 'updateProfile'])
+    ->name('profile.update')
+    ->middleware('auth');
+
+// submit review
+Route::post('/product/{id}/review', [App\Http\Controllers\ProductController::class, 'storeReview'])
+    ->name('product.review.store')
+    ->middleware('auth');
+
+
+// =====================================================
+// SHIPPING ADDRESS
+// =====================================================
+Route::middleware('auth')->group(function () {
+
+    // danh sách địa chỉ
+    Route::get(
+        '/change-address',
+        [ShippingAddressController::class, 'index']
+    )->name('addresses.index');
+
+
+
+    // form thêm địa chỉ
+    Route::get(
+        '/change-address/create',
+        [ShippingAddressController::class, 'create']
+    )->name('addresses.create');
+
+
+
+    // lưu địa chỉ
+    Route::post(
+        '/change-address/store',
+        [ShippingAddressController::class, 'store']
+    )->name('addresses.store');
+
+    // form sửa địa chỉ
+    Route::get(
+        '/change-address/edit/{id}',
+        [ShippingAddressController::class, 'edit']
+    )->name('addresses.edit');
+
+
+
+    // cập nhật địa chỉ
+    Route::post(
+        '/change-address/update/{id}',
+        [ShippingAddressController::class, 'update']
+    )->name('addresses.update');
+
+    // xoá địa chỉ
+    Route::delete(
+        '/change-address/delete/{id}',
+        [ShippingAddressController::class, 'destroy']
+    )->name('addresses.destroy');
+
+    //thiết lập địa chỉ mặc định
+    Route::post(
+        '/change-address/default/{id}',
+        [ShippingAddressController::class, 'setDefault']
+    )->name('addresses.default');
+});
+
+// CART
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
+Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
+
+// Phải có dấu {id} trong ngoặc nhọn
+Route::get('/api/compare-product/{id}', [App\Http\Controllers\CompareController::class, 'getCompareProduct']);
+
