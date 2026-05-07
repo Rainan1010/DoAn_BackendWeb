@@ -127,12 +127,12 @@
                 @csrf
                 <!-- OTP Inputs -->
                 <div class="flex justify-center gap-2">
-                    <input type="number" name="otp[]" class="otp-input" maxlength="1" oninput="moveToNext(this, event)" autofocus required>
-                    <input type="number" name="otp[]" class="otp-input" maxlength="1" oninput="moveToNext(this, event)" required>
-                    <input type="number" name="otp[]" class="otp-input" maxlength="1" oninput="moveToNext(this, event)" required>
-                    <input type="number" name="otp[]" class="otp-input" maxlength="1" oninput="moveToNext(this, event)" required>
-                    <input type="number" name="otp[]" class="otp-input" maxlength="1" oninput="moveToNext(this, event)" required>
-                    <input type="number" name="otp[]" class="otp-input" maxlength="1" oninput="moveToNext(this, event)" required>
+                    <input type="number" name="otp[]" class="otp-input" maxlength="1" autofocus required>
+                    <input type="number" name="otp[]" class="otp-input" maxlength="1" required>
+                    <input type="number" name="otp[]" class="otp-input" maxlength="1" required>
+                    <input type="number" name="otp[]" class="otp-input" maxlength="1" required>
+                    <input type="number" name="otp[]" class="otp-input" maxlength="1" required>
+                    <input type="number" name="otp[]" class="otp-input" maxlength="1" required>
                 </div>
 
                 <!-- Submit Button -->
@@ -178,24 +178,71 @@
     </div>
 
     <script>
-        function moveToNext(input, event) {
-            // Prevent non-numeric
-            input.value = input.value.replace(/[^0-9]/g, '');
-            
-            if (input.value.length > 1) {
-                input.value = input.value.slice(0, 1);
-            }
+        const otpInputs = document.querySelectorAll('.otp-input');
+        const form = document.querySelector('form');
 
-            if (input.value.length === 1) {
-                let next = input.nextElementSibling;
-                if (next && next.tagName === 'INPUT') {
-                    next.focus();
-                }
+        // Chuyển ký tự Full-width (Toàn góc) sang Half-width (Bán góc)
+        // VD: ０１２３４５ → 012345
+        function toHalfWidth(str) {
+            return str.replace(/[\uFF00-\uFFEF]/g, function(ch) {
+                return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0);
+            });
+        }
+
+        function checkAndSubmit() {
+            let allFilled = Array.from(otpInputs).every(input => input.value.trim() !== '');
+            if (allFilled) {
+                // Thêm độ trễ nhỏ để người dùng kịp nhìn thấy số cuối cùng
+                setTimeout(() => {
+                    form.submit();
+                }, 100);
             }
         }
 
-        // Handle backspace
-        document.querySelectorAll('.otp-input').forEach((input, index) => {
+        otpInputs.forEach((input, index) => {
+            // Xử lý khi người dùng Paste (Dán) mã OTP
+            input.addEventListener('paste', function(e) {
+                e.preventDefault();
+                let pasteData = (e.clipboardData || window.clipboardData).getData('text');
+                pasteData = toHalfWidth(pasteData); // Chuyển Full-width → Half-width trước
+                let numbers = pasteData.replace(/[^0-9]/g, '').slice(0, 6);
+                
+                if (numbers.length > 0) {
+                    for (let i = 0; i < numbers.length; i++) {
+                        if (otpInputs[index + i]) {
+                            otpInputs[index + i].value = numbers[i];
+                            if (i === numbers.length - 1) {
+                                if (otpInputs[index + i + 1]) {
+                                    otpInputs[index + i + 1].focus();
+                                } else {
+                                    otpInputs[index + i].focus();
+                                }
+                            }
+                        }
+                    }
+                    checkAndSubmit();
+                }
+            });
+
+            // Xử lý khi nhập từng phím
+            input.addEventListener('input', function(e) {
+                input.value = toHalfWidth(input.value); // Chuyển Full-width → Half-width
+                input.value = input.value.replace(/[^0-9]/g, '');
+                if (input.value.length > 1) {
+                    input.value = input.value.slice(0, 1);
+                }
+
+                if (input.value.length === 1) {
+                    let next = input.nextElementSibling;
+                    if (next && next.tagName === 'INPUT') {
+                        next.focus();
+                    } else {
+                        checkAndSubmit();
+                    }
+                }
+            });
+
+            // Xử lý phím xoá lùi (Backspace)
             input.addEventListener('keydown', function(e) {
                 if (e.key === 'Backspace' && !input.value) {
                     let prev = input.previousElementSibling;
