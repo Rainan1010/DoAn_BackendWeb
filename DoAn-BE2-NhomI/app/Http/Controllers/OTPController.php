@@ -13,9 +13,6 @@ class OTPController extends Controller
 {
     public function showVerifyForm()
     {
-        if (!session()->has('otp_user_id')) {
-            return redirect()->route('register')->with('error', 'Vui lòng đăng ký trước.');
-        }
         return view('auth.verify_otp');
     }
 

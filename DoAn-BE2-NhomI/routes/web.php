@@ -11,6 +11,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\OTPController;
 use App\Http\Controllers\ShippingAddressController;
+use App\Http\Controllers\CartController;
 
 
 /*
@@ -46,27 +47,29 @@ Route::prefix('admin')->name('admin.')->group(function () {
 // ---------------------------------------------------
 // Các route của Trang, Thực sẽ viết tiếp xuống đây...
 // ---------------------------------------------------
-// hiển thị form login
-Route::get('/login', [CrudUserController::class, 'showLogin'])->name('login');
+// Chặn người đã đăng nhập vào lại các trang auth
+Route::middleware('guest')->group(function () {
+    // hiển thị form login + xử lý login khi submit form
+    Route::get('/login', [CrudUserController::class, 'showLogin'])->name('login');
+    Route::post('/login', [CrudUserController::class, 'login']);
 
-// xử lý login khi submit form
+    Route::get('/register', [CrudUserController::class, 'showRegister'])->name('register');
+    Route::post('/register', [CrudUserController::class, 'register']);
 
-Route::post('/login', [CrudUserController::class, 'login']);
+    //Login Google & Github
+    Route::get('auth/google', [SocialAuthController::class, 'redirectToGoogle'])->name('google.login');
+    Route::get('auth/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
 
-Route::get('/register', [CrudUserController::class, 'showRegister'])->name('register');
-Route::post('/register', [CrudUserController::class, 'register']);
+    Route::get('auth/github', [SocialAuthController::class, 'redirectToGithub'])->name('github.login');
+    Route::get('auth/github/callback', [SocialAuthController::class, 'handleGithubCallback']);
 
-//Login Google & Github
-Route::get('auth/google', [SocialAuthController::class, 'redirectToGoogle'])->name('google.login');
-Route::get('auth/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
-
-Route::get('auth/github', [SocialAuthController::class, 'redirectToGithub'])->name('github.login');
-Route::get('auth/github/callback', [SocialAuthController::class, 'handleGithubCallback']);
-
-//Xác thực OTP
-Route::get('/verify-otp', [OTPController::class, 'showVerifyForm'])->name('otp.view');
-Route::post('/verify-otp', [OTPController::class, 'verifyOTP'])->name('otp.verify');
-Route::post('/resend-otp', [OTPController::class, 'resendOTP'])->name('otp.resend');
+    //Xác thực OTP - Bắt buộc phải có session đăng ký mới được vào
+    Route::middleware('otp.session')->group(function () {
+        Route::get('/verify-otp', [OTPController::class, 'showVerifyForm'])->name('otp.view');
+        Route::post('/verify-otp', [OTPController::class, 'verifyOTP'])->name('otp.verify');
+        Route::post('/resend-otp', [OTPController::class, 'resendOTP'])->name('otp.resend');
+    });
+});
 
 //chi tiết sản phẩm
 Route::get('/product/{id}', [HomeController::class, 'detail']);
@@ -170,3 +173,10 @@ Route::middleware('auth')->group(function () {
     )->name('addresses.store');
 
 });
+
+// CART
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
+Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
+
