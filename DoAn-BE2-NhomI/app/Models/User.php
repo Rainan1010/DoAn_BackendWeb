@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable; // class dùng cho login
+use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
@@ -11,16 +12,19 @@ class User extends Authenticatable
     protected $primaryKey = 'user_id'; // khóa chính không phải id mà là user_id
 
     public $incrementing = true; // khóa chính tự tăng
-    public $timestamps = false; // Bỏ qua updated_at và created_at tự động của Laravel
-
+    const UPDATED_AT = null; // Bỏ qua cập nhật cột updated_at do DB không có
     // các cột cho phép insert/update
     protected $fillable = [
         'email',
-        'username',
-        'full_name',
         'password_hash',
+        'full_name',
+        'phone',
+        'avatar_url',
         'role',
-        'is_active'
+        'provider',
+        'provider_id',
+        'is_active',
+        'is_verified',
     ];
 
     // ẩn khi trả dữ liệu ra ngoài

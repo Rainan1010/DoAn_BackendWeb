@@ -9,18 +9,19 @@
 
 @section('content')
 <div x-data="{ 
-    code: 'TECHSPRING20',
-    type: 'percent',
-    value: 15,
-    min_order: 500000,
-    max_discount: 100000,
-    start_at: '',
-    end_at: '2024-12-31',
-    is_active: true
+    code: '{{ old('code', $voucher->code) }}',
+    type: '{{ old('type', $voucher->type) }}',
+    value: {{ old('value', $voucher->value) }},
+    min_order: {{ old('min_order_value', $voucher->min_order_value) }},
+    max_discount: {{ old('max_discount', $voucher->max_discount ?? 0) }},
+    start_at: '{{ old('start_at', $voucher->start_at ? \Carbon\Carbon::parse($voucher->start_at)->format('Y-m-d\TH:i') : '') }}',
+    end_at: '{{ old('end_at', $voucher->end_at ? \Carbon\Carbon::parse($voucher->end_at)->format('Y-m-d\TH:i') : '') }}',
+    is_active: {{ $voucher->is_active ? 'true' : 'false' }}
 }" class="pb-10">
     
-    <form action="{{ route('admin.vouchers.store') }}" method="POST">
+    <form action="{{ route('admin.vouchers.update', $voucher->voucher_id) }}" method="POST">
         @csrf
+        @method('PUT')
         
         <!-- Header Actions -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -28,16 +29,16 @@
                 <nav class="flex text-xs font-medium text-gray-400 mb-2 gap-2">
                     <span>Khuyến mãi</span>
                     <span>&rsaquo;</span>
-                    <span class="text-gray-600">Thêm Voucher Mới</span>
+                    <span class="text-gray-600">Chỉnh sửa Voucher</span>
                 </nav>
-                <h1 class="text-4xl font-black text-[#0A2540] tracking-tight">Thêm Voucher Mới</h1>
+                <h1 class="text-4xl font-black text-[#0A2540] tracking-tight">Chỉnh sửa Voucher</h1>
             </div>
             <div class="flex items-center gap-3">
                 <a href="{{ route('admin.vouchers.index') }}" class="px-8 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
                     Hủy bỏ
                 </a>
                 <button type="submit" class="px-8 py-3 bg-[#0A2540] text-white rounded-xl text-sm font-bold hover:bg-[#113255] transition-colors shadow-lg shadow-[#0A2540]/20">
-                    Lưu Voucher
+                    Cập nhật Voucher
                 </button>
             </div>
         </div>
@@ -67,8 +68,8 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Voucher ID (Tự động)</label>
-                            <input type="text" value="VCH-2024-001" disabled class="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-bold text-gray-400 cursor-not-allowed">
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Voucher ID (Cố định)</label>
+                            <input type="text" value="VCH-{{ str_pad($voucher->voucher_id, 3, '0', STR_PAD_LEFT) }}" disabled class="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-bold text-gray-400 cursor-not-allowed">
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Mã Voucher (Code)</label>
@@ -117,11 +118,11 @@
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Giới hạn sử dụng</label>
-                            <input type="number" name="usage_limit" placeholder="1000" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10">
+                            <input type="number" name="usage_limit" value="{{ $voucher->usage_limit }}" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10">
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Đã sử dụng</label>
-                            <input type="text" value="0" disabled class="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-bold text-gray-400 cursor-not-allowed">
+                            <input type="text" value="{{ $voucher->used_count }}" disabled class="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-bold text-gray-400 cursor-not-allowed">
                         </div>
                     </div>
                 </div>
@@ -196,7 +197,7 @@
                                         <span class="text-xs font-black tracking-widest uppercase" x-text="code"></span>
                                         <i data-lucide="copy" class="w-3 h-3 text-white/40"></i>
                                     </div>
-                                    <p class="text-[8px] text-white/30 uppercase font-bold tracking-widest mt-4">Hết hạn: <span x-text="end_at || '31/12/2024'"></span></p>
+                                    <p class="text-[8px] text-white/30 uppercase font-bold tracking-widest mt-4">Hết hạn: <span x-text="end_at ? end_at.replace('T', ' ') : '31/12/2024'"></span></p>
                                 </div>
                             </div>
                         </div>

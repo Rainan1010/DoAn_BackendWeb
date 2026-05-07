@@ -174,7 +174,7 @@
                         <div id="dropdownMenu"
                             class="hidden absolute right-0 mt-2 w-48 bg-white text-black rounded-xl shadow-lg p-2">
 
-                            <a href="#" class="block px-4 py-2 hover:bg-gray-100 rounded">
+                            <a href="{{ route('profile') }}" class="block px-4 py-2 hover:bg-gray-100 rounded">
                                 Tài khoản
                             </a>
 

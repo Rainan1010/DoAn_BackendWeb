@@ -40,6 +40,7 @@
     <form action="{{ route('admin.categories.update', $category->category_id) }}" method="POST">
         @csrf
         @method('PUT')
+        <input type="hidden" name="version" value="{{ $category->version }}">
         <div class="flex flex-col lg:flex-row gap-8 mt-6">
             <!-- Left Column: Form -->
             <div class="w-full lg:w-2/3">

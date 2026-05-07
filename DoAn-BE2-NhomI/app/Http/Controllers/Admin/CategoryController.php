@@ -80,12 +80,13 @@ class CategoryController extends Controller
         }
 
         $request->validate([
-            'name' => 'required|max:40',
-            'slug' => 'required|unique:categories,slug,' . $category->category_id . ',category_id',
-            'parent_id' => 'nullable|exists:categories,category_id',
-            'sort_order' => 'nullable|integer',
-            'icon_url' => 'nullable|string|max:500',
-        ], [
+        'name' => 'required|max:40',
+        'slug' => 'required|unique:categories,slug,' . $category->category_id . ',category_id',
+        'parent_id' => 'nullable|exists:categories,category_id',
+        'sort_order' => 'nullable|integer',
+        'icon_url' => 'nullable|string|max:500',
+        'version' => 'required|integer', // Validate version gửi lên từ form
+    ], [
             'name.required' => 'Vui lòng nhập tên danh mục.',
             'name.max' => 'Tên danh mục không được vượt quá 40 ký tự.',
             'slug.required' => 'Vui lòng nhập đường dẫn (slug).',
@@ -94,15 +95,21 @@ class CategoryController extends Controller
             'parent_id.exists' => 'Danh mục cha không hợp lệ.'
         ]);
 
-        $category->update([
+        $updated = \App\Models\Category::where('category_id', $id)
+        ->where('version', $request->version) // Chỉ update nếu version trong DB khớp với version ở form
+        ->update([
             'name' => $request->name,
             'slug' => $request->slug,
             'parent_id' => $request->parent_id,
             'icon_url' => $request->icon_url,
             'sort_order' => $request->sort_order ?? 0,
             'is_active' => $request->has('is_active') ? 1 : 0,
+            'version' => $request->version + 1, // Tăng version lên 1 đơn vị
         ]);
-
+        if ($updated === 0) {
+            return redirect()->back()
+                ->with('error', 'Dữ liệu đã được thay đổi bởi một người dùng khác. Vui lòng tải lại trang và thử lại.');
+        }
         return redirect()->route('admin.categories.index')->with('success', 'Cập nhật dữ liệu thành công.');
     }
 
