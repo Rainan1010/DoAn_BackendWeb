@@ -76,7 +76,7 @@ class CartController extends Controller
                 unset($cart[$request->id]);
                 session()->put('cart', $cart);
             }
-            return redirect()->back()->with('success', 'Đã dọn dẹp sản phẩm khỏi giỏ hàng!');
+            return redirect()->back()->with('success', 'Sản phẩm đã được xoá khỏi giỏ hàng!');
         }
     }
 }
