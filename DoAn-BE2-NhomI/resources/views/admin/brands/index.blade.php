@@ -34,31 +34,31 @@
     </div>
 
     <!-- KPI Statistic Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <!-- Card 1 -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Tổng thương hiệu</h3>
-            <p class="text-3xl font-black text-[#0A2540]">{{ $totalBrands }}</p>
-        </div>
-        
-        <!-- Card 2 -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Đang hoạt động</h3>
-            <p class="text-3xl font-black text-[#0FAF62]">{{ $activeBrands }}</p>
-        </div>
-
-        <!-- Card 3 -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Đang ẩn</h3>
-            <p class="text-3xl font-black text-gray-500">{{ $hiddenBrands }}</p>
-        </div>
-
-        <!-- Card 4 -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Mới trong tháng</h3>
-            <p class="text-3xl font-black text-[#0A2540]">{{ $newBrands }}</p>
-        </div>
+   <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Tổng thương hiệu</h3>
+        {{-- Thay $totalBrands bằng $stats['total'] --}}
+        <p class="text-3xl font-black text-[#0A2540]">{{ $stats['total'] }}</p> 
     </div>
+    
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Đang hoạt động</h3>
+        {{-- Thay $activeBrands bằng $stats['active'] --}}
+        <p class="text-3xl font-black text-[#0FAF62]">{{ $stats['active'] }}</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Đang ẩn</h3>
+        {{-- Thay $hiddenBrands bằng $stats['inactive'] --}}
+        <p class="text-3xl font-black text-gray-500">{{ $stats['inactive'] }}</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Mới trong tháng</h3>
+        {{-- Thay $newBrands bằng $stats['new'] --}}
+        <p class="text-3xl font-black text-[#0A2540]">{{ $stats['new'] }}</p>
+    </div>
+</div>
 
     <!-- Main Table Card -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
