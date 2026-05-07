@@ -83,6 +83,11 @@
             box-shadow: 0 0 0 2px #001e40;
         }
 
+        .input-field.input-error {
+            box-shadow: 0 0 0 2px #ba1a1a;
+            background-color: #fce8e8;
+        }
+
         .input-label {
             display: block;
             font-size: 0.65rem;
@@ -146,7 +151,7 @@
             <div class="bg-primary-container p-6 rounded-xl w-64 shadow-2xl relative overflow-hidden">
                 <div class="absolute inset-0 bg-blue-500/20 blur-2xl"></div>
                 <img alt="B-Tris Logo" class="w-full relative z-10 drop-shadow-md"
-                    src="https://lh3.googleusercontent.com/aida/ADBb0ujkfzLNdx7XZSZitQlk5uvj58AaPKD3Q4a8s-N0jif1cx4oHslaKAX8G2ZSnAHlcRzadbQdewYZKqoFk1mOb5nMlQ2IWE1LEkOPhgpQ_f3OAsi4xeTMJ3iOTa-_8eU52P20jiTjhhO_DVQY61OFzUJM8oDLw2QCxhc4jgJbee-3YfHibnbR1pzW15EedKEEkwJ2jT6xWslOUKe8XEFuUs5-rwpt-cQ8hs_cqBxpbSAhnRVFQyjHx3mj4QEwzI1P6AkPg2IpZ6OgwCA" />
+                    src="{{ asset('images/logo/logo.jpg') }}" />
             </div>
 
             <div class="space-y-6 mt-8">
@@ -184,27 +189,30 @@
                     <p class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mt-2">Bắt đầu hành trình kỹ thuật của bạn</p>
                 </div>
 
-                <form method="POST" action="/register" class="space-y-5">
+                <form method="POST" action="/register" class="space-y-5" id="registerForm">
                     @csrf
                     
                     <!-- Full Name -->
                     <div>
                         <label class="input-label" for="full_name">Họ và tên</label>
-                        <input class="input-field" name="full_name" id="full_name" placeholder="Ví dụ: Nguyễn Văn A" type="text" value="{{ old('full_name') }}" />
-                        @error('full_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <input class="input-field @error('full_name') input-error @enderror" name="full_name" id="full_name" placeholder="Ví dụ: Nguyễn Văn A" type="text" value="{{ old('full_name') }}" maxlength="255" />
+                        <p id="err-full_name" class="text-error text-xs mt-1 hidden"></p>
+                        @error('full_name') <p id="server-err-full_name" class="text-error text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
                     <!-- Email & Phone Grid -->
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="input-label" for="email">Email công việc</label>
-                            <input class="input-field" name="email" id="email" placeholder="email@btris.vn" type="email" value="{{ old('email') }}" />
-                            @error('email') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                            <input class="input-field @error('email') input-error @enderror" name="email" id="email" placeholder="email@btris.vn" type="email" value="{{ old('email') }}" maxlength="191" />
+                            <p id="err-email" class="text-error text-xs mt-1 hidden"></p>
+                            @error('email') <p id="server-err-email" class="text-error text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label class="input-label" for="phone">Số điện thoại</label>
-                            <input class="input-field" name="phone" id="phone" placeholder="09xx xxx xxx" type="tel" value="{{ old('phone') }}" />
-                            @error('phone') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                            <input class="input-field @error('phone') input-error @enderror" name="phone" id="phone" placeholder="09xx xxx xxx" type="tel" value="{{ old('phone') }}" maxlength="20" />
+                            <p id="err-phone" class="text-error text-xs mt-1 hidden"></p>
+                            @error('phone') <p id="server-err-phone" class="text-error text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
                     </div>
 
@@ -212,18 +220,21 @@
                     <div>
                         <label class="input-label" for="password">Mật khẩu bảo mật</label>
                         <div class="relative">
-                            <input class="input-field pr-10" name="password" id="password" placeholder="••••••••" type="password" />
+                            <input class="input-field pr-10 @error('password') input-error @enderror" name="password" id="password" placeholder="••••••••" type="password" maxlength="255" />
                             <span onclick="togglePassword('password', 'eyeIcon1')" id="eyeIcon1" class="material-symbols-outlined absolute right-3 top-3 text-outline cursor-pointer hover:text-primary transition-colors text-[20px]">
                                 visibility
                             </span>
                         </div>
-                        @error('password') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <p id="err-password" class="text-error text-xs mt-1 hidden"></p>
+                        @error('password') <p id="server-err-password" class="text-error text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
                     <!-- Confirm Password -->
                     <div>
                         <label class="input-label" for="password_confirmation">Xác nhận mật khẩu</label>
-                        <input class="input-field" name="password_confirmation" id="password_confirmation" placeholder="••••••••" type="password" />
+                        <input class="input-field @error('password_confirmation') input-error @enderror" name="password_confirmation" id="password_confirmation" placeholder="••••••••" type="password" maxlength="255" />
+                        <p id="err-password_confirmation" class="text-error text-xs mt-1 hidden"></p>
+                        @error('password_confirmation') <p id="server-err-password_confirmation" class="text-error text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
                     <!-- Terms Checkbox -->
@@ -256,21 +267,21 @@
 
                 <!-- Social Logins -->
                 <div class="flex gap-4">
-                    <button type="button" class="btn-social">
+                    <a href="{{ route('google.login') }}" class="btn-social" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">
                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
                             <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                         </svg>
-                        Google
-                    </button>
-                    <button type="button" class="btn-social">
+                        <span style="margin-left: 8px;">Google</span>
+                    </a>
+                    <a href="{{ route('github.login') }}" class="btn-social" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">
                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                             <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
                         </svg>
-                        GitHub
-                    </button>
+                        <span style="margin-left: 8px;">GitHub</span>
+                    </a>
                 </div>
 
                 <div class="mt-8 text-center text-[8px] font-bold text-outline uppercase tracking-[0.2em]">
@@ -279,5 +290,104 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hàm chuyển đổi ký tự Full-width (Toàn góc) sang Half-width (Bán góc)
+            const toHalfWidth = (str) => {
+                return str.replace(/[\uFF01-\uFF5E]/g, function(ch) {
+                    return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0);
+                }).replace(/\u3000/g, ' ');
+            };
+
+            const rules = {
+                full_name: {
+                    validate: (val) => val.trim().length >= 2,
+                    message: 'Họ và tên phải có ít nhất 2 ký tự.'
+                },
+                email: {
+                    format: true, // Áp dụng chuyển đổi half-width
+                    validate: (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+                    message: 'Email không đúng định dạng.'
+                },
+                phone: {
+                    format: true, // Áp dụng chuyển đổi half-width
+                    validate: (val) => /^(0[3|5|7|8|9])+([0-9]{8})$/.test(val),
+                    message: 'Số điện thoại không hợp lệ (gồm 10 số, bắt đầu bằng 03, 05, 07, 08, 09).'
+                },
+                password: {
+                    validate: (val) => val.length >= 8,
+                    message: 'Mật khẩu phải có ít nhất 8 ký tự.'
+                },
+                password_confirmation: {
+                    validate: (val) => val === document.getElementById('password').value,
+                    message: 'Mật khẩu xác nhận không khớp.'
+                }
+            };
+
+            const validateField = (id) => {
+                const input = document.getElementById(id);
+                const errorElement = document.getElementById(`err-${id}`);
+                const serverError = document.getElementById(`server-err-${id}`);
+                const rule = rules[id];
+                
+                if (!rule || !input) return true;
+
+                // Tự động chuyển đổi Half-width nếu trường yêu cầu
+                if (rule.format && input.value) {
+                    input.value = toHalfWidth(input.value);
+                }
+
+                if (serverError) serverError.classList.add('hidden');
+
+                if (input.value.trim() === '') {
+                    errorElement.textContent = 'Trường này không được để trống.';
+                    errorElement.classList.remove('hidden');
+                    input.classList.add('input-error');
+                    return false;
+                }
+
+                const isValid = rule.validate(input.value);
+                if (!isValid) {
+                    errorElement.textContent = rule.message;
+                    errorElement.classList.remove('hidden');
+                    input.classList.add('input-error');
+                    return false;
+                } else {
+                    errorElement.textContent = '';
+                    errorElement.classList.add('hidden');
+                    input.classList.remove('input-error');
+                    return true;
+                }
+            };
+
+            ['full_name', 'email', 'phone', 'password', 'password_confirmation'].forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.addEventListener('blur', () => validateField(id));
+                    input.addEventListener('input', () => {
+                        const errorElement = document.getElementById(`err-${id}`);
+                        const serverError = document.getElementById(`server-err-${id}`);
+                        if (serverError) serverError.classList.add('hidden');
+                        errorElement.classList.add('hidden');
+                        input.classList.remove('input-error');
+                    });
+                }
+            });
+
+            document.getElementById('registerForm').addEventListener('submit', function(e) {
+                let isFormValid = true;
+                ['full_name', 'email', 'phone', 'password', 'password_confirmation'].forEach(id => {
+                    if (!validateField(id)) {
+                        isFormValid = false;
+                    }
+                });
+
+                if (!isFormValid) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
 </body>
 </html>
