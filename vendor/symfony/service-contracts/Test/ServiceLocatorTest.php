@@ -11,6 +11,7 @@
 
 namespace Symfony\Contracts\Service\Test;
 
+
 class_alias(ServiceLocatorTestCase::class, ServiceLocatorTest::class);
 
 if (false) {
@@ -20,4 +21,10 @@ if (false) {
     class ServiceLocatorTest
     {
     }
+
+/**
+ * @deprecated since PHPUnit 9.6
+ */
+class ServiceLocatorTest extends ServiceLocatorTestCase
+{
 }
