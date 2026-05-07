@@ -12,6 +12,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\OTPController;
 use App\Http\Controllers\ShippingAddressController;
+use App\Http\Controllers\CartController;
 
 
 /*
@@ -30,6 +31,7 @@ Route::get('/product-detail/{id}', [HomeController::class, 'detail'])->name('pro
 | AUTHENTICATION (Đăng nhập, Đăng ký, Đăng xuất)
 |--------------------------------------------------------------------------
 */
+Route::get('/login', [CrudUserController::class, 'showLogin'])->name('login');
 
 // ---------------------------------------------------
 // Các route của Trung
@@ -155,5 +157,21 @@ Route::post('/product/{id}/review', [App\Http\Controllers\ProductController::cla
 // SHIPPING ADDRESS
 // =====================================================
 Route::middleware('auth')->group(function () {
-    Route::get('/change-address', [ShippingAddressController::class, 'index'])->name('addresses.index');
+
+
+    Route::get(
+
+    '/change-address',
+
+    [ShippingAddressController::class, 'index']
+
+)->name('addresses.index');
+
 });
+
+// CART
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
+Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
+
