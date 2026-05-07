@@ -29,6 +29,7 @@ class HomeController extends Controller
             ->paginate(16);
 
         // 3. Lấy danh sách sản phẩm trending (Từ nhánh Trung/51_San_pham_Trending)
+        // Ưu tiên sản phẩm is_trending = 1, nếu không có thì fallback sang is_hot và view_count
         $trendingProducts = DB::table('products')
             ->join('product_images', 'products.product_id', '=', 'product_images.product_id')
             ->where('product_images.is_primary', 1)
@@ -36,7 +37,21 @@ class HomeController extends Controller
             ->where('products.is_trending', 1)
             ->select('products.*', 'product_images.image_url')
             ->orderBy('products.view_count', 'desc')
+            ->limit(10)
             ->get();
+
+        // Fallback: Nếu không có sản phẩm trending nào
+        if ($trendingProducts->isEmpty()) {
+            $trendingProducts = DB::table('products')
+                ->join('product_images', 'products.product_id', '=', 'product_images.product_id')
+                ->where('product_images.is_primary', 1)
+                ->where('products.is_active', 1)
+                ->select('products.*', 'product_images.image_url')
+                ->orderBy('products.is_hot', 'desc')
+                ->orderBy('products.view_count', 'desc')
+                ->limit(10)
+                ->get();
+        }
 
         // Trả về view với đầy đủ 3 biến: newProducts, trendingProducts, promoProduct
         return view('home.index', compact('newProducts', 'trendingProducts', 'promoProduct'));
