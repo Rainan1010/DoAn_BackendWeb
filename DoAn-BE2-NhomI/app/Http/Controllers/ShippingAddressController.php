@@ -13,36 +13,34 @@ class ShippingAddressController extends Controller
     // DANH SÁCH ĐỊA CHỈ
     // =====================================================
     public function index()
-{
+    {
 
-    $addresses =
-        ShippingAddress::where(
-            'user_id',
-            Auth::id()
-        )
+        $addresses =
+            ShippingAddress::where(
+                'user_id',
+                Auth::id()
+            )
 
-        // địa chỉ mặc định lên đầu
-        ->orderBy(
-            'is_default',
-            'desc'
-        )
+            ->orderBy(
+                'is_default',
+                'desc'
+            )
 
-        // địa chỉ mới nhất
-        ->orderBy(
-            'address_id',
-            'desc'
-        )
+            ->orderBy(
+                'address_id',
+                'desc'
+            )
 
-        ->get();
+            ->get();
 
 
 
-    return view(
-        'auth.address.index',
-        compact('addresses')
-    );
+        return view(
+            'auth.address.index',
+            compact('addresses')
+        );
 
-}
+    }
 
 
 
@@ -65,12 +63,43 @@ class ShippingAddressController extends Controller
 
 
     // =====================================================
+    // FORM EDIT
+    // =====================================================
+    public function edit($id)
+    {
+
+        $address =
+            ShippingAddress::where(
+                'user_id',
+                Auth::id()
+            )
+
+            ->where(
+                'address_id',
+                $id
+            )
+
+            ->firstOrFail();
+
+
+
+        return view(
+            'auth.address.edit',
+            compact('address')
+        );
+
+    }
+
+
+
+
+
+    // =====================================================
     // NORMALIZE ADDRESS
     // =====================================================
     private function normalizeAddress($address)
     {
 
-        // lowercase
         $address =
             mb_strtolower(
                 $address,
@@ -79,7 +108,6 @@ class ShippingAddressController extends Controller
 
 
 
-        // bỏ dấu tiếng việt
         $address =
             str_replace(
 
@@ -133,17 +161,157 @@ class ShippingAddressController extends Controller
 
 
 
-        // bỏ khoảng trắng + ký tự đặc biệt
-        $address =
-            preg_replace(
-                '/[^a-z0-9]/',
-                '',
-                $address
+        return preg_replace(
+            '/[^a-z0-9]/',
+            '',
+            $address
+        );
+
+    }
+
+
+
+
+
+    // =====================================================
+    // VALIDATE + CHECK DUPLICATE
+    // =====================================================
+    private function validateAddress(
+        Request $request,
+        $ignoreId = null
+    ) {
+
+        // validate
+        $request->validate([
+
+            'full_name' =>
+                'required|max:255',
+
+            'phone' =>
+                'required|regex:/^[0-9]{10,11}$/',
+
+            'province' =>
+                'required',
+
+            'district' =>
+                'required',
+
+            'ward' =>
+                'required',
+
+            'street_address' =>
+                'required|max:255',
+
+        ], [
+
+            'full_name.required' =>
+                'Vui lòng nhập họ tên.',
+
+            'phone.required' =>
+                'Vui lòng nhập số điện thoại.',
+
+            'phone.regex' =>
+                'Số điện thoại không hợp lệ.',
+
+            'province.required' =>
+                'Vui lòng chọn tỉnh/thành phố.',
+
+            'district.required' =>
+                'Vui lòng chọn quận/huyện.',
+
+            'ward.required' =>
+                'Vui lòng chọn phường/xã.',
+
+            'street_address.required' =>
+                'Vui lòng nhập địa chỉ cụ thể.',
+
+        ]);
+
+
+
+
+
+        // query địa chỉ
+        $addresses =
+            ShippingAddress::where(
+                'user_id',
+                Auth::id()
             );
 
 
 
-        return $address;
+        // update thì bỏ qua chính nó
+        if ($ignoreId) {
+
+            $addresses->where(
+                'address_id',
+                '!=',
+                $ignoreId
+            );
+
+        }
+
+
+
+        $addresses =
+            $addresses->get();
+
+
+
+
+
+        // normalize địa chỉ mới
+        $newAddress =
+            $this->normalizeAddress(
+                $request->street_address
+            );
+
+
+
+
+
+        // check trùng
+        foreach ($addresses as $address) {
+
+            $oldAddress =
+                $this->normalizeAddress(
+                    $address->street_address
+                );
+
+
+
+            if (
+
+                $address->province ==
+                $request->province &&
+
+                $address->district ==
+                $request->district &&
+
+                $address->ward ==
+                $request->ward &&
+
+                $oldAddress ==
+                $newAddress
+
+            ) {
+
+                return back()
+
+                    ->withInput()
+
+                    ->with(
+                        'error',
+                        'Địa chỉ đã tồn tại.'
+                    );
+
+            }
+
+        }
+
+
+
+        return null;
 
     }
 
@@ -157,148 +325,16 @@ class ShippingAddressController extends Controller
     public function store(Request $request)
     {
 
-        // =================================================
-        // VALIDATE
-        // =================================================
-        $request->validate([
+        $check =
+            $this->validateAddress(
+                $request
+            );
 
-            'full_name' =>
 
-                'required|max:255',
 
+        if ($check) {
 
-
-            'phone' =>
-
-                'required|regex:/^[0-9]{10,11}$/',
-
-
-
-            'province' =>
-
-                'required',
-
-
-
-            'district' =>
-
-                'required',
-
-
-
-            'ward' =>
-
-                'required',
-
-
-
-            'street_address' =>
-
-                'required|max:255',
-
-        ], [
-
-            'full_name.required' =>
-
-                'Vui lòng nhập họ tên.',
-
-
-
-            'phone.required' =>
-
-                'Vui lòng nhập số điện thoại.',
-
-
-
-            'phone.regex' =>
-
-                'Số điện thoại không hợp lệ.',
-
-
-
-            'province.required' =>
-
-                'Vui lòng chọn tỉnh/thành phố.',
-
-
-
-            'district.required' =>
-
-                'Vui lòng chọn quận/huyện.',
-
-
-
-            'ward.required' =>
-
-                'Vui lòng chọn phường/xã.',
-
-
-
-            'street_address.required' =>
-
-                'Vui lòng nhập địa chỉ cụ thể.',
-
-        ]);
-
-
-
-
-
-        // =================================================
-        // CHECK TRÙNG ĐỊA CHỈ
-        // =================================================
-        $exists = false;
-
-
-
-        $addresses =
-            ShippingAddress::where(
-                'user_id',
-                Auth::id()
-            )
-            ->get();
-
-
-
-
-
-        foreach ($addresses as $address) {
-
-            // normalize địa chỉ cũ
-            $oldAddress =
-                $this->normalizeAddress(
-                    $address->street_address
-                );
-
-
-
-            // normalize địa chỉ mới
-            $newAddress =
-                $this->normalizeAddress(
-                    $request->street_address
-                );
-
-
-
-
-
-            if (
-
-                $address->province == $request->province &&
-
-                $address->district == $request->district &&
-
-                $address->ward == $request->ward &&
-
-                $oldAddress == $newAddress
-
-            ) {
-
-                $exists = true;
-
-                break;
-
-            }
+            return $check;
 
         }
 
@@ -306,92 +342,41 @@ class ShippingAddressController extends Controller
 
 
 
-        // =================================================
-        // ADDRESS EXISTS
-        // =================================================
-        if ($exists) {
-
-            return back()
-
-                ->withInput()
-
-                ->with(
-
-                    'error',
-
-                    'Địa chỉ đã tồn tại, vui lòng chọn địa chỉ khác.'
-
-                );
-
-        }
-
-
-
-
-
-        // =================================================
-        // FIRST ADDRESS => DEFAULT
-        // =================================================
+        // địa chỉ đầu tiên => mặc định
         $isDefault =
             ShippingAddress::where(
                 'user_id',
                 Auth::id()
-            )
-            ->count() == 0;
+            )->doesntExist();
 
 
 
 
 
-        // =================================================
-        // CREATE ADDRESS
-        // =================================================
         ShippingAddress::create([
 
             'user_id' =>
-
                 Auth::id(),
 
-
-
             'full_name' =>
-
                 $request->full_name,
 
-
-
             'phone' =>
-
                 $request->phone,
 
-
-
             'province' =>
-
                 $request->province,
 
-
-
             'district' =>
-
                 $request->district,
 
-
-
             'ward' =>
-
                 $request->ward,
 
-
-
             'street_address' =>
-
                 $request->street_address,
 
-
-
             'is_default' =>
-
                 $isDefault,
 
         ]);
@@ -400,19 +385,95 @@ class ShippingAddressController extends Controller
 
 
 
-        // =================================================
-        // SUCCESS
-        // =================================================
         return redirect()
 
             ->route('addresses.create')
 
             ->with(
-
                 'success',
-
                 'Thêm địa chỉ mới thành công.'
+            );
 
+    }
+
+
+
+
+
+    // =====================================================
+    // UPDATE
+    // =====================================================
+    public function update(Request $request, $id)
+    {
+
+        $check =
+            $this->validateAddress(
+                $request,
+                $id
+            );
+
+
+
+        if ($check) {
+
+            return $check;
+
+        }
+
+
+
+
+
+        $address =
+            ShippingAddress::where(
+                'user_id',
+                Auth::id()
+            )
+
+            ->where(
+                'address_id',
+                $id
+            )
+
+            ->firstOrFail();
+
+
+
+
+
+        $address->update([
+
+            'full_name' =>
+                $request->full_name,
+
+            'phone' =>
+                $request->phone,
+
+            'province' =>
+                $request->province,
+
+            'district' =>
+                $request->district,
+
+            'ward' =>
+                $request->ward,
+
+            'street_address' =>
+                $request->street_address,
+
+        ]);
+
+
+
+
+
+        return redirect()
+
+            ->route('addresses.index')
+
+            ->with(
+                'success',
+                'Cập nhật địa chỉ thành công.'
             );
 
     }

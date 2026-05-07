@@ -172,6 +172,19 @@ Route::middleware('auth')->group(function () {
         [ShippingAddressController::class, 'store']
     )->name('addresses.store');
 
+       // form sửa địa chỉ
+    Route::get(
+        '/change-address/edit/{id}',
+        [ShippingAddressController::class, 'edit']
+    )->name('addresses.edit');
+
+
+
+    // cập nhật địa chỉ
+    Route::post(
+        '/change-address/update/{id}',
+        [ShippingAddressController::class, 'update']
+    )->name('addresses.update');
 });
 
 // CART
