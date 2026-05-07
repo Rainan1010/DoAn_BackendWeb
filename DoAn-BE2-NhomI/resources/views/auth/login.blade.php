@@ -81,17 +81,17 @@
             },
         }
         function togglePassword() {
-    const input = document.getElementById("password");
-    const icon = document.getElementById("eyeIcon");
+            const input = document.getElementById("password");
+            const icon = document.getElementById("eyeIcon");
 
-    if (input.type === "password") {
-        input.type = "text";
-        icon.textContent = "visibility_off"; // đổi icon
-    } else {
-        input.type = "password";
-        icon.textContent = "visibility";
-    }
-}
+            if (input.type === "password") {
+                input.type = "text";
+                icon.textContent = "visibility_off"; // đổi icon
+            } else {
+                input.type = "password";
+                icon.textContent = "visibility";
+            }
+        }
     </script>
     <style>
         .material-symbols-outlined {
@@ -211,6 +211,15 @@
                         <p class="text-sm text-on-surface-variant font-medium mt-1">Vui lòng nhập thông tin tài khoản
                             của bạn</p>
                     </div>
+                    {{-- HIỂN THỊ LỖI VALIDATE --}}
+                    @if($errors->any())
+                        <div style="color:red; margin-bottom:10px;">
+                            @foreach($errors->all() as $err)
+                                <div>{{ $err }}</div>
+                            @endforeach
+                        </div>
+                    @endif
+                    {{-- LỖI LOGIN --}}
                     @if(session('error'))
                         <div style="color:red; margin-bottom:10px;">
                             {{ session('error') }}
@@ -226,7 +235,7 @@
                         <!-- Identifier Field -->
                         <div class="space-y-2">
                             <label class="block text-[11px] font-black uppercase tracking-[0.2em] text-primary"
-                                for="identifier">Email</label>
+                                for="email">Email</label>
                             <div class="relative group">
                                 <div
                                     class="absolute inset-y-0 left-0 flex items-center pl-0 pointer-events-none text-outline-variant group-focus-within:text-primary transition-colors">
@@ -235,7 +244,8 @@
                                 </div>
                                 <input
                                     class="w-full bg-transparent border-b-2 border-outline-variant/30 focus:border-primary focus:ring-0 transition-all pl-8 py-3 text-on-surface placeholder:text-outline-variant/50 outline-none font-medium"
-                                    name="identifier" id="identifier" placeholder="admin@b-tris.com" type="text" />
+                                    name="email" id="email" placeholder="admin@b-tris.com" type="text"
+                                    value="{{ old('email') }}" />
                             </div>
                         </div>
                         <!-- Password Field -->
@@ -250,12 +260,10 @@
                                 <input
                                     class="w-full bg-transparent border-b-2 border-outline-variant/30 focus:border-primary focus:ring-0 transition-all pl-8 py-3 text-on-surface placeholder:text-outline-variant/50 outline-none font-medium"
                                     name="password" id="password" placeholder="••••••••" type="password" />
-                               <span
-    onclick="togglePassword()"
-    id="eyeIcon"
-    class="material-symbols-outlined absolute right-0 top-3 text-outline cursor-pointer hover:text-primary transition-colors text-xl">
-    visibility
-</span>
+                                <span onclick="togglePassword()" id="eyeIcon"
+                                    class="material-symbols-outlined absolute right-0 top-3 text-outline cursor-pointer hover:text-primary transition-colors text-xl">
+                                    visibility
+                                </span>
                             </div>
                         </div>
                         <!-- Remember & Forgot -->

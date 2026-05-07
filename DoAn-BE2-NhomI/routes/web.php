@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\HomeController; 
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CrudUserController;
 use App\Http\Controllers\Admin\VoucherController;
 use App\Http\Controllers\Admin\ReviewController;
@@ -11,7 +11,7 @@ use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\OTPController;
-
+use App\Http\Controllers\ShippingAddressController;
 
 
 /*
@@ -30,7 +30,6 @@ Route::get('/product-detail/{id}', [HomeController::class, 'detail'])->name('pro
 | AUTHENTICATION (Đăng nhập, Đăng ký, Đăng xuất)
 |--------------------------------------------------------------------------
 */
-Route::get('/login', [CrudUserController::class, 'showLogin'])->name('login');
 
 // ---------------------------------------------------
 // Các route của Trung
@@ -38,7 +37,7 @@ Route::get('/login', [CrudUserController::class, 'showLogin'])->name('login');
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);
-    
+
     // Quản lý Thương hiệu
     Route::patch('brands/{id}/toggle-status', [App\Http\Controllers\Admin\BrandController::class, 'toggleStatus'])->name('brands.toggleStatus');
     Route::resource('brands', App\Http\Controllers\Admin\BrandController::class);
@@ -47,27 +46,29 @@ Route::prefix('admin')->name('admin.')->group(function () {
 // ---------------------------------------------------
 // Các route của Trang, Thực sẽ viết tiếp xuống đây...
 // ---------------------------------------------------
-// hiển thị form login
-Route::get('/login', [CrudUserController::class, 'showLogin'])->name('login');
+// Chặn người đã đăng nhập vào lại các trang auth
+Route::middleware('guest')->group(function () {
+    // hiển thị form login + xử lý login khi submit form
+    Route::get('/login', [CrudUserController::class, 'showLogin'])->name('login');
+    Route::post('/login', [CrudUserController::class, 'login']);
 
-// xử lý login khi submit form
+    Route::get('/register', [CrudUserController::class, 'showRegister'])->name('register');
+    Route::post('/register', [CrudUserController::class, 'register']);
 
-Route::post('/login', [CrudUserController::class, 'login']);
+    //Login Google & Github
+    Route::get('auth/google', [SocialAuthController::class, 'redirectToGoogle'])->name('google.login');
+    Route::get('auth/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
 
-Route::get('/register', [CrudUserController::class, 'showRegister'])->name('register');
-Route::post('/register', [CrudUserController::class, 'register']);
+    Route::get('auth/github', [SocialAuthController::class, 'redirectToGithub'])->name('github.login');
+    Route::get('auth/github/callback', [SocialAuthController::class, 'handleGithubCallback']);
 
-//Login Google & Github
-Route::get('auth/google', [SocialAuthController::class, 'redirectToGoogle'])->name('google.login');
-Route::get('auth/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
-
-Route::get('auth/github', [SocialAuthController::class, 'redirectToGithub'])->name('github.login');
-Route::get('auth/github/callback', [SocialAuthController::class, 'handleGithubCallback']);
-
-//Xác thực OTP
-Route::get('/verify-otp', [OTPController::class, 'showVerifyForm'])->name('otp.view');
-Route::post('/verify-otp', [OTPController::class, 'verifyOTP'])->name('otp.verify');
-Route::post('/resend-otp', [OTPController::class, 'resendOTP'])->name('otp.resend');
+    //Xác thực OTP - Bắt buộc phải có session đăng ký mới được vào
+    Route::middleware('otp.session')->group(function () {
+        Route::get('/verify-otp', [OTPController::class, 'showVerifyForm'])->name('otp.view');
+        Route::post('/verify-otp', [OTPController::class, 'verifyOTP'])->name('otp.verify');
+        Route::post('/resend-otp', [OTPController::class, 'resendOTP'])->name('otp.resend');
+    });
+});
 
 //chi tiết sản phẩm
 Route::get('/product/{id}', [HomeController::class, 'detail']);
@@ -98,7 +99,7 @@ Route::middleware(['auth'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
-    
+
     // Quản lý Danh mục (Categories)
     Route::resource('categories', CategoryController::class);
 
@@ -106,7 +107,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::view('/brands/create', 'admin.brands.create')->name('brands.create'); // Ưu tiên route cụ thể trước resource
     Route::patch('brands/{id}/toggle-status', [BrandController::class, 'toggleStatus'])->name('brands.toggleStatus');
     Route::resource('brands', BrandController::class);
-    
+
     // Quản lý Voucher (Vouchers)
     Route::patch('vouchers/{id}/toggle-status', [VoucherController::class, 'toggleStatus'])->name('vouchers.toggleStatus');
     Route::resource('vouchers', VoucherController::class);
@@ -133,3 +134,25 @@ Route::get('/password/change', [CrudUserController::class, 'showChangePassword']
 
 // xử lý đổi mật khẩu
 Route::post('/password/change', [CrudUserController::class, 'changePassword'])->middleware('auth');
+
+// =====================================================
+// PROFILE
+// =====================================================
+
+// trang profile
+Route::get('/profile', [CrudUserController::class, 'profile'])
+    ->middleware('auth')
+    ->name('profile');
+    
+// update profile
+Route::post('/profile/update', [CrudUserController::class, 'updateProfile'])
+    ->name('profile.update')
+    ->middleware('auth');
+
+
+// =====================================================
+// SHIPPING ADDRESS
+// =====================================================
+Route::middleware('auth')->group(function () {
+    Route::get('/change-address', [ShippingAddressController::class, 'index'])->name('addresses.index');
+});
