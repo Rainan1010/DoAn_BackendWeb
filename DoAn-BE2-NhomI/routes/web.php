@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CrudUserController;
 use App\Http\Controllers\Admin\VoucherController;
+use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\ProductController;
@@ -113,6 +114,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::patch('vouchers/{id}/toggle-status', [VoucherController::class, 'toggleStatus'])->name('vouchers.toggleStatus');
     Route::resource('vouchers', VoucherController::class);
 
+    // Quản lý Đánh giá (Reviews)
+    Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
+    Route::get('reviews/{id}', [ReviewController::class, 'show'])->name('reviews.show');
+    Route::patch('reviews/{id}/status', [ReviewController::class, 'updateStatus'])->name('reviews.updateStatus');
+    Route::delete('reviews/{id}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
+
     // Quản lý Backup/Restore
     Route::get('backups', [App\Http\Controllers\Admin\BackupController::class, 'index'])->name('backups.index');
     Route::post('backups', [App\Http\Controllers\Admin\BackupController::class, 'create'])->name('backups.create');
@@ -130,10 +137,6 @@ Route::get('/password/change', [CrudUserController::class, 'showChangePassword']
 // xử lý đổi mật khẩu
 Route::post('/password/change', [CrudUserController::class, 'changePassword'])->middleware('auth');
 
-// =====================================================
-// PROFILE
-// =====================================================
-
 // trang profile
 Route::get('/profile', [CrudUserController::class, 'profile'])
     ->middleware('auth')
@@ -142,6 +145,11 @@ Route::get('/profile', [CrudUserController::class, 'profile'])
 // update profile
 Route::post('/profile/update', [CrudUserController::class, 'updateProfile'])
     ->name('profile.update')
+    ->middleware('auth');
+
+// submit review
+Route::post('/product/{id}/review', [App\Http\Controllers\ProductController::class, 'storeReview'])
+    ->name('product.review.store')
     ->middleware('auth');
 
 
