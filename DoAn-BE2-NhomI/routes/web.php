@@ -5,12 +5,14 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CrudUserController;
 use App\Http\Controllers\Admin\VoucherController;
+use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\OTPController;
 use App\Http\Controllers\ShippingAddressController;
+use App\Http\Controllers\CartController;
 
 
 /*
@@ -46,27 +48,29 @@ Route::prefix('admin')->name('admin.')->group(function () {
 // ---------------------------------------------------
 // Các route của Trang, Thực sẽ viết tiếp xuống đây...
 // ---------------------------------------------------
-// hiển thị form login
-Route::get('/login', [CrudUserController::class, 'showLogin'])->name('login');
+// Chặn người đã đăng nhập vào lại các trang auth
+Route::middleware('guest')->group(function () {
+    // hiển thị form login + xử lý login khi submit form
+    Route::get('/login', [CrudUserController::class, 'showLogin'])->name('login');
+    Route::post('/login', [CrudUserController::class, 'login']);
 
-// xử lý login khi submit form
+    Route::get('/register', [CrudUserController::class, 'showRegister'])->name('register');
+    Route::post('/register', [CrudUserController::class, 'register']);
 
-Route::post('/login', [CrudUserController::class, 'login']);
+    //Login Google & Github
+    Route::get('auth/google', [SocialAuthController::class, 'redirectToGoogle'])->name('google.login');
+    Route::get('auth/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
 
-Route::get('/register', [CrudUserController::class, 'showRegister'])->name('register');
-Route::post('/register', [CrudUserController::class, 'register']);
+    Route::get('auth/github', [SocialAuthController::class, 'redirectToGithub'])->name('github.login');
+    Route::get('auth/github/callback', [SocialAuthController::class, 'handleGithubCallback']);
 
-//Login Google & Github
-Route::get('auth/google', [SocialAuthController::class, 'redirectToGoogle'])->name('google.login');
-Route::get('auth/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
-
-Route::get('auth/github', [SocialAuthController::class, 'redirectToGithub'])->name('github.login');
-Route::get('auth/github/callback', [SocialAuthController::class, 'handleGithubCallback']);
-
-//Xác thực OTP
-Route::get('/verify-otp', [OTPController::class, 'showVerifyForm'])->name('otp.view');
-Route::post('/verify-otp', [OTPController::class, 'verifyOTP'])->name('otp.verify');
-Route::post('/resend-otp', [OTPController::class, 'resendOTP'])->name('otp.resend');
+    //Xác thực OTP - Bắt buộc phải có session đăng ký mới được vào
+    Route::middleware('otp.session')->group(function () {
+        Route::get('/verify-otp', [OTPController::class, 'showVerifyForm'])->name('otp.view');
+        Route::post('/verify-otp', [OTPController::class, 'verifyOTP'])->name('otp.verify');
+        Route::post('/resend-otp', [OTPController::class, 'resendOTP'])->name('otp.resend');
+    });
+});
 
 //chi tiết sản phẩm
 Route::get('/product/{id}', [HomeController::class, 'detail']);
@@ -110,6 +114,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::patch('vouchers/{id}/toggle-status', [VoucherController::class, 'toggleStatus'])->name('vouchers.toggleStatus');
     Route::resource('vouchers', VoucherController::class);
 
+    // Quản lý Đánh giá (Reviews)
+    Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
+    Route::get('reviews/{id}', [ReviewController::class, 'show'])->name('reviews.show');
+    Route::patch('reviews/{id}/status', [ReviewController::class, 'updateStatus'])->name('reviews.updateStatus');
+    Route::delete('reviews/{id}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
+
     // Quản lý Backup/Restore
     Route::get('backups', [App\Http\Controllers\Admin\BackupController::class, 'index'])->name('backups.index');
     Route::post('backups', [App\Http\Controllers\Admin\BackupController::class, 'create'])->name('backups.create');
@@ -127,10 +137,6 @@ Route::get('/password/change', [CrudUserController::class, 'showChangePassword']
 // xử lý đổi mật khẩu
 Route::post('/password/change', [CrudUserController::class, 'changePassword'])->middleware('auth');
 
-// =====================================================
-// PROFILE
-// =====================================================
-
 // trang profile
 Route::get('/profile', [CrudUserController::class, 'profile'])
     ->middleware('auth')
@@ -141,18 +147,59 @@ Route::post('/profile/update', [CrudUserController::class, 'updateProfile'])
     ->name('profile.update')
     ->middleware('auth');
 
+// submit review
+Route::post('/product/{id}/review', [App\Http\Controllers\ProductController::class, 'storeReview'])
+    ->name('product.review.store')
+    ->middleware('auth');
+
 
 // =====================================================
 // SHIPPING ADDRESS
 // =====================================================
 Route::middleware('auth')->group(function () {
 
+    // danh sách địa chỉ
     Route::get(
+        '/change-address',
+        [ShippingAddressController::class, 'index']
+    )->name('addresses.index');
 
-    '/change-address',
 
-    [ShippingAddressController::class, 'index']
 
-)->name('addresses.index');
+    // form thêm địa chỉ
+    Route::get(
+        '/change-address/create',
+        [ShippingAddressController::class, 'create']
+    )->name('addresses.create');
 
+
+
+    // lưu địa chỉ
+    Route::post(
+        '/change-address/store',
+        [ShippingAddressController::class, 'store']
+    )->name('addresses.store');
+
+       // form sửa địa chỉ
+    Route::get(
+        '/change-address/edit/{id}',
+        [ShippingAddressController::class, 'edit']
+    )->name('addresses.edit');
+
+
+
+    // cập nhật địa chỉ
+    Route::post(
+        '/change-address/update/{id}',
+        [ShippingAddressController::class, 'update']
+    )->name('addresses.update');
 });
+
+// CART
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
+Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
+
+// Phải có dấu {id} trong ngoặc nhọn
+Route::get('/api/compare-product/{id}', [App\Http\Controllers\CompareController::class, 'getCompareProduct']);

@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\ProductImage;
+use App\Models\ProductReview;
+use App\Models\ProductVariant;
 
 class Product extends Model
 {
@@ -49,6 +52,6 @@ class Product extends Model
     // 🔥 1 sản phẩm có nhiều đánh giá
     public function reviews()
     {
-        return $this->hasMany(ProductReview::class, 'product_id');
+        return $this->hasMany(Review::class, 'product_id', 'product_id');
     }
 }
