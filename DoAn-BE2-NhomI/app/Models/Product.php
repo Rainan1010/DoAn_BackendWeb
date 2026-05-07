@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\ProductImage;
+use App\Models\ProductReview;
+use App\Models\ProductVariant;
 
 class Product extends Model
 {
