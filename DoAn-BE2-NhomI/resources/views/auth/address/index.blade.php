@@ -193,20 +193,20 @@
 
 
 
-                    {{-- add address --}}
-                    <button
-                        class="bg-blue-900 text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 hover:bg-blue-800 transition shadow-lg shadow-blue-900/20 active:scale-95">
+                  {{-- add address --}}
+<a
+   href="/change-address/create"
+    class="bg-blue-900 text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 hover:bg-blue-800 transition shadow-lg shadow-blue-900/20 active:scale-95">
 
-                        <span class="material-symbols-outlined">
+    <span class="material-symbols-outlined">
 
-                            add
+        add
 
-                        </span>
+    </span>
 
-                        Thêm địa chỉ mới
+    Thêm địa chỉ mới
 
-                    </button>
-
+</a>
                 </div>
 
 
