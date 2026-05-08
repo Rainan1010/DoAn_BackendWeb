@@ -52,17 +52,20 @@ class BackupController extends Controller
 
     private function runDatabaseDump($filePath)
     {
-        $dumpPath = env('DB_DUMP_PATH', '');
+        $dumpPath = config('database.dump_path', '');
         $executable = $dumpPath ? rtrim($dumpPath, '\\/') . DIRECTORY_SEPARATOR . 'mysqldump' : 'mysqldump';
+
+        $connection = config('database.default', 'mysql');
+        $dbConfig = config("database.connections.{$connection}");
 
         $command = sprintf(
             '"%s" --user="%s" %s --host="%s" --port="%s" "%s" > "%s"',
             $executable,
-            env('DB_USERNAME'),
-            env('DB_PASSWORD') ? '--password="' . env('DB_PASSWORD') . '"' : '',
-            env('DB_HOST', '127.0.0.1'),
-            env('DB_PORT', '3306'),
-            env('DB_DATABASE'),
+            $dbConfig['username'] ?? 'root',
+            !empty($dbConfig['password']) ? '--password="' . $dbConfig['password'] . '"' : '',
+            $dbConfig['host'] ?? '127.0.0.1',
+            $dbConfig['port'] ?? '3306',
+            $dbConfig['database'] ?? '',
             $filePath
         );
 
