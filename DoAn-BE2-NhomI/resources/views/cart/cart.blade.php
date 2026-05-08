@@ -20,7 +20,7 @@
                     <div class="w-full md:w-48 h-48 bg-surface-container-low rounded-md overflow-hidden relative border border-outline-variant/10">
                         <img src="{{ asset(str_replace('public/', '', $details['image'])) }}"
                             class="w-full h-full object-contain p-4 transition-all duration-500 group-hover:scale-105"
-                            onerror="this.src='{{ asset('images/default-product.png') }}'">
+                            onerror='this.src="{{ asset("images/default-product.png") }}";'>
                     </div>
 
                     <div class="flex-1 flex flex-col justify-between">
