@@ -122,7 +122,7 @@
 
                     <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white text-[#0A2540] rounded-xl shadow-2xl p-2 font-bold text-sm">
                         <a href="{{ route('profile') }}" class="block px-4 py-2 hover:bg-gray-100 rounded-lg">Hồ sơ cá nhân</a>
-                        <a href="#" class="block px-4 py-2 hover:bg-gray-100 rounded-lg border-b border-gray-50 mb-1">Đơn mua của tôi</a>
+                        <a href="{{ route('orders.history') }}" class="block px-4 py-2 hover:bg-gray-100 rounded-lg border-b border-gray-50 mb-1">Đơn mua của tôi</a>
                         <form action="{{ route('logout') }}" method="POST">
                             @csrf
                             <button class="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 rounded-lg">Đăng xuất</button>

@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\OTPController;
 use App\Http\Controllers\ShippingAddressController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\OrderController;
 
 
 /*
@@ -158,15 +159,53 @@ Route::post('/product/{id}/review', [App\Http\Controllers\ProductController::cla
 // =====================================================
 Route::middleware('auth')->group(function () {
 
-
+    // danh sách địa chỉ
     Route::get(
+        '/change-address',
+        [ShippingAddressController::class, 'index']
+    )->name('addresses.index');
 
-    '/change-address',
 
-    [ShippingAddressController::class, 'index']
 
-)->name('addresses.index');
+    // form thêm địa chỉ
+    Route::get(
+        '/change-address/create',
+        [ShippingAddressController::class, 'create']
+    )->name('addresses.create');
 
+
+
+    // lưu địa chỉ
+    Route::post(
+        '/change-address/store',
+        [ShippingAddressController::class, 'store']
+    )->name('addresses.store');
+
+    // form sửa địa chỉ
+    Route::get(
+        '/change-address/edit/{id}',
+        [ShippingAddressController::class, 'edit']
+    )->name('addresses.edit');
+
+
+
+    // cập nhật địa chỉ
+    Route::post(
+        '/change-address/update/{id}',
+        [ShippingAddressController::class, 'update']
+    )->name('addresses.update');
+
+    // xoá địa chỉ
+    Route::delete(
+        '/change-address/delete/{id}',
+        [ShippingAddressController::class, 'destroy']
+    )->name('addresses.destroy');
+
+    //thiết lập địa chỉ mặc định
+    Route::post(
+    '/change-address/default/{id}',
+    [ShippingAddressController::class, 'setDefault']
+)->name('addresses.default');
 });
 
 // CART
@@ -175,3 +214,9 @@ Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
 Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
 Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
 
+// Phải có dấu {id} trong ngoặc nhọn
+Route::get('/api/compare-product/{id}', [App\Http\Controllers\CompareController::class, 'getCompareProduct']);
+
+// lịch sử đơn hàng
+Route::get('/orders', [OrderController::class, 'history'])
+    ->name('orders.history');
