@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\OTPController;
 use App\Http\Controllers\ShippingAddressController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\OrderController;
 
 
 /*
@@ -215,3 +216,7 @@ Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remov
 
 // Phải có dấu {id} trong ngoặc nhọn
 Route::get('/api/compare-product/{id}', [App\Http\Controllers\CompareController::class, 'getCompareProduct']);
+
+// lịch sử đơn hàng
+Route::get('/orders', [OrderController::class, 'history'])
+    ->name('orders.history');
