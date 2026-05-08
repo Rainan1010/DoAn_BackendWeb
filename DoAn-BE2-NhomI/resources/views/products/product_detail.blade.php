@@ -17,8 +17,9 @@
         <div class="lg:col-span-6 sticky top-24">
             <div class="border-2 border-gray-50 p-8 rounded-3xl bg-white shadow-sm hover:shadow-md transition-shadow">
                 <img src="{{ asset(str_replace('public/', '', $product->image_url)) }}"
-                    class="w-full h-[450px] object-contain hover:scale-105 transition-transform duration-500"
-                    alt="{{ $product->name }}">
+                    class="w-full h-[450px] object-contain hover:scale-105 transition-transform duration-500 cursor-zoom-in"
+                    alt="{{ $product->name }}"
+                    onclick="openLightbox(['{{ asset(str_replace('public/', '', $product->image_url)) }}'], 0)">
             </div>
         </div>
 
@@ -27,6 +28,7 @@
             <div class="space-y-3">
                 <h1 class="text-4xl font-black text-blue-900 leading-tight">{{ $product->name }}</h1>
                 <div class="flex items-center gap-4">
+                    {{-- Giá sẽ nhảy theo biến thể nhờ JS ở dưới --}}
                     <p id="mainPrice" class="text-3xl text-red-600 font-black">
                         {{ number_format($variants[0]->price ?? $product->base_price, 0, ',', '.') }}₫
                     </p>
@@ -38,17 +40,12 @@
                 <p class="text-gray-600 leading-relaxed text-sm">{{ $product->description }}</p>
             </div>
 
-            {{-- PHÂN LOẠI BIẾN THỂ --}}
+            {{-- PHÂN LOẠI BIẾN THỂ (RAM/ROM) --}}
             @php
                 $uniqueVariants = $variants->unique(function ($v) {
                     $attr = json_decode($v->attribute_values, true);
                     return ($attr['RAM'] ?? '') . ($attr['ROM'] ?? '');
                 });
-                $colors = [];
-                foreach($variants as $v) {
-                    $attr = json_decode($v->attribute_values, true);
-                    if (isset($attr['Màu sắc'])) $colors[] = $attr['Màu sắc'];
-                }
             @endphp
 
             <div class="space-y-6">
@@ -78,22 +75,51 @@
                 @endif
             </div>
 
-            {{-- FORM GIỎ HÀNG --}}
+            {{-- FORM GIỎ HÀNG (BỔ SUNG NÚT & TOOLTIP) --}}
             <form action="{{ route('cart.add') }}" method="POST" class="space-y-6 pt-4">
                 @csrf
                 <input type="hidden" name="id" value="{{ $product->product_id }}">
                 <input type="hidden" name="variant_id" id="selectedVariantId" value="{{ $variants[0]->variant_id ?? '' }}">
                 
+                {{-- CHỌN SỐ LƯỢNG --}}
                 <div class="flex items-center gap-6">
                     <label class="font-black text-blue-900 text-xs uppercase tracking-widest">Số lượng:</label>
-                    <div class="flex items-center border-2 border-gray-100 rounded-xl overflow-hidden w-fit bg-white">
-                        <button type="button" onclick="this.parentNode.querySelector('input').stepDown()" class="px-5 py-2 hover:bg-gray-50 text-gray-400 font-black">-</button>
+                    <div class="flex items-center border-2 border-gray-100 rounded-xl overflow-hidden w-fit bg-white shadow-sm">
+                        <button type="button" onclick="this.parentNode.querySelector('input').stepDown()" class="px-5 py-2 hover:bg-gray-50 text-gray-400 font-black transition-colors">-</button>
                         <input type="number" name="quantity" value="1" min="1" class="w-12 text-center border-none focus:ring-0 font-black text-blue-900 bg-transparent">
-                        <button type="button" onclick="this.parentNode.querySelector('input').stepUp()" class="px-5 py-2 hover:bg-gray-50 text-gray-400 font-black">+</button>
+                        <button type="button" onclick="this.parentNode.querySelector('input').stepUp()" class="px-5 py-2 hover:bg-gray-50 text-gray-400 font-black transition-colors">+</button>
                     </div>
                 </div>
-                <button type="submit" class="w-full bg-blue-900 text-white py-4 rounded-2xl font-black hover:bg-blue-800 transition-all shadow-xl uppercase tracking-widest text-xs">MUA NGAY</button>
+
+                {{-- CÁC NÚT HÀNH ĐỘNG --}}
+                <div class="flex gap-4">
+                    <button type="submit" class="flex-1 bg-blue-900 text-white py-4 rounded-2xl font-black hover:bg-blue-800 transition-all shadow-xl uppercase tracking-widest text-xs active:scale-[0.98]">
+                        MUA NGAY
+                    </button>
+
+                    {{-- BIỂU TƯỢNG GIỎ HÀNG VỚI TOOLTIP --}}
+                    <div class="relative group">
+                        <button type="submit" class="w-16 h-full border-2 border-blue-900 text-blue-900 rounded-2xl flex items-center justify-center hover:bg-blue-50 transition-all active:scale-90">
+                            <span class="material-symbols-outlined text-2xl">add_shopping_cart</span>
+                        </button>
+                        
+                        <div class="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-[#003366] text-white text-[10px] font-black rounded-lg opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-300 whitespace-nowrap shadow-2xl z-10 uppercase tracking-tighter">
+                            Thêm vào giỏ hàng
+                            <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#003366]"></div>
+                        </div>
+                    </div>
+                </div>
             </form>
+
+            {{-- CHÍNH SÁCH --}}
+            <div class="grid grid-cols-2 gap-4 pt-6 border-t border-gray-100">
+                <div class="flex items-center gap-3 text-xs font-bold text-gray-500">
+                    <span class="material-symbols-outlined text-blue-600">local_shipping</span> Giao nhanh toàn quốc
+                </div>
+                <div class="flex items-center gap-3 text-xs font-bold text-gray-500">
+                    <span class="material-symbols-outlined text-blue-600">verified_user</span> Bảo hành chính hãng 12T
+                </div>
+            </div>
         </div>
     </div>
 
@@ -116,16 +142,16 @@
                     <span class="text-sm font-black text-blue-900">{{ $product->name }}</span>
                 </div>
                 <div class="flex-1 text-sm font-bold text-blue-900">
-                    <div class="h-24 border-b flex items-center justify-center bg-blue-900/5">Apple A18 Pro</div>
-                    <div class="h-24 border-b flex items-center justify-center">48MP + 48MP</div>
-                    <div class="h-24 border-b flex items-center justify-center bg-blue-900/5">5.000 mAh</div>
+                    <div class="h-24 border-b flex items-center justify-center bg-blue-900/5">A-Series Precision</div>
+                    <div class="h-24 border-b flex items-center justify-center">Pro Camera System</div>
+                    <div class="h-24 border-b flex items-center justify-center bg-blue-900/5">All-day Battery</div>
                     <div class="h-24 flex items-center justify-center text-lg font-black text-red-600">{{ number_format($product->base_price, 0, ',', '.') }}₫</div>
                 </div>
             </div>
             <div class="flex flex-col" id="compare-column-2">
                 <div class="h-44 p-6 flex items-center justify-center border-b bg-gray-50/50">
                     <div id="select-container" class="w-full">
-                        <select id="select-compare-product" class="w-full text-xs font-bold border-gray-200 rounded-xl">
+                        <select id="select-compare-product" class="w-full text-xs font-bold border-gray-200 rounded-xl focus:ring-blue-900">
                             <option value="">+ Chọn máy so sánh</option>
                             @foreach($relatedProducts as $item)
                                 <option value="{{ $item->product_id }}">{{ $item->name }}</option>
@@ -148,7 +174,7 @@
         </div>
     </section>
 
-    {{-- ===== 5. SẢN PHẨM LIÊN QUAN (MỤC BẢO CẦN) ===== --}}
+    {{-- ===== 5. CÙNG DÒNG SẢN PHẨM ===== --}}
     @if(count($relatedProducts))
         <div class="pt-12 border-t border-gray-100">
             <h2 class="text-2xl font-black text-blue-900 mb-8 uppercase tracking-tight">Cùng dòng sản phẩm</h2>
@@ -169,8 +195,8 @@
     @endif
 
     {{-- ===== 6. ĐÁNH GIÁ SẢN PHẨM ===== --}}
-    <div class="mt-10 bg-white p-6 rounded-xl border">
-        <h2 class="text-xl font-bold mb-6 border-b pb-4">Đánh giá từ khách hàng</h2>
+    <div class="mt-10 bg-white p-8 rounded-3xl border shadow-sm">
+        <h2 class="text-xl font-black text-blue-900 mb-6 border-b pb-4 uppercase tracking-tight">Đánh giá từ khách hàng</h2>
         @if(count($reviews) > 0)
             <div class="space-y-6">
                 @foreach($reviews as $review)
@@ -188,27 +214,30 @@
                                 </div>
                             </div>
                         </div>
-                        <p class="text-gray-700 text-sm leading-relaxed">{{ $review->comment }}</p>
+                        <p class="text-gray-700 text-sm leading-relaxed italic">"{{ $review->comment }}"</p>
                     </div>
                 @endforeach
             </div>
         @else
-            <p class="text-center py-10 text-gray-400 text-sm">Sản phẩm này chưa có đánh giá nào.</p>
+            <p class="text-center py-10 text-gray-400 text-sm font-medium">Sản phẩm này chưa có đánh giá nào.</p>
         @endif
     </div>
 </div>
 
 {{-- LIGHTBOX --}}
-<div id="lightbox" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/95" onclick="closeLightbox()">
+<div id="lightbox" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/95 backdrop-blur-md" onclick="closeLightbox()">
+    <button class="absolute top-6 right-6 text-white hover:rotate-90 transition-transform">
+        <span class="material-symbols-outlined text-4xl">close</span>
+    </button>
     <img id="lb-img" src="" class="max-w-[90vw] max-h-[85vh] rounded-xl object-contain shadow-2xl">
 </div>
 
-@endsection {{-- ĐÓNG CONTENT --}}
+@endsection
 
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Biến thể & Nhảy giá
+        // --- 1. Xử lý Biến thể & Nhảy giá ---
         const variantBtns = document.querySelectorAll('.variant-btn');
         const selectedVariantLabel = document.getElementById('selectedVariant');
         const mainPrice = document.getElementById('mainPrice');
@@ -216,20 +245,23 @@
 
         variantBtns.forEach(btn => {
             btn.addEventListener('click', function () {
+                // Reset style tất cả button
                 variantBtns.forEach(b => {
                     b.classList.remove('bg-blue-900', 'text-white', 'border-blue-900', 'shadow-md');
                     b.classList.add('bg-white', 'text-gray-500', 'border-gray-100');
                 });
+                // Active button được chọn
                 this.classList.remove('bg-white', 'text-gray-500', 'border-gray-100');
                 this.classList.add('bg-blue-900', 'text-white', 'border-blue-900', 'shadow-md');
 
+                // Cập nhật thông tin hiển thị và input ẩn
                 if (selectedVariantLabel) selectedVariantLabel.innerText = "(" + this.dataset.value + ")";
                 if (mainPrice) mainPrice.innerText = this.dataset.price;
                 if (hiddenVariantInput) hiddenVariantInput.value = this.dataset.variantId;
             });
         });
 
-        // So sánh AJAX
+        // --- 2. So sánh AJAX ---
         const selectCompare = document.getElementById('select-compare-product');
         if(selectCompare) {
             selectCompare.addEventListener('change', function() {
@@ -255,6 +287,7 @@
         }
     });
 
+    // --- 3. Các hàm hỗ trợ ---
     function resetCompare() {
         document.getElementById('select-compare-product').value = "";
         document.getElementById('compare-info-2').classList.add('hidden');
