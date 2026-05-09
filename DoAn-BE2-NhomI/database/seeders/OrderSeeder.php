@@ -59,7 +59,7 @@ class OrderSeeder extends Seeder
                 'total_amount' => 21020000,
                 'payment_method' => 'vnpay',
                 'payment_status' => 'paid',
-                'order_status' => 'shipping',
+                'order_status' => 'shipped',
                 'cancel_reason' => null,
                 'paid_at' => now(),
                 'created_at' => now(),
