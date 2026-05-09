@@ -10,15 +10,21 @@
 
             <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <span class="text-on-secondary-container bg-secondary-container px-3 py-1 text-[10px] font-bold tracking-[0.1em] uppercase rounded-full mb-4 inline-block">TÀI KHOẢN CỦA TÔI</span>
-                    <h1 class="text-4xl md:text-5xl font-black text-brand-blue tracking-tighter leading-none mb-2">Lịch sử đơn hàng</h1>
-                    <p class="text-on-surface-variant max-w-md">Theo dõi, quản lý và xem lại các giao dịch kỹ thuật cao của bạn với độ chính xác tuyệt đối.</p>
+                    <span
+                        class="text-on-secondary-container bg-secondary-container px-3 py-1 text-[10px] font-bold tracking-[0.1em] uppercase rounded-full mb-4 inline-block">TÀI
+                        KHOẢN CỦA TÔI</span>
+                    <h1 class="text-4xl md:text-5xl font-black text-brand-blue tracking-tighter leading-none mb-2">Lịch sử
+                        đơn hàng</h1>
+                    <p class="text-on-surface-variant max-w-md">Theo dõi, quản lý và xem lại các giao dịch kỹ thuật cao của
+                        bạn với độ chính xác tuyệt đối.</p>
                 </div>
                 <div class="flex gap-2">
-                    <button class="bg-surface-container-high text-on-surface px-6 py-3 rounded-md text-sm font-bold flex items-center gap-2 hover:bg-surface-container-highest transition-colors">
+                    <button
+                        class="bg-surface-container-high text-on-surface px-6 py-3 rounded-md text-sm font-bold flex items-center gap-2 hover:bg-surface-container-highest transition-colors">
                         <span class="material-symbols-outlined text-sm" data-icon="filter_list">filter_list</span> Bộ lọc
                     </button>
-                    <button class="bg-brand-blue text-white text-on-primary px-6 py-3 rounded-md text-sm font-bold shadow-lg hover:shadow-brand-blue/20 transition-all">
+                    <button
+                        class="bg-brand-blue text-white text-on-primary px-6 py-3 rounded-md text-sm font-bold shadow-lg hover:shadow-brand-blue/20 transition-all">
                         Tải hóa đơn (PDF)
                     </button>
                 </div>
@@ -155,17 +161,15 @@
 
                                 @if(!empty($item->image_url))
 
-                                    <img
-                                        src="{{ asset($item->image_url) }}"
-                                        alt="{{ $item->product_name }}"
-                                        class="w-full h-full object-cover"  >
+                                    <img src="{{ asset($item->image_url) }}" alt="{{ $item->product_name }}"
+                                        class="w-full h-full object-cover">
 
-                                 @else
+                                @else
 
                                     <div class="w-full h-full flex items-center justify-center bg-gray-100">
 
                                         <span class="material-symbols-outlined text-5xl text-gray-400">
-                                        inventory_2
+                                            inventory_2
                                         </span>
 
                                     </div>
@@ -251,14 +255,10 @@
                                 <!-- BUTTON -->
 
                                 <div class="flex flex-col justify-center gap-3">
-
-                                    <button
-                                        class="bg-brand-blue text-white px-8 py-3 rounded-md text-xs font-bold tracking-widest uppercase hover:bg-primary-container transition-colors">
-
+                                    <a href="{{ route('orders.detail', $order->order_id) }}"
+                                        class="bg-brand-blue text-white px-8 py-3 rounded-md text-xs font-bold tracking-widest uppercase hover:bg-primary-container transition-colors text-center">
                                         Xem chi tiết
-
-                                    </button>
-
+                                    </a>
                                     @if($order->order_status == 'delivered')
 
                                         <button

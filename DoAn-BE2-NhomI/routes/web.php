@@ -220,3 +220,7 @@ Route::get('/api/compare-product/{id}', [App\Http\Controllers\CompareController:
 // lịch sử đơn hàng
 Route::get('/orders', [OrderController::class, 'history'])
     ->name('orders.history');
+
+// xem chi tiet don hang
+Route::get('/orders/{id}', [OrderController::class, 'detail'])
+    ->name('orders.detail');

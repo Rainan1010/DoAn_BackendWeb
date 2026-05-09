@@ -14,7 +14,7 @@ class OrderSeeder extends Seeder
             // ORDER 1
             [
                 'user_id' => 1,
-                'shipping_address_id' => 1,
+                'shipping_address_id' => 3,
                 'voucher_id' => null,
                 'order_code' => 'BT-1001',
                 'subtotal' => 34990000,
@@ -32,7 +32,7 @@ class OrderSeeder extends Seeder
             // ORDER 2
             [
                 'user_id' => 1,
-                'shipping_address_id' => 2,
+                'shipping_address_id' => 4,
                 'voucher_id' => null,
                 'order_code' => 'BT-1002',
                 'subtotal' => 28500000,
@@ -50,7 +50,7 @@ class OrderSeeder extends Seeder
             // ORDER 3
             [
                 'user_id' => 1,
-                'shipping_address_id' => 1,
+                'shipping_address_id' => 3,
                 'voucher_id' => null,
                 'order_code' => 'BT-1003',
                 'subtotal' => 21990000,
@@ -68,7 +68,7 @@ class OrderSeeder extends Seeder
             // ORDER 4
             [
                 'user_id' => 1,
-                'shipping_address_id' => 2,
+                'shipping_address_id' => 3,
                 'voucher_id' => null,
                 'order_code' => 'BT-1004',
                 'subtotal' => 15990000,
@@ -86,7 +86,7 @@ class OrderSeeder extends Seeder
             // ORDER 5
             [
                 'user_id' => 1,
-                'shipping_address_id' => 1,
+                'shipping_address_id' =>4,
                 'voucher_id' => null,
                 'order_code' => 'BT-1005',
                 'subtotal' => 45990000,
@@ -104,7 +104,7 @@ class OrderSeeder extends Seeder
             // ORDER 6
             [
                 'user_id' => 1,
-                'shipping_address_id' => 2,
+                'shipping_address_id' => 4,
                 'voucher_id' => null,
                 'order_code' => 'BT-1006',
                 'subtotal' => 12500000,
