@@ -50,6 +50,9 @@
             <a href="{{ route('admin.backups.index') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.backups.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
                 <i data-lucide="database-backup" class="w-5 h-5"></i> Sao lưu Dữ liệu
             </a>
+            <a href="{{ route('admin.permissions.index') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.permissions.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
+                <i data-lucide="shield-check" class="w-5 h-5"></i> Phân quyền
+            </a>
         </nav>
 
         <div class="p-4 border-t border-white/10">
