@@ -62,6 +62,10 @@ class CartController extends Controller
 
             // Cập nhật số lượng mới
             $cart[$request->id]["quantity"] = $request->quantity;
+            if (isset($cart[$request->id])) {
+                // Cập nhật số lượng mới
+                $cart[$request->id]["quantity"] = $request->quantity;
+            }
 
             session()->put('cart', $cart);
             return redirect()->back()->with('success', 'Giỏ hàng đã được cập nhật!');

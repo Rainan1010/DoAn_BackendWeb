@@ -57,7 +57,11 @@ class ProductController extends Controller
     {
         $categories = Category::orderBy('name')->get();
         $brands     = Brand::orderBy('name')->get();
-        return view('admin.products.create', compact('categories', 'brands'));
+
+        return view('admin.products.create', compact('categories', 'brands'))->with([
+            'old_images'   => old('images') ?? [ ['url' => '', 'is_primary' => true] ],
+            'old_variants' => old('variants') ?? [ ['sku' => '', 'price' => '', 'sale_price' => '', 'stock' => 0, 'is_active' => true] ],
+        ]);
     }
 
     // ─────────────────────────────────────────────
@@ -65,6 +69,14 @@ class ProductController extends Controller
     // ─────────────────────────────────────────────
     public function store(Request $request)
     {
+        // Loại bỏ các ảnh trống trước khi validate
+        if ($request->has('images')) {
+            $images = array_filter($request->images, function($img) {
+                return !empty($img['url']);
+            });
+            $request->merge(['images' => array_values($images)]);
+        }
+
         $request->validate([
             'name'        => 'required|string|max:255',
             'slug'        => 'required|string|max:191|unique:products,slug',
@@ -73,7 +85,7 @@ class ProductController extends Controller
             'base_price'  => 'required|numeric|min:0',
             'description' => 'nullable|string',
             'specs'       => 'nullable|string',
-            'images.*.url'    => 'nullable|url',
+            'images.*.url'    => 'nullable|string',
             'variants.*.sku'        => 'nullable|string|max:100',
             'variants.*.price'      => 'nullable|numeric|min:0',
             'variants.*.sale_price' => 'nullable|numeric|min:0',
@@ -149,7 +161,7 @@ class ProductController extends Controller
                         'sale_price'       => !empty($v['sale_price']) ? (float) $v['sale_price'] : null,
                         'stock_quantity'   => (int) ($v['stock'] ?? 0),
                         'attribute_values' => null,
-                        'is_active'        => !empty($v['is_active']) ? 1 : 1,
+                        'is_active'        => !empty($v['is_active']) ? 1 : 0,
                     ]);
                 }
             }
@@ -195,6 +207,14 @@ class ProductController extends Controller
     {
         $product = Product::where('product_id', $id)->firstOrFail();
 
+        // Loại bỏ các ảnh trống trước khi validate
+        if ($request->has('images')) {
+            $images = array_filter($request->images, function($img) {
+                return !empty($img['url']);
+            });
+            $request->merge(['images' => array_values($images)]);
+        }
+
         $request->validate([
             'name'        => 'required|string|max:255',
             'slug'        => 'required|string|max:191|unique:products,slug,' . $id . ',product_id',
@@ -203,7 +223,7 @@ class ProductController extends Controller
             'base_price'  => 'required|numeric|min:0',
             'description' => 'nullable|string',
             'specs'       => 'nullable|string',
-            'images.*.url'          => 'nullable|url',
+            'images.*.url'          => 'nullable|string',
             'variants.*.sku'        => 'nullable|string|max:100',
             'variants.*.price'      => 'nullable|numeric|min:0',
             'variants.*.sale_price' => 'nullable|numeric|min:0',

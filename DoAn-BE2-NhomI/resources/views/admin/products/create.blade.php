@@ -127,7 +127,7 @@
             </div>
 
             <!-- 2. Hình ảnh (URL) -->
-            <div x-data="{ images: [{url:'', is_primary: true}] }" class="bg-white rounded-xl shadow-sm border border-orange-100 overflow-hidden relative">
+            <div x-data="{ images: {{ json_encode($old_images) }} }" class="bg-white rounded-xl shadow-sm border border-orange-100 overflow-hidden relative">
                 <div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-400"></div>
                 <div class="p-6 border-b border-gray-50 flex items-center justify-between">
                     <div class="flex items-center gap-3">
@@ -163,7 +163,7 @@
             </div>
 
             <!-- 3. Biến thể -->
-            <div x-data="{ variants: [{sku:'', price:'', sale_price:'', stock: 0, is_active: true}] }" class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden relative">
+            <div x-data="{ variants: {{ json_encode($old_variants) }} }" class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden relative">
                 <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
                 <div class="p-6 border-b border-gray-50 flex items-center justify-between">
                     <div class="flex items-center gap-3">
@@ -215,7 +215,7 @@
                                     <td class="py-3 pr-3 text-center">
                                         <label class="relative inline-flex items-center cursor-pointer">
                                             <input type="checkbox" :name="'variants['+index+'][is_active]'" value="1" x-model="v.is_active" class="sr-only peer">
-                                            <div class="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#0A2540]"></div>
+                                            <div class="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[' '] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#0A2540]"></div>
                                         </label>
                                     </td>
                                     <td class="py-3 text-right">
@@ -253,7 +253,7 @@
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" name="is_active" value="1" x-model="isPublic" class="sr-only peer" checked>
-                            <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0A2540]"></div>
+                            <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[' '] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0A2540]"></div>
                         </label>
                     </div>
 
@@ -303,7 +303,7 @@
                             <!-- Real image from URL -->
                             <template x-if="imageUrl">
                                 <img :src="imageUrl" class="w-full h-full object-contain p-2" alt=""
-                                     @error="imageUrl = ''">
+                                     x-on:error="imageUrl = ''">
                             </template>
 
                             <!-- Placeholder khi chưa có ảnh -->
