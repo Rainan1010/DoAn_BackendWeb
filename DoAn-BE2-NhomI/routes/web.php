@@ -19,7 +19,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);
     
     // Quản lý Thương hiệu
-    Route::patch('brands/{id}/toggle-status', [App\Http\Controllers\Admin\BrandController::class, 'toggleStatus'])->name('brands.toggleStatus');
+    Route::patch('brands/{brand}/toggle-status', [App\Http\Controllers\Admin\BrandController::class, 'toggleStatus'])->name('brands.toggleStatus');
     Route::resource('brands', App\Http\Controllers\Admin\BrandController::class);
 });
 
@@ -60,4 +60,3 @@ Route::post('/password/change', [CrudUserController::class, 'changePassword'])->
 Route::prefix('admin')->middleware(['auth'])->group(function () {
     Route::resource('vouchers', App\Http\Controllers\Admin\VoucherController::class);
 });
-

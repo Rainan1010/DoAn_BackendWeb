@@ -60,7 +60,7 @@
                         </div>
                     </div>
                 </div>
-
+ 
                 <!-- Action Buttons -->
                 <div class="flex items-center gap-2 flex-shrink-0">
                     <a href="{{ route('admin.brands.edit', $brand->brand_id) }}" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-bold transition-colors text-sm">
