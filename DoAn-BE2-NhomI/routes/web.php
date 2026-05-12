@@ -14,6 +14,7 @@ use App\Http\Controllers\OTPController;
 use App\Http\Controllers\ShippingAddressController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\Admin\DashboardController;
 
 
 /*
@@ -102,6 +103,12 @@ Route::middleware(['auth'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
+    // Dashboard
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index']);
+
+    // Quản lý Sản phẩm (Products)
+    Route::resource('products', \App\Http\Controllers\Admin\ProductController::class);
 
     // Quản lý Danh mục (Categories)
     Route::resource('categories', CategoryController::class);
