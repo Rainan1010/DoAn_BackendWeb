@@ -128,6 +128,127 @@
 .bg-move {
     animation: moveGlow 12s ease-in-out infinite;
 }
+
+.success-modal{
+
+    position:fixed;
+
+    inset:0;
+
+    background:rgba(0,0,0,.5);
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    z-index:9999;
+
+    animation:fadeIn .3s ease;
+}
+
+.success-box{
+
+    width:420px;
+
+    background:#fff;
+
+    border-radius:24px;
+
+    padding:40px;
+
+    text-align:center;
+
+    animation:zoomIn .3s ease;
+}
+
+.success-icon{
+
+    width:90px;
+
+    height:90px;
+
+    border-radius:50%;
+
+    background:#22c55e;
+
+    color:#fff;
+
+    margin:auto;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    font-size:40px;
+
+    margin-bottom:20px;
+}
+
+.success-box h2{
+
+    color:#001e40;
+
+    margin-bottom:16px;
+}
+
+.success-box p{
+
+    margin-bottom:10px;
+
+    color:#555;
+}
+
+.success-box button{
+
+    margin-top:20px;
+
+    border:none;
+
+    background:#001e40;
+
+    color:#fff;
+
+    padding:12px 30px;
+
+    border-radius:12px;
+
+    cursor:pointer;
+
+    font-weight:700;
+}
+
+@keyframes fadeIn{
+
+    from{
+        opacity:0;
+    }
+
+    to{
+        opacity:1;
+    }
+}
+
+@keyframes zoomIn{
+
+    from{
+
+        transform:scale(.7);
+
+        opacity:0;
+    }
+
+    to{
+
+        transform:scale(1);
+
+        opacity:1;
+    }
+}
+
 </style>
     <main class="relative pt-10 pb-20 px-4 max-w-5xl mx-auto overflow-hidden">
 
@@ -1103,5 +1224,53 @@ transition-all duration-500">
         </div>
 
     </main>
+@if(session('success_order'))
 
+<div id="successModal" class="success-modal">
+
+    <div class="success-box">
+
+        <div class="success-icon">
+            ✔
+        </div>
+
+        <h2>
+            Đặt hàng thành công
+        </h2>
+
+        <p>
+            Mã đơn:
+            <b>
+                {{ session('success_order.code') }}
+            </b>
+        </p>
+
+        <p>
+            Tổng tiền:
+            <b>
+                {{ number_format(session('success_order.total')) }}đ
+            </b>
+        </p>
+
+        <button onclick="closeSuccessModal()">
+            OK
+        </button>
+
+    </div>
+
+</div>
+
+@endif
+<script>
+
+function closeSuccessModal(){
+
+    document
+        .getElementById(
+            'successModal'
+        )
+        .style.display = 'none';
+}
+
+</script>
 @endsection

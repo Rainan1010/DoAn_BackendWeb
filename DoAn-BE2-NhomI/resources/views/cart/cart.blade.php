@@ -250,10 +250,14 @@
                         </span>
                     </div>
 
-                    @if(count($selectedCartIds ?? []) > 0)
-                        <button class="w-full bg-brand-blue text-white py-5 rounded-md font-black uppercase tracking-[0.2em] text-sm shadow-xl hover:bg-[#002244] hover:shadow-2xl transition-all active:scale-[0.98]">
-                            Đặt hàng
-                        </button>
+                  @if(count($selectedCartIds ?? []) > 0)
+                        <form action="{{ route('checkout') }}"
+                        method="GET">
+
+                            <button type="submit" class="w-full bg-brand-blue text-white py-5 rounded-md font-black uppercase tracking-[0.2em] text-sm shadow-xl hover:bg-[#002244] hover:shadow-2xl transition-all active:scale-[0.98]">
+                                Đặt hàng
+                            </button>
+                        </form>
                     @else
                         <button 
                             disabled

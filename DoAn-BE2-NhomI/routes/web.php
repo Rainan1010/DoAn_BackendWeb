@@ -229,3 +229,64 @@ Route::get('/orders', [OrderController::class, 'history'])
 // xem chi tiet don hang
 Route::get('/orders/{id}', [OrderController::class, 'detail'])
     ->name('orders.detail');
+
+
+/*
+|--------------------------------------------------------------------------
+| CHECKOUT
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth')->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 1
+    |--------------------------------------------------------------------------
+    */
+    Route::get(
+        '/checkout',
+        [OrderController::class, 'checkout']
+    )->name('checkout');
+
+    /*
+    |--------------------------------------------------------------------------
+    | SAVE INFORMATION
+    |--------------------------------------------------------------------------
+    */
+    Route::post(
+        '/checkout/save-information',
+        [OrderController::class, 'saveInformation']
+    )->name('checkout.saveInformation');
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 2
+    |--------------------------------------------------------------------------
+    */
+    Route::get(
+        '/checkout/payment',
+        [OrderController::class, 'payment']
+    )->name('checkout.payment');
+
+    /*
+    |--------------------------------------------------------------------------
+    | STORE ORDER
+    |--------------------------------------------------------------------------
+    */
+    Route::post(
+        '/checkout/store',
+        [OrderController::class, 'store']
+    )->name('checkout.store');
+
+ 
+    /*
+    |--------------------------------------------------------------------------
+    | HISTORY
+    |--------------------------------------------------------------------------
+    */
+    Route::get(
+        '/history',
+        [OrderController::class, 'history']
+    )->name('order.history');
+});
