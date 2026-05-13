@@ -216,6 +216,8 @@ Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
 Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
 Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
+Route::post('/cart/select', [CartController::class, 'select'])->name('cart.select');
+Route::post('/cart/toggle-select', [CartController::class, 'toggleSelect'])->name('cart.toggleSelect');
 
 // Phải có dấu {id} trong ngoặc nhọn
 Route::get('/api/compare-product/{id}', [App\Http\Controllers\CompareController::class, 'getCompareProduct']);
