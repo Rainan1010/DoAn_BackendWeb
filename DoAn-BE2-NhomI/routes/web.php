@@ -14,6 +14,7 @@ use App\Http\Controllers\OTPController;
 use App\Http\Controllers\ShippingAddressController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\Admin\AttributeController;
 
 
 /*
@@ -21,6 +22,7 @@ use App\Http\Controllers\OrderController;
 | PUBLIC ROUTES (Trang chủ & Sản phẩm)
 |--------------------------------------------------------------------------
 */
+
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/search-ajax', [ProductController::class, 'searchAjax'])->name('search.ajax');
 Route::get('/product/{id}', [ProductController::class, 'show'])->name('product.show');
@@ -132,6 +134,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::post('backups/{id}/restore', [App\Http\Controllers\Admin\BackupController::class, 'restore'])->name('backups.restore');
     Route::delete('backups/{id}', [App\Http\Controllers\Admin\BackupController::class, 'destroy'])->name('backups.destroy');
 
+    // Quản lý Thuộc tính (Attributes)
+    Route::resource('attributes', AttributeController::class);
 });
 
 
@@ -145,7 +149,7 @@ Route::post('/password/change', [CrudUserController::class, 'changePassword'])->
 Route::get('/profile', [CrudUserController::class, 'profile'])
     ->middleware('auth')
     ->name('profile');
-    
+
 // update profile
 Route::post('/profile/update', [CrudUserController::class, 'updateProfile'])
     ->name('profile.update')
@@ -206,9 +210,9 @@ Route::middleware('auth')->group(function () {
 
     //thiết lập địa chỉ mặc định
     Route::post(
-    '/change-address/default/{id}',
-    [ShippingAddressController::class, 'setDefault']
-)->name('addresses.default');
+        '/change-address/default/{id}',
+        [ShippingAddressController::class, 'setDefault']
+    )->name('addresses.default');
 });
 
 // CART
