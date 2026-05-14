@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,9 +10,25 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #F4F5F7; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F4F5F7;
+        }
+
+        .sidebar-scroll {
+            scrollbar-width: none;
+            /* Firefox */
+            -ms-overflow-style: none;
+            /* IE/Edge cũ */
+        }
+
+        .sidebar-scroll::-webkit-scrollbar {
+            display: none;
+            /* Chrome, Edge, Safari */
+        }
     </style>
 </head>
+
 <body class="flex h-screen overflow-hidden text-gray-800">
     <!-- Sidebar -->
     <aside class="w-64 bg-[#0A2540] hidden md:flex flex-col h-full">
@@ -28,13 +45,16 @@
             </div>
         </div>
 
-        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
+        <nav class="sidebar-scroll flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
             <a href="#" class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-blue-200 rounded-lg hover:bg-white/10 transition-colors">
                 <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Bảng điều khiển
             </a>
-          
+
             <a href="{{ route('admin.products.index') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.products.*') ? 'bg-[#002B6B] text-white shadow-inner' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
                 <i data-lucide="box" class="w-5 h-5"></i> Sản phẩm
+            </a>
+            <a href="{{ route('admin.attributes.index') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.attributes.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
+                <i data-lucide="cpu" class="w-5 h-5"></i> Thuộc tính
             </a>
 
             <a href="{{ route('admin.brands.index') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.brands.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
@@ -43,17 +63,25 @@
             <a href="{{ route('admin.categories.index') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.categories.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
                 <i data-lucide="boxes" class="w-5 h-5"></i> Danh mục
             </a>
-         
+
             <a href="{{ route('admin.vouchers.index') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.vouchers.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
                 <i data-lucide="ticket" class="w-5 h-5"></i> Voucher
             </a>
+
             <a href="{{ route('admin.reviews.index') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.reviews.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
                 <i data-lucide="star" class="w-5 h-5"></i> Đánh giá
             </a>
-            
+
             <a href="{{ route('admin.backups.index') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.backups.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
                 <i data-lucide="database-backup" class="w-5 h-5"></i> Sao lưu Dữ liệu
             </a>
+
+
+            <a href="{{ route('home') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.backups.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
+                <i data-lucide="arrow-big-right" class="w-5 h-5"></i> Quay về Trang chủ
+            </a>
+
+
         </nav>
 
         <div class="p-4 border-t border-white/10">
@@ -105,4 +133,5 @@
     </script>
     @stack('scripts')
 </body>
+
 </html>
