@@ -255,7 +255,6 @@
                 </tbody>
             </table>
         </div>
-
         {{-- Pagination --}}
         <div class="p-4 border-t border-gray-100 flex items-center justify-between bg-white text-sm">
             <p class="text-gray-500 text-[13px] font-medium">
