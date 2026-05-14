@@ -34,19 +34,47 @@ class OrderController extends Controller
         // =================================================
         // LẤY DANH SÁCH ĐƠN HÀNG
         // =================================================
-        $orders = Order::with('items')
+        /*
+ |--------------------------------------------------------------------------
+ | QUERY
+ |--------------------------------------------------------------------------
+ */
+        $query = Order::with('items')
 
             ->where(
                 'user_id',
                 $userId
-            )
+            );
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | FILTER STATUS
+        |--------------------------------------------------------------------------
+        */
+        if (request()->status) {
+
+            $query->where(
+                'order_status',
+                request()->status
+            );
+        }
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ORDERS
+        |--------------------------------------------------------------------------
+        */
+        $orders = $query
 
             ->orderByDesc(
                 'created_at'
             )
 
             ->paginate(5);
-
 
 
 
@@ -209,7 +237,231 @@ class OrderController extends Controller
             )
         );
     }
+    /*
+    |--------------------------------------------------------------------------
+    | CANCEL ORDER
+    |--------------------------------------------------------------------------
+    */
+    public function cancel($id)
+    {
 
+        $order = Order::where(
+            'user_id',
+            Auth::id()
+        )->findOrFail($id);
+
+
+
+        // chỉ cho huỷ khi chưa giao
+        if (
+            !in_array(
+                $order->order_status,
+                ['pending', 'confirmed', 'processing']
+            )
+        ) {
+
+            return back()->with(
+                'error',
+                'Không thể huỷ đơn hàng này'
+            );
+        }
+
+
+
+        $order->update([
+
+            'order_status' => 'cancelled'
+
+        ]);
+
+
+
+        return back()->with(
+            'success',
+            'Huỷ đơn hàng thành công'
+        );
+    }
+    /*
+    |--------------------------------------------------------------------------
+    | REORDER
+    |--------------------------------------------------------------------------
+    */
+    public function reorder($id)
+    {
+
+        $order = Order::with('items')
+
+            ->where(
+                'user_id',
+                Auth::id()
+            )
+
+            ->findOrFail($id);
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | TẠO CART MỚI RIÊNG
+        |--------------------------------------------------------------------------
+        */
+        $cart = [];
+
+
+
+        $selectedCartIds = [];
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOOP ITEMS
+        |--------------------------------------------------------------------------
+        */
+        foreach ($order->items as $item) {
+
+            $variant = DB::table('product_variants')
+
+                ->join(
+                    'products',
+                    'products.product_id',
+                    '=',
+                    'product_variants.product_id'
+                )
+
+                ->leftJoin(
+                    'product_images',
+                    function ($join) {
+
+                        $join->on(
+                            'product_images.product_id',
+                            '=',
+                            'products.product_id'
+                        )
+
+                            ->where(
+                                'product_images.is_primary',
+                                1
+                            );
+
+                    }
+                )
+
+                ->where(
+                    'product_variants.variant_id',
+                    $item->variant_id
+                )
+
+                ->select(
+
+                    'products.product_id',
+
+                    'products.name',
+
+                    'product_variants.variant_id',
+
+                    'product_variants.attribute_values',
+
+                    'product_images.image_url'
+
+                )
+
+                ->first();
+
+
+
+            if (!$variant) {
+                continue;
+            }
+
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | CART KEY
+            |--------------------------------------------------------------------------
+            */
+            $cartKey =
+                'product_' .
+                $variant->variant_id;
+
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | ADD CART
+            |--------------------------------------------------------------------------
+            */
+            $cart[$cartKey] = [
+
+                'product_id' =>
+                    $variant->product_id,
+
+                'variant_id' =>
+                    $variant->variant_id,
+
+                'name' =>
+                    $variant->name,
+
+                'quantity' =>
+                    $item->quantity,
+
+                'price' =>
+                    $item->unit_price,
+
+                'image' =>
+                    $variant->image_url,
+
+                'variant_name' =>
+                    $variant->attribute_values
+            ];
+
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | AUTO SELECT
+            |--------------------------------------------------------------------------
+            */
+            $selectedCartIds[] =
+                $cartKey;
+        }
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | GHI ĐÈ CART
+        |--------------------------------------------------------------------------
+        */
+        session()->put(
+            'cart',
+            $cart
+        );
+
+
+
+        session()->put(
+            'selected_cart_ids',
+            $selectedCartIds
+        );
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | QUA THẲNG CHECKOUT
+        |--------------------------------------------------------------------------
+        */
+        return redirect()
+
+            ->route('checkout')
+
+            ->with(
+                'success',
+                'Đang mua lại sản phẩm'
+            );
+    }
     /*
     |--------------------------------------------------------------------------
     | CHECKOUT PAGE - STEP 1
@@ -244,15 +496,15 @@ class OrderController extends Controller
                 $checkoutItems[$id] = $cart[$id];
             }
         }
-/*
-|--------------------------------------------------------------------------
-| SAVE SESSION
-|--------------------------------------------------------------------------
-*/
-session([
-    'checkout_items' =>
-        $checkoutItems
-]);
+        /*
+        |--------------------------------------------------------------------------
+        | SAVE SESSION
+        |--------------------------------------------------------------------------
+        */
+        session([
+            'checkout_items' =>
+                $checkoutItems
+        ]);
         /*
         |--------------------------------------------------------------------------
         | NO PRODUCT
@@ -273,29 +525,29 @@ session([
         | ADDRESS
         |--------------------------------------------------------------------------
         */
-     $addresses = ShippingAddress::where(
-    'user_id',
-    Auth::id()
-)
+        $addresses = ShippingAddress::where(
+            'user_id',
+            Auth::id()
+        )
 
-->orderByDesc(
-    'is_default'
-)
+            ->orderByDesc(
+                'is_default'
+            )
 
-->orderByDesc(
-    'address_id'
-)
+            ->orderByDesc(
+                'address_id'
+            )
 
-->get();
-/*
-|--------------------------------------------------------------------------
-| OLD CHECKOUT INFO
-|--------------------------------------------------------------------------
-*/
-$oldInfo = session(
-    'checkout_information',
-    []
-);
+            ->get();
+        /*
+        |--------------------------------------------------------------------------
+        | OLD CHECKOUT INFO
+        |--------------------------------------------------------------------------
+        */
+        $oldInfo = session(
+            'checkout_information',
+            []
+        );
         /*
         |--------------------------------------------------------------------------
         | TOTAL
@@ -324,27 +576,27 @@ $oldInfo = session(
         | VIEW
         |--------------------------------------------------------------------------
         */
-       return view(
+        return view(
 
-    'checkout.index',
+            'checkout.index',
 
-    compact(
+            compact(
 
-        'checkoutItems',
+                'checkoutItems',
 
-        'addresses',
+                'addresses',
 
-        'subtotal',
+                'subtotal',
 
-        'shippingFee',
+                'shippingFee',
 
-        'discount',
+                'discount',
 
-        'total',
+                'total',
 
-        'oldInfo'
-    )
-);
+                'oldInfo'
+            )
+        );
     }
 
 
@@ -357,93 +609,111 @@ $oldInfo = session(
     | SAVE INFORMATION
     |--------------------------------------------------------------------------
     */
-   public function saveInformation(Request $request)
-{
-
-    /*
-    |--------------------------------------------------------------------------
-    | VALIDATE
-    |--------------------------------------------------------------------------
-    */
-    $request->validate([
-
-        'full_name' =>
-            'required',
-
-        'phone' =>
-            'required',
-
-        'delivery_type' =>
-            'required',
-    ]);
-
-
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | ADDRESS DATA
-    |--------------------------------------------------------------------------
-    */
-    $province = null;
-
-    $district = null;
-
-    $ward = null;
-
-    $streetAddress = null;
-
-
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | GIAO TẬN NƠI
-    |--------------------------------------------------------------------------
-    */
-    if (
-        $request->delivery_type
-        == 'home'
-    ) {
+    public function saveInformation(Request $request)
+    {
 
         /*
         |--------------------------------------------------------------------------
-        | ĐỊA CHỈ ĐÃ LƯU
+        | VALIDATE
+        |--------------------------------------------------------------------------
+        */
+        $request->validate([
+
+            'full_name' =>
+                'required',
+
+            'phone' =>
+                'required',
+
+            'delivery_type' =>
+                'required',
+        ]);
+
+
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ADDRESS DATA
+        |--------------------------------------------------------------------------
+        */
+        $province = null;
+
+        $district = null;
+
+        $ward = null;
+
+        $streetAddress = null;
+
+
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | GIAO TẬN NƠI
         |--------------------------------------------------------------------------
         */
         if (
-            $request->address_type
-            == 'saved'
+            $request->delivery_type
+            == 'home'
         ) {
 
-            $address =
-                ShippingAddress::where(
+            /*
+            |--------------------------------------------------------------------------
+            | ĐỊA CHỈ ĐÃ LƯU
+            |--------------------------------------------------------------------------
+            */
+            if (
+                $request->address_type
+                == 'saved'
+            ) {
 
-                    'address_id',
+                $address =
+                    ShippingAddress::where(
 
-                    $request->shipping_address_id
+                        'address_id',
 
-                )
+                        $request->shipping_address_id
 
-                ->where(
-                    'user_id',
-                    Auth::id()
-                )
+                    )
 
-                ->first();
+                        ->where(
+                            'user_id',
+                            Auth::id()
+                        )
+
+                        ->first();
 
 
 
 
 
-            if (!$address) {
+                if (!$address) {
 
-                return back()->with(
-                    'error',
-                    'Vui lòng chọn địa chỉ'
-                );
+                    return back()->with(
+                        'error',
+                        'Vui lòng chọn địa chỉ'
+                    );
+                }
+
+
+
+
+
+
+                $province =
+                    $address->province;
+
+                $district =
+                    $address->district;
+
+                $ward =
+                    $address->ward;
+
+                $streetAddress =
+                    $address->street_address;
             }
 
 
@@ -451,17 +721,43 @@ $oldInfo = session(
 
 
 
-            $province =
-                $address->province;
+            /*
+            |--------------------------------------------------------------------------
+            | ĐỊA CHỈ MỚI
+            |--------------------------------------------------------------------------
+            */ else {
 
-            $district =
-                $address->district;
+                $request->validate([
 
-            $ward =
-                $address->ward;
+                    'province' =>
+                        'required',
 
-            $streetAddress =
-                $address->street_address;
+                    'district' =>
+                        'required',
+
+                    'ward' =>
+                        'required',
+
+                    'street_address' =>
+                        'required',
+                ]);
+
+
+
+
+
+                $province =
+                    $request->province;
+
+                $district =
+                    $request->district;
+
+                $ward =
+                    $request->ward;
+
+                $streetAddress =
+                    $request->street_address;
+            }
         }
 
 
@@ -471,106 +767,61 @@ $oldInfo = session(
 
         /*
         |--------------------------------------------------------------------------
-        | ĐỊA CHỈ MỚI
+        | SAVE SESSION
         |--------------------------------------------------------------------------
         */
-        else {
+        session([
 
-            $request->validate([
+            'checkout_information' => [
+
+                'delivery_type' =>
+                    $request->delivery_type,
+
+                'address_type' =>
+                    $request->address_type,
+
+                'shipping_address_id' =>
+                    $request->shipping_address_id,
+
+                'pickup_store' =>
+                    $request->pickup_store,
+
+                'full_name' =>
+                    $request->full_name,
+
+                'phone' =>
+                    $request->phone,
 
                 'province' =>
-                    'required',
+                    $province,
 
                 'district' =>
-                    'required',
+                    $district,
 
                 'ward' =>
-                    'required',
+                    $ward,
 
                 'street_address' =>
-                    'required',
-            ]);
+                    $streetAddress,
+
+                'note' =>
+                    $request->note,
+            ]
+        ]);
 
 
 
 
 
-            $province =
-                $request->province;
-
-            $district =
-                $request->district;
-
-            $ward =
-                $request->ward;
-
-            $streetAddress =
-                $request->street_address;
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | REDIRECT
+        |--------------------------------------------------------------------------
+        */
+        return redirect()->route(
+            'checkout.payment'
+        );
     }
-
-
-
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | SAVE SESSION
-    |--------------------------------------------------------------------------
-    */
-    session([
-
-        'checkout_information' => [
-
-            'delivery_type' =>
-                $request->delivery_type,
-
-            'address_type' =>
-                $request->address_type,
-
-            'shipping_address_id' =>
-                $request->shipping_address_id,
-
-            'pickup_store' =>
-                $request->pickup_store,
-
-            'full_name' =>
-                $request->full_name,
-
-            'phone' =>
-                $request->phone,
-
-            'province' =>
-                $province,
-
-            'district' =>
-                $district,
-
-            'ward' =>
-                $ward,
-
-            'street_address' =>
-                $streetAddress,
-
-            'note' =>
-                $request->note,
-        ]
-    ]);
-
-
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | REDIRECT
-    |--------------------------------------------------------------------------
-    */
-    return redirect()->route(
-        'checkout.payment'
-    );
-}
 
 
 
@@ -589,10 +840,10 @@ $oldInfo = session(
 | CHECKOUT ITEMS
 |--------------------------------------------------------------------------
 */
-$checkoutItems = session()->get(
-    'checkout_items',
-    []
-);
+        $checkoutItems = session()->get(
+            'checkout_items',
+            []
+        );
 
         /*
         |--------------------------------------------------------------------------
@@ -640,58 +891,58 @@ $checkoutItems = session()->get(
         $info = session(
             'checkout_information'
         );
-/*
-|--------------------------------------------------------------------------
-| CHECK INFO
-|--------------------------------------------------------------------------
-*/
-if (!$info) {
+        /*
+        |--------------------------------------------------------------------------
+        | CHECK INFO
+        |--------------------------------------------------------------------------
+        */
+        if (!$info) {
 
-    return redirect()
+            return redirect()
 
-        ->route('checkout')
+                ->route('checkout')
 
-        ->with(
-            'error',
-            'Vui lòng nhập thông tin giao hàng'
+                ->with(
+                    'error',
+                    'Vui lòng nhập thông tin giao hàng'
+                );
+        }
+        /*
+ |--------------------------------------------------------------------------
+ | ADDRESSES
+ |--------------------------------------------------------------------------
+ */
+        $addresses =
+            ShippingAddress::where(
+                'user_id',
+                Auth::id()
+            )->get();
+
+
+
+
+
+        return view(
+
+            'checkout.payment',
+
+            compact(
+
+                'checkoutItems',
+
+                'info',
+
+                'addresses',
+
+                'subtotal',
+
+                'shippingFee',
+
+                'discount',
+
+                'total'
+            )
         );
-}
-       /*
-|--------------------------------------------------------------------------
-| ADDRESSES
-|--------------------------------------------------------------------------
-*/
-$addresses =
-    ShippingAddress::where(
-        'user_id',
-        Auth::id()
-    )->get();
-
-
-
-
-
-return view(
-
-    'checkout.payment',
-
-    compact(
-
-        'checkoutItems',
-
-        'info',
-
-        'addresses',
-
-        'subtotal',
-
-        'shippingFee',
-
-        'discount',
-
-        'total'
-    )
-);
     }
 
 
@@ -706,381 +957,140 @@ return view(
     |--------------------------------------------------------------------------
     */
     public function store(Request $request)
-{
-
-    /*
-    |--------------------------------------------------------------------------
-    | VALIDATE
-    |--------------------------------------------------------------------------
-    */
-    $request->validate([
-
-        'payment_method' =>
-            'required',
-    ]);
-
-
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | GET SESSION INFO
-    |--------------------------------------------------------------------------
-    */
-    $info = session(
-        'checkout_information'
-    );
-
-
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | CHECK INFO
-    |--------------------------------------------------------------------------
-    */
-    if (!$info) {
-
-        return redirect()
-
-            ->route('checkout')
-
-            ->with(
-                'error',
-                'Vui lòng nhập thông tin giao hàng'
-            );
-    }
-
-
-
-
-
-
-  /*
-|--------------------------------------------------------------------------
-| CART
-|--------------------------------------------------------------------------
-*/
-$cart = session()->get(
-    'cart',
-    []
-);
-
-/*
-|--------------------------------------------------------------------------
-| SELECTED IDS
-|--------------------------------------------------------------------------
-*/
-$selectedCartIds = session()->get(
-    'selected_cart_ids',
-    []
-);
-
-/*
-|--------------------------------------------------------------------------
-| CHECKOUT ITEMS
-|--------------------------------------------------------------------------
-*/
-$checkoutItems = session()->get(
-    'checkout_items',
-    []
-);
-
-
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | EMPTY
-    |--------------------------------------------------------------------------
-    */
-    if (empty($checkoutItems)) {
-
-        return redirect()
-
-            ->route('cart.index')
-
-            ->with(
-                'error',
-                'Không có sản phẩm để thanh toán'
-            );
-    }
-
-
-
-
-
-
-    DB::beginTransaction();
-
-    try {
+    {
 
         /*
         |--------------------------------------------------------------------------
-        | TOTAL
+        | VALIDATE
         |--------------------------------------------------------------------------
         */
-        $subtotal = 0;
-
-        foreach ($checkoutItems as $item) {
-
-            $subtotal +=
-                $item['price']
-                * $item['quantity'];
-        }
-
-        $shippingFee = 30000;
-
-        $discount = 0;
-
-        $total =
-            $subtotal
-            + $shippingFee
-            - $discount;
-
-
-
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | SHIPPING ADDRESS
-        |--------------------------------------------------------------------------
-        */
-        $shippingAddressId = null;
-
-
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | GIAO TẬN NƠI
-        |--------------------------------------------------------------------------
-        */
-        if (
-            $info['delivery_type']
-            == 'home'
-        ) {
-
-            /*
-            |--------------------------------------------------------------------------
-            | ĐỊA CHỈ ĐÃ LƯU
-            |--------------------------------------------------------------------------
-            */
-            if (
-                $info['address_type']
-                == 'saved'
-            ) {
-
-                $shippingAddressId =
-                    $info['shipping_address_id'];
-            }
-
-
-
-
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | ĐỊA CHỈ MỚI
-            |--------------------------------------------------------------------------
-            */
-            elseif (
-                $info['address_type']
-                == 'new'
-            ) {
-
-                /*
-                |--------------------------------------------------------------------------
-                | CHECK EXIST ADDRESS
-                |--------------------------------------------------------------------------
-                */
-                $existAddress =
-                    ShippingAddress::where(
-                        'user_id',
-                        Auth::id()
-                    )
-
-                    ->where(
-                        'province',
-                        $info['province']
-                    )
-
-                    ->where(
-                        'district',
-                        $info['district']
-                    )
-
-                    ->where(
-                        'ward',
-                        $info['ward']
-                    )
-
-                    ->where(
-                        'street_address',
-                        $info['street_address']
-                    )
-
-                    ->first();
-
-
-
-
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | EXIST
-                |--------------------------------------------------------------------------
-                */
-                if ($existAddress) {
-
-                    $shippingAddressId =
-                        $existAddress->address_id;
-                }
-
-
-
-
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | CREATE NEW ADDRESS
-                |--------------------------------------------------------------------------
-                */
-                else {
-
-                    $address =
-                        ShippingAddress::create([
-
-                            'user_id' =>
-                                Auth::id(),
-
-                            'full_name' =>
-                                $info['full_name'],
-
-                            'phone' =>
-                                $info['phone'],
-
-                            'province' =>
-                                $info['province'],
-
-                            'district' =>
-                                $info['district'],
-
-                            'ward' =>
-                                $info['ward'],
-
-                            'street_address' =>
-                                $info['street_address'],
-
-                            'is_default' =>
-                                0,
-                        ]);
-
-                    $shippingAddressId =
-                        $address->address_id;
-                }
-            }
-        }
-
-
-
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | CREATE ORDER
-        |--------------------------------------------------------------------------
-        */
-        $order = Order::create([
-
-            'user_id' =>
-                Auth::id(),
-
-            'shipping_address_id' =>
-                $shippingAddressId,
-
-            'voucher_id' =>
-                null,
-
-            'order_code' =>
-                'ORD-' . time(),
-
-            'subtotal' =>
-                $subtotal,
-
-            'shipping_fee' =>
-                $shippingFee,
-
-            'discount_amount' =>
-                $discount,
-
-            'total_amount' =>
-                $total,
+        $request->validate([
 
             'payment_method' =>
-                $request->payment_method,
-
-            'payment_status' =>
-
-                $request->payment_method == 'cod'
-                ? 'pending'
-                : 'paid',
-
-            'order_status' =>
-                'pending',
-
-            'cancel_reason' =>
-                null,
-
-            'paid_at' =>
-
-                $request->payment_method != 'cod'
-                ? now()
-                : null,
+                'required',
         ]);
 
 
 
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | GET SESSION INFO
+        |--------------------------------------------------------------------------
+        */
+        $info = session(
+            'checkout_information'
+        );
+
+
+
+
 
         /*
         |--------------------------------------------------------------------------
-        | CREATE ORDER ITEMS
+        | CHECK INFO
         |--------------------------------------------------------------------------
         */
-        foreach ($checkoutItems as $item) {
+        if (!$info) {
 
-            $variant =
-                ProductVariant::find(
-                    $item['variant_id']
+            return redirect()
+
+                ->route('checkout')
+
+                ->with(
+                    'error',
+                    'Vui lòng nhập thông tin giao hàng'
                 );
+        }
 
 
 
 
+
+
+        /*
+      |--------------------------------------------------------------------------
+      | CART
+      |--------------------------------------------------------------------------
+      */
+        $cart = session()->get(
+            'cart',
+            []
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | SELECTED IDS
+        |--------------------------------------------------------------------------
+        */
+        $selectedCartIds = session()->get(
+            'selected_cart_ids',
+            []
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | CHECKOUT ITEMS
+        |--------------------------------------------------------------------------
+        */
+        $checkoutItems = session()->get(
+            'checkout_items',
+            []
+        );
+
+
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | EMPTY
+        |--------------------------------------------------------------------------
+        */
+        if (empty($checkoutItems)) {
+
+            return redirect()
+
+                ->route('cart.index')
+
+                ->with(
+                    'error',
+                    'Không có sản phẩm để thanh toán'
+                );
+        }
+
+
+
+
+
+
+        DB::beginTransaction();
+
+        try {
 
             /*
             |--------------------------------------------------------------------------
-            | CHECK VARIANT
+            | TOTAL
             |--------------------------------------------------------------------------
             */
-            if (!$variant) {
+            $subtotal = 0;
 
-                throw new \Exception(
-                    'Biến thể sản phẩm không tồn tại'
-                );
+            foreach ($checkoutItems as $item) {
+
+                $subtotal +=
+                    $item['price']
+                    * $item['quantity'];
             }
+
+            $shippingFee = 30000;
+
+            $discount = 0;
+
+            $total =
+                $subtotal
+                + $shippingFee
+                - $discount;
 
 
 
@@ -1089,19 +1099,145 @@ $checkoutItems = session()->get(
 
             /*
             |--------------------------------------------------------------------------
-            | CHECK STOCK
+            | SHIPPING ADDRESS
+            |--------------------------------------------------------------------------
+            */
+            $shippingAddressId = null;
+
+
+
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | GIAO TẬN NƠI
             |--------------------------------------------------------------------------
             */
             if (
-                $variant->stock_quantity
-                < $item['quantity']
+                $info['delivery_type']
+                == 'home'
             ) {
 
-                throw new \Exception(
-                    'Sản phẩm '
-                    . $item['name']
-                    . ' không đủ tồn kho'
-                );
+                /*
+                |--------------------------------------------------------------------------
+                | ĐỊA CHỈ ĐÃ LƯU
+                |--------------------------------------------------------------------------
+                */
+                if (
+                    $info['address_type']
+                    == 'saved'
+                ) {
+
+                    $shippingAddressId =
+                        $info['shipping_address_id'];
+                }
+
+
+
+
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | ĐỊA CHỈ MỚI
+                |--------------------------------------------------------------------------
+                */ elseif (
+                    $info['address_type']
+                    == 'new'
+                ) {
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | CHECK EXIST ADDRESS
+                    |--------------------------------------------------------------------------
+                    */
+                    $existAddress =
+                        ShippingAddress::where(
+                            'user_id',
+                            Auth::id()
+                        )
+
+                            ->where(
+                                'province',
+                                $info['province']
+                            )
+
+                            ->where(
+                                'district',
+                                $info['district']
+                            )
+
+                            ->where(
+                                'ward',
+                                $info['ward']
+                            )
+
+                            ->where(
+                                'street_address',
+                                $info['street_address']
+                            )
+
+                            ->first();
+
+
+
+
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | EXIST
+                    |--------------------------------------------------------------------------
+                    */
+                    if ($existAddress) {
+
+                        $shippingAddressId =
+                            $existAddress->address_id;
+                    }
+
+
+
+
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | CREATE NEW ADDRESS
+                    |--------------------------------------------------------------------------
+                    */ else {
+
+                        $address =
+                            ShippingAddress::create([
+
+                                'user_id' =>
+                                    Auth::id(),
+
+                                'full_name' =>
+                                    $info['full_name'],
+
+                                'phone' =>
+                                    $info['phone'],
+
+                                'province' =>
+                                    $info['province'],
+
+                                'district' =>
+                                    $info['district'],
+
+                                'ward' =>
+                                    $info['ward'],
+
+                                'street_address' =>
+                                    $info['street_address'],
+
+                                'is_default' =>
+                                    0,
+                            ]);
+
+                        $shippingAddressId =
+                            $address->address_id;
+                    }
+                }
             }
 
 
@@ -1111,34 +1247,55 @@ $checkoutItems = session()->get(
 
             /*
             |--------------------------------------------------------------------------
-            | CREATE ORDER ITEM
+            | CREATE ORDER
             |--------------------------------------------------------------------------
             */
-            OrderItem::create([
+            $order = Order::create([
 
-                'order_id' =>
-                    $order->order_id,
+                'user_id' =>
+                    Auth::id(),
 
-                'variant_id' =>
-                    $variant->variant_id,
+                'shipping_address_id' =>
+                    $shippingAddressId,
 
-                'product_name' =>
-                    $item['name'],
+                'voucher_id' =>
+                    null,
 
-                'variant_info' =>
-                    $item['variant_name']
-                    ?? null,
-
-                'unit_price' =>
-                    $item['price'],
-
-                'quantity' =>
-                    $item['quantity'],
+                'order_code' =>
+                    'ORD-' . time(),
 
                 'subtotal' =>
+                    $subtotal,
 
-                    $item['price']
-                    * $item['quantity'],
+                'shipping_fee' =>
+                    $shippingFee,
+
+                'discount_amount' =>
+                    $discount,
+
+                'total_amount' =>
+                    $total,
+
+                'payment_method' =>
+                    $request->payment_method,
+
+                'payment_status' =>
+
+                    $request->payment_method == 'cod'
+                    ? 'pending'
+                    : 'paid',
+
+                'order_status' =>
+                    'pending',
+
+                'cancel_reason' =>
+                    null,
+
+                'paid_at' =>
+
+                    $request->payment_method != 'cod'
+                    ? now()
+                    : null,
             ]);
 
 
@@ -1148,151 +1305,241 @@ $checkoutItems = session()->get(
 
             /*
             |--------------------------------------------------------------------------
-            | TRỪ TỒN KHO
+            | CREATE ORDER ITEMS
             |--------------------------------------------------------------------------
             */
-            $variant->decrement(
+            foreach ($checkoutItems as $item) {
 
-                'stock_quantity',
+                $variant =
+                    ProductVariant::find(
+                        $item['variant_id']
+                    );
 
-                $item['quantity']
+
+
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | CHECK VARIANT
+                |--------------------------------------------------------------------------
+                */
+                if (!$variant) {
+
+                    throw new \Exception(
+                        'Biến thể sản phẩm không tồn tại'
+                    );
+                }
+
+
+
+
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | CHECK STOCK
+                |--------------------------------------------------------------------------
+                */
+                if (
+                    $variant->stock_quantity
+                    < $item['quantity']
+                ) {
+
+                    throw new \Exception(
+                        'Sản phẩm '
+                        . $item['name']
+                        . ' không đủ tồn kho'
+                    );
+                }
+
+
+
+
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | CREATE ORDER ITEM
+                |--------------------------------------------------------------------------
+                */
+                OrderItem::create([
+
+                    'order_id' =>
+                        $order->order_id,
+
+                    'variant_id' =>
+                        $variant->variant_id,
+
+                    'product_name' =>
+                        $item['name'],
+
+                    'variant_info' =>
+                        $item['variant_name']
+                        ?? null,
+
+                    'unit_price' =>
+                        $item['price'],
+
+                    'quantity' =>
+                        $item['quantity'],
+
+                    'subtotal' =>
+
+                        $item['price']
+                        * $item['quantity'],
+                ]);
+
+
+
+
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | TRỪ TỒN KHO
+                |--------------------------------------------------------------------------
+                */
+                $variant->decrement(
+
+                    'stock_quantity',
+
+                    $item['quantity']
+                );
+            }
+
+
+
+
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | PAYMENT
+            |--------------------------------------------------------------------------
+            */
+            Payment::create([
+
+                'order_id' =>
+                    $order->order_id,
+
+                'gateway' =>
+                    $request->payment_method,
+
+                'transaction_id' =>
+
+                    strtoupper(
+                        $request->payment_method
+                    )
+
+                    . '-'
+
+                    . time(),
+
+                'amount' =>
+                    $total,
+
+                'status' =>
+
+                    $request->payment_method == 'cod'
+                    ? 'pending'
+                    : 'success',
+            ]);
+
+
+
+
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | REMOVE CART
+            |--------------------------------------------------------------------------
+            */
+            foreach ($selectedCartIds as $id) {
+
+                unset($cart[$id]);
+            }
+
+
+
+
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | UPDATE CART
+            |--------------------------------------------------------------------------
+            */
+            session()->put(
+                'cart',
+                $cart
+            );
+
+
+
+
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | CLEAR SESSION
+            |--------------------------------------------------------------------------
+            */
+            session()->forget(
+                'selected_cart_ids'
+            );
+
+            session()->forget(
+                'checkout_information'
+            );
+
+            session()->forget(
+                'checkout_items'
+            );
+
+
+
+            DB::commit();
+
+
+
+
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | SUCCESS
+            |--------------------------------------------------------------------------
+            */
+            return redirect()
+
+                ->route('order.history')
+
+                ->with(
+
+                    'success_order',
+
+                    [
+
+                        'code' =>
+                            $order->order_code,
+
+                        'total' =>
+                            $order->total_amount
+                    ]
+                );
+
+        } catch (\Exception $e) {
+
+            DB::rollback();
+
+            return back()->with(
+                'error',
+                $e->getMessage()
             );
         }
-
-
-
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | PAYMENT
-        |--------------------------------------------------------------------------
-        */
-        Payment::create([
-
-            'order_id' =>
-                $order->order_id,
-
-            'gateway' =>
-                $request->payment_method,
-
-            'transaction_id' =>
-
-                strtoupper(
-                    $request->payment_method
-                )
-
-                . '-'
-
-                . time(),
-
-            'amount' =>
-                $total,
-
-            'status' =>
-
-                $request->payment_method == 'cod'
-                ? 'pending'
-                : 'success',
-        ]);
-
-
-
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | REMOVE CART
-        |--------------------------------------------------------------------------
-        */
-        foreach ($selectedCartIds as $id) {
-
-            unset($cart[$id]);
-        }
-
-
-
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | UPDATE CART
-        |--------------------------------------------------------------------------
-        */
-        session()->put(
-            'cart',
-            $cart
-        );
-
-
-
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | CLEAR SESSION
-        |--------------------------------------------------------------------------
-        */
-       session()->forget(
-    'selected_cart_ids'
-);
-
-session()->forget(
-    'checkout_information'
-);
-
-session()->forget(
-    'checkout_items'
-);
-
-
-
-        DB::commit();
-
-
-
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | SUCCESS
-        |--------------------------------------------------------------------------
-        */
-       return redirect()
-
-    ->route('order.history')
-
-    ->with(
-
-        'success_order',
-
-        [
-
-            'code' =>
-                $order->order_code,
-
-            'total' =>
-                $order->total_amount
-        ]
-    );
-
     }
-
-    catch (\Exception $e) {
-
-        DB::rollback();
-
-        return back()->with(
-            'error',
-            $e->getMessage()
-        );
-    }
-}
 
 
 
