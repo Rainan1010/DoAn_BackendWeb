@@ -39,7 +39,7 @@ class Product extends Model
         'is_active'  => 'boolean',
         'is_new'     => 'boolean',
         'is_hot'     => 'boolean',
-        'is_trending'=> 'boolean',
+        'is_trending' => 'boolean',
         'created_at' => 'datetime',
     ];
 
@@ -70,15 +70,9 @@ class Product extends Model
         return $this->hasMany(ProductVariant::class, 'product_id', 'product_id');
     }
 
-
+    // 🔥 1 sản phẩm có nhiều đánh giá
     public function reviews()
     {
-        return $this->hasMany(Review::class, 'product_id', 'product_id');
+        return $this->hasMany(ProductReview::class, 'product_id', 'product_id');
     }
-
-    // 🔥 1 sản phẩm có nhiều đánh giá
-    public function reviews() {
-    return $this->hasMany(ProductReview::class, 'product_id', 'product_id');
-}
->>>>>>> fix-crud-user-controller
 }
