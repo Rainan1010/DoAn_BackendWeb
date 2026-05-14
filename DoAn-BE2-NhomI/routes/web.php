@@ -233,9 +233,6 @@ Route::get('/orders', [OrderController::class, 'history'])
 // xem chi tiet don hang
 Route::get('/orders/{id}', [OrderController::class, 'detail'])
     ->name('orders.detail');
-<<<<<<< HEAD
-
-
 /*
 |--------------------------------------------------------------------------
 | CHECKOUT
@@ -295,5 +292,4 @@ Route::middleware('auth')->group(function () {
         [OrderController::class, 'history']
     )->name('order.history');
 });
-=======
->>>>>>> master
+
