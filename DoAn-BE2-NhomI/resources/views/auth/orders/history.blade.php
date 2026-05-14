@@ -967,35 +967,51 @@ transition-all duration-300
                                                     {{-- ĐANG GIAO --}}
                                     @elseif($order->order_status == 'shipped')
 
-                                                   <button class="group relative overflow-hidden
+                                                   <a
+    href="{{ route('orders.tracking', $order->order_id) }}"
+    class="group relative overflow-hidden
 
-border border-blue-500
-bg-blue-50/70 backdrop-blur-xl
+    border border-blue-500
+    bg-blue-50/70 backdrop-blur-xl
 
-active:scale-95
+    active:scale-95
 
-text-blue-600 px-8 py-3
-rounded-xl text-xs font-bold
+    text-blue-600 px-8 py-3
+    rounded-xl text-xs font-bold
 
-tracking-widest uppercase
+    tracking-widest uppercase
 
-hover:bg-gradient-to-r
-hover:from-blue-500
-hover:to-indigo-600
+    hover:bg-gradient-to-r
+    hover:from-blue-500
+    hover:to-indigo-600
 
-hover:text-white
+    hover:text-white
 
-hover:-translate-y-1
-hover:scale-[1.02]
+    hover:-translate-y-1
+    hover:scale-[1.02]
 
-hover:shadow-[0_15px_40px_rgba(59,130,246,.35)]
+    hover:shadow-[0_15px_40px_rgba(59,130,246,.35)]
 
-transition-all duration-500">
+    transition-all duration-500">
 
-                                                        Theo dõi đơn hàng
+    <div
+        class="absolute inset-0
+        -translate-x-full
+        group-hover:translate-x-full
 
-                                                    </button>
+        bg-gradient-to-r
+        from-transparent
+        via-white/30
+        to-transparent
 
+        transition duration-1000">
+    </div>
+
+    <span class="relative z-10">
+        Theo dõi đơn hàng
+    </span>
+
+</a>
 
 
 
