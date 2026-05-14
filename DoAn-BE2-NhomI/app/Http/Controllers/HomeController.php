@@ -88,10 +88,18 @@ class HomeController extends Controller
             $item->image_url = $img->image_url ?? null;
         }
 
+        // 🔥 Lấy đánh giá
+        $reviews = \App\Models\Review::with(['user', 'images'])
+            ->where('product_id', $id)
+            ->where('status', 'approved')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return view('products.product_detail', compact(
             'product',
             'variants',
-            'relatedProducts'
+            'relatedProducts',
+            'reviews'
         ));
     }
 }

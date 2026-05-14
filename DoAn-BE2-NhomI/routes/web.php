@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CrudUserController;
 use App\Http\Controllers\Admin\VoucherController;
+use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\ProductController;
@@ -12,6 +13,8 @@ use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\OTPController;
 use App\Http\Controllers\ShippingAddressController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\Admin\AttributeController;
 
 
 /*
@@ -19,6 +22,7 @@ use App\Http\Controllers\CartController;
 | PUBLIC ROUTES (Trang chủ & Sản phẩm)
 |--------------------------------------------------------------------------
 */
+
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/search-ajax', [ProductController::class, 'searchAjax'])->name('search.ajax');
 Route::get('/product/{id}', [ProductController::class, 'show'])->name('product.show');
@@ -101,6 +105,9 @@ Route::middleware(['auth'])->group(function () {
 */
 Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
 
+    // Quản lý Sản phẩm (Products)
+    Route::resource('products', \App\Http\Controllers\Admin\ProductController::class);
+
     // Quản lý Danh mục (Categories)
     Route::resource('categories', CategoryController::class);
 
@@ -113,6 +120,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::patch('vouchers/{id}/toggle-status', [VoucherController::class, 'toggleStatus'])->name('vouchers.toggleStatus');
     Route::resource('vouchers', VoucherController::class);
 
+    // Quản lý Đánh giá (Reviews)
+    Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
+    Route::get('reviews/{id}', [ReviewController::class, 'show'])->name('reviews.show');
+    Route::patch('reviews/{id}/status', [ReviewController::class, 'updateStatus'])->name('reviews.updateStatus');
+    Route::delete('reviews/{id}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
+
     // Quản lý Backup/Restore
     Route::get('backups', [App\Http\Controllers\Admin\BackupController::class, 'index'])->name('backups.index');
     Route::post('backups', [App\Http\Controllers\Admin\BackupController::class, 'create'])->name('backups.create');
@@ -121,6 +134,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::post('backups/{id}/restore', [App\Http\Controllers\Admin\BackupController::class, 'restore'])->name('backups.restore');
     Route::delete('backups/{id}', [App\Http\Controllers\Admin\BackupController::class, 'destroy'])->name('backups.destroy');
 
+    // Quản lý Thuộc tính (Attributes)
+    Route::resource('attributes', AttributeController::class);
 });
 
 
@@ -130,18 +145,19 @@ Route::get('/password/change', [CrudUserController::class, 'showChangePassword']
 // xử lý đổi mật khẩu
 Route::post('/password/change', [CrudUserController::class, 'changePassword'])->middleware('auth');
 
-// =====================================================
-// PROFILE
-// =====================================================
-
 // trang profile
 Route::get('/profile', [CrudUserController::class, 'profile'])
     ->middleware('auth')
     ->name('profile');
-    
+
 // update profile
 Route::post('/profile/update', [CrudUserController::class, 'updateProfile'])
     ->name('profile.update')
+    ->middleware('auth');
+
+// submit review
+Route::post('/product/{id}/review', [App\Http\Controllers\ProductController::class, 'storeReview'])
+    ->name('product.review.store')
     ->middleware('auth');
 
 
@@ -150,15 +166,53 @@ Route::post('/profile/update', [CrudUserController::class, 'updateProfile'])
 // =====================================================
 Route::middleware('auth')->group(function () {
 
-
+    // danh sách địa chỉ
     Route::get(
+        '/change-address',
+        [ShippingAddressController::class, 'index']
+    )->name('addresses.index');
 
-    '/change-address',
 
-    [ShippingAddressController::class, 'index']
 
-)->name('addresses.index');
+    // form thêm địa chỉ
+    Route::get(
+        '/change-address/create',
+        [ShippingAddressController::class, 'create']
+    )->name('addresses.create');
 
+
+
+    // lưu địa chỉ
+    Route::post(
+        '/change-address/store',
+        [ShippingAddressController::class, 'store']
+    )->name('addresses.store');
+
+    // form sửa địa chỉ
+    Route::get(
+        '/change-address/edit/{id}',
+        [ShippingAddressController::class, 'edit']
+    )->name('addresses.edit');
+
+
+
+    // cập nhật địa chỉ
+    Route::post(
+        '/change-address/update/{id}',
+        [ShippingAddressController::class, 'update']
+    )->name('addresses.update');
+
+    // xoá địa chỉ
+    Route::delete(
+        '/change-address/delete/{id}',
+        [ShippingAddressController::class, 'destroy']
+    )->name('addresses.destroy');
+
+    //thiết lập địa chỉ mặc định
+    Route::post(
+        '/change-address/default/{id}',
+        [ShippingAddressController::class, 'setDefault']
+    )->name('addresses.default');
 });
 
 // CART
@@ -166,4 +220,91 @@ Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
 Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
 Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
+Route::post('/cart/select', [CartController::class, 'select'])->name('cart.select');
+Route::post('/cart/toggle-select', [CartController::class, 'toggleSelect'])->name('cart.toggleSelect');
+
+// Phải có dấu {id} trong ngoặc nhọn
+Route::get('/api/compare-product/{id}', [App\Http\Controllers\CompareController::class, 'getCompareProduct']);
+
+// lịch sử đơn hàng
+Route::get('/orders', [OrderController::class, 'history'])
+    ->name('orders.history');
+
+// xem chi tiet don hang
+Route::get('/orders/{id}', [OrderController::class, 'detail'])
+    ->name('orders.detail');
+
+   // huỷ đơn hàng
+Route::post(
+    '/orders/cancel/{id}',
+    [OrderController::class, 'cancel']
+)->name('orders.cancel');
+
+
+// mua lại
+Route::post(
+    '/orders/reorder/{id}',
+    [OrderController::class, 'reorder']
+)->name('orders.reorder');
+
+
+/*
+|--------------------------------------------------------------------------
+| CHECKOUT
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth')->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 1
+    |--------------------------------------------------------------------------
+    */
+    Route::get(
+        '/checkout',
+        [OrderController::class, 'checkout']
+    )->name('checkout');
+
+    /*
+    |--------------------------------------------------------------------------
+    | SAVE INFORMATION
+    |--------------------------------------------------------------------------
+    */
+    Route::post(
+        '/checkout/save-information',
+        [OrderController::class, 'saveInformation']
+    )->name('checkout.saveInformation');
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 2
+    |--------------------------------------------------------------------------
+    */
+    Route::get(
+        '/checkout/payment',
+        [OrderController::class, 'payment']
+    )->name('checkout.payment');
+
+    /*
+    |--------------------------------------------------------------------------
+    | STORE ORDER
+    |--------------------------------------------------------------------------
+    */
+    Route::post(
+        '/checkout/store',
+        [OrderController::class, 'store']
+    )->name('checkout.store');
+
+ 
+    /*
+    |--------------------------------------------------------------------------
+    | HISTORY
+    |--------------------------------------------------------------------------
+    */
+    Route::get(
+        '/history',
+        [OrderController::class, 'history']
+    )->name('order.history');
+});
 
