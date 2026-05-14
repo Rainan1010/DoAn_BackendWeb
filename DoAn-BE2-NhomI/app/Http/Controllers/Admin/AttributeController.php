@@ -16,6 +16,7 @@ class AttributeController extends Controller
 
         return view('admin.attributes.index', compact('attributes'));
     }
+    
 
     public function store(Request $request)
     {
