@@ -11,7 +11,7 @@ class AttributeController extends Controller
     public function index()
     {
         $attributes = Attribute::with('values')
-            ->orderBy('attribute_id', 'desc')
+            ->orderBy('attribute_id', 'asc')
             ->get();
 
         return view('admin.attributes.index', compact('attributes'));
