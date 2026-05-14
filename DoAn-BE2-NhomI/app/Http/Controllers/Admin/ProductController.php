@@ -207,13 +207,7 @@ class ProductController extends Controller
     {
         $product = Product::where('product_id', $id)->firstOrFail();
 
-        // Loại bỏ các ảnh trống trước khi validate
-        if ($request->has('images')) {
-            $images = array_filter($request->images, function($img) {
-                return !empty($img['url']);
-            });
-            $request->merge(['images' => array_values($images)]);
-        }
+        // Không còn logic lọc ảnh từ JSON (do form UI đã đổi)
 
         $request->validate([
             'name'        => 'required|string|max:255',
@@ -223,7 +217,7 @@ class ProductController extends Controller
             'base_price'  => 'required|numeric|min:0',
             'description' => 'nullable|string',
             'specs'       => 'nullable|string',
-            'images.*.url'          => 'nullable|string',
+            'upload_images.*'       => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'variants.*.sku'        => 'nullable|string|max:100',
             'variants.*.price'      => 'nullable|numeric|min:0',
             'variants.*.sale_price' => 'nullable|numeric|min:0',
@@ -241,7 +235,9 @@ class ProductController extends Controller
             'base_price.required'  => 'Vui lòng nhập giá niêm yết.',
             'base_price.numeric'   => 'Giá niêm yết phải là số hợp lệ.',
             'base_price.min'       => 'Giá niêm yết không được nhỏ hơn 0.',
-            'images.*.url.url'     => 'Một hoặc nhiều URL hình ảnh không hợp lệ.',
+            'upload_images.*.image' => 'File tải lên phải là định dạng hình ảnh.',
+            'upload_images.*.mimes' => 'Hình ảnh phải có định dạng: jpeg, png, jpg, gif, webp.',
+            'upload_images.*.max'   => 'Kích thước mỗi ảnh không được vượt quá 5MB.',
             'variants.*.sku.max'   => 'Mã SKU không được vượt quá 100 ký tự.',
             'variants.*.price.numeric'      => 'Giá biến thể phải là số hợp lệ.',
             'variants.*.price.min'          => 'Giá biến thể không được nhỏ hơn 0.',
@@ -290,18 +286,36 @@ class ProductController extends Controller
             }
         }
 
-        // Thêm ảnh mới nếu có
-        if ($request->has('images')) {
-            $order = $product->images()->max('sort_order') ?? 0;
-            foreach ($request->images as $img) {
-                if (!empty($img['url'])) {
-                    ProductImage::create([
-                        'product_id' => $product->product_id,
-                        'image_url'  => $img['url'],
-                        'sort_order' => ++$order,
-                        'is_primary' => !empty($img['is_primary']) ? 1 : 0,
-                    ]);
+        // Xóa ảnh cũ theo yêu cầu
+        if ($request->has('delete_images') && is_array($request->delete_images)) {
+            $imagesToDelete = ProductImage::whereIn('image_id', $request->delete_images)
+                                          ->where('product_id', $product->product_id)
+                                          ->get();
+            foreach ($imagesToDelete as $img) {
+                // Lấy đường dẫn tương đối để xóa khỏi disk
+                $path = str_replace('/storage/', '', $img->image_url);
+                if (\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($path);
                 }
+                $img->delete();
+            }
+        }
+
+        // Lưu ảnh upload từ thiết bị
+        if ($request->hasFile('upload_images')) {
+            $order = $product->images()->max('sort_order') ?? 0;
+            $directory = 'products/' . $product->product_id;
+            
+            foreach ($request->file('upload_images') as $file) {
+                $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs($directory, $fileName, 'public');
+                
+                ProductImage::create([
+                    'product_id' => $product->product_id,
+                    'image_url'  => \Illuminate\Support\Facades\Storage::url($path),
+                    'sort_order' => ++$order,
+                    'is_primary' => ($order === 1) ? 1 : 0,
+                ]);
             }
         }
 
