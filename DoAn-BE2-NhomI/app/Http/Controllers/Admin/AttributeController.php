@@ -66,14 +66,35 @@ class AttributeController extends Controller
         $request->validate([
             'name' => 'required|string|max:100',
             'unit' => 'nullable|string|max:50',
+            'values' => 'nullable|string',
         ]);
 
-        $attribute = Attribute::findOrFail($id);
+        $attribute = Attribute::with('values')->findOrFail($id);
 
+        // Cập nhật tên thuộc tính và đơn vị
         $attribute->update([
             'name' => $request->name,
             'unit' => $request->unit,
         ]);
+
+        // Cập nhật lại danh sách giá trị
+        if ($request->has('values')) {
+            // Xóa toàn bộ giá trị cũ
+            $attribute->values()->delete();
+
+            // Thêm lại giá trị mới từ input, cách nhau bằng dấu phẩy
+            $values = explode(',', $request->values);
+
+            foreach ($values as $value) {
+                $value = trim($value);
+
+                if ($value !== '') {
+                    $attribute->values()->create([
+                        'value' => $value,
+                    ]);
+                }
+            }
+        }
 
         return redirect()
             ->route('admin.attributes.index')
