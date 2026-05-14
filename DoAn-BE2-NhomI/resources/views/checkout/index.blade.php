@@ -681,7 +681,6 @@
 
     </div>
 
-    ```html
     <script>
 
         function toggleAddressType() {

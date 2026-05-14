@@ -234,7 +234,7 @@ Route::get('/orders', [OrderController::class, 'history'])
 Route::get('/orders/{id}', [OrderController::class, 'detail'])
     ->name('orders.detail');
 
-   // huỷ đơn hàng
+// huỷ đơn hàng
 Route::post(
     '/orders/cancel/{id}',
     [OrderController::class, 'cancel']
@@ -296,7 +296,7 @@ Route::middleware('auth')->group(function () {
         [OrderController::class, 'store']
     )->name('checkout.store');
 
- 
+
     /*
     |--------------------------------------------------------------------------
     | HISTORY
@@ -306,5 +306,25 @@ Route::middleware('auth')->group(function () {
         '/history',
         [OrderController::class, 'history']
     )->name('order.history');
+
+    /*
+|--------------------------------------------------------------------------
+| MOMO
+|--------------------------------------------------------------------------
+*/
+    Route::post(
+        '/payment/momo',
+        [OrderController::class, 'momoPayment']
+    )->name('payment.momo');
+
+    Route::get(
+        '/momo/return',
+        [OrderController::class, 'momoReturn']
+    )->name('momo.return');
+
+    Route::post(
+        '/momo/ipn',
+        [OrderController::class, 'momoIPN']
+    )->name('momo.ipn');
 });
 
