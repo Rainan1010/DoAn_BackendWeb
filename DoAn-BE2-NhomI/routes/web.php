@@ -233,6 +233,21 @@ Route::get('/orders', [OrderController::class, 'history'])
 // xem chi tiet don hang
 Route::get('/orders/{id}', [OrderController::class, 'detail'])
     ->name('orders.detail');
+
+   // huỷ đơn hàng
+Route::post(
+    '/orders/cancel/{id}',
+    [OrderController::class, 'cancel']
+)->name('orders.cancel');
+
+
+// mua lại
+Route::post(
+    '/orders/reorder/{id}',
+    [OrderController::class, 'reorder']
+)->name('orders.reorder');
+
+
 /*
 |--------------------------------------------------------------------------
 | CHECKOUT
