@@ -296,17 +296,6 @@ Route::middleware('auth')->group(function () {
         [OrderController::class, 'store']
     )->name('checkout.store');
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | HISTORY
-    |--------------------------------------------------------------------------
-    */
-    Route::get(
-        '/history',
-        [OrderController::class, 'history']
-    )->name('order.history');
-
     /*
 |--------------------------------------------------------------------------
 | MOMO
@@ -326,5 +315,21 @@ Route::middleware('auth')->group(function () {
         '/momo/ipn',
         [OrderController::class, 'momoIPN']
     )->name('momo.ipn');
+
+
+    /*
+|--------------------------------------------------------------------------
+| VNPAY
+|--------------------------------------------------------------------------
+*/
+Route::post(
+    '/payment/vnpay',
+    [OrderController::class, 'vnpayPayment']
+)->name('payment.vnpay');
+Route::get('/vnpay-portal', [OrderController::class, 'vnpayMockPortal'])->name('vnpay.mock_portal');
+Route::get(
+    '/vnpay/return',
+    [OrderController::class, 'vnpayReturn']
+)->name('vnpay.return');
 });
 
