@@ -3,13 +3,12 @@
 @section('header_search')
 <form action="{{ route('admin.attributes.index') }}" method="GET" class="relative">
     <i data-lucide="search" class="absolute left-4 top-2.5 text-gray-400 w-5 h-5"></i>
-    <input 
-        type="text" 
-        name="search" 
-        value="{{ request('search') }}" 
-        placeholder="Tìm kiếm thuộc tính..." 
-        class="w-full bg-[#F4F5F7] border border-transparent rounded-full py-2.5 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A2540] focus:bg-white transition-colors text-[#0A2540] font-medium placeholder-gray-400" 
-    />
+    <input
+        type="text"
+        name="search"
+        value="{{ request('search') }}"
+        placeholder="Tìm kiếm thuộc tính..."
+        class="w-full bg-[#F4F5F7] border border-transparent rounded-full py-2.5 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A2540] focus:bg-white transition-colors text-[#0A2540] font-medium placeholder-gray-400" />
 </form>
 @endsection
 
@@ -17,10 +16,10 @@
 
 @section('content')
 @php
-    $totalAttributes = method_exists($attributes, 'total') ? $attributes->total() : $attributes->count();
-    $totalValues = $attributes->sum(fn($attribute) => $attribute->values->count());
-    $emptyAttributes = $attributes->filter(fn($attribute) => $attribute->values->count() === 0)->count();
-    $selectedAttribute = $attributes->first();
+$totalAttributes = method_exists($attributes, 'total') ? $attributes->total() : $attributes->count();
+$totalValues = $attributes->sum(fn($attribute) => $attribute->values->count());
+$emptyAttributes = $attributes->filter(fn($attribute) => $attribute->values->count() === 0)->count();
+$selectedAttribute = $attributes->first();
 @endphp
 
 <div class="space-y-6">
@@ -49,7 +48,7 @@
                     Xuất Excel
                 </button>
 
-                <a href="#quick-create" class="flex items-center gap-2 px-5 py-2.5 bg-[#0A2540] hover:bg-[#113255] text-white rounded-lg font-bold transition-colors text-sm shadow-sm">
+                <a href="{{ route('admin.attributes.create') }}" class="flex items-center gap-2 px-5 py-2.5 bg-[#0A2540] hover:bg-[#113255] text-white rounded-lg font-bold transition-colors text-sm shadow-sm">
                     <i data-lucide="plus" class="w-4 h-4"></i>
                     Thêm thuộc tính mới
                 </a>
@@ -59,25 +58,25 @@
 
     {{-- Alert --}}
     @if(session('success'))
-        <div class="p-4 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm font-semibold">
-            {{ session('success') }}
-        </div>
+    <div class="p-4 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm font-semibold">
+        {{ session('success') }}
+    </div>
     @endif
 
     @if(session('error'))
-        <div class="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-semibold">
-            {{ session('error') }}
-        </div>
+    <div class="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-semibold">
+        {{ session('error') }}
+    </div>
     @endif
 
     @if($errors->any())
-        <div class="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-            <ul class="list-disc list-inside space-y-1">
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
+    <div class="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+        <ul class="list-disc list-inside space-y-1">
+            @foreach($errors->all() as $error)
+            <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
     @endif
 
     {{-- KPI Statistic Cards --}}
@@ -157,108 +156,108 @@
 
                         <tbody class="divide-y divide-gray-100">
                             @forelse($attributes as $attribute)
-                                <tr class="hover:bg-gray-50/50 transition-colors">
-                                    <td class="py-5 px-6 font-medium text-gray-500 text-sm">
-                                        AT-{{ str_pad($attribute->attribute_id, 3, '0', STR_PAD_LEFT) }}
-                                    </td>
+                            <tr class="hover:bg-gray-50/50 transition-colors">
+                                <td class="py-5 px-6 font-medium text-gray-500 text-sm">
+                                    AT-{{ str_pad($attribute->attribute_id, 3, '0', STR_PAD_LEFT) }}
+                                </td>
 
-                                    <td class="py-5 px-4">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-lg bg-[#F4F5F7] border border-gray-200 flex items-center justify-center text-[#0A2540]">
-                                                @php
-                                                    $nameLower = mb_strtolower($attribute->name);
-                                                @endphp
+                                <td class="py-5 px-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-lg bg-[#F4F5F7] border border-gray-200 flex items-center justify-center text-[#0A2540]">
+                                            @php
+                                            $nameLower = mb_strtolower($attribute->name);
+                                            @endphp
 
-                                                @if(str_contains($nameLower, 'ram'))
-                                                    <i data-lucide="memory-stick" class="w-5 h-5"></i>
-                                                @elseif(str_contains($nameLower, 'rom') || str_contains($nameLower, 'bộ nhớ'))
-                                                    <i data-lucide="hard-drive" class="w-5 h-5"></i>
-                                                @elseif(str_contains($nameLower, 'màu'))
-                                                    <i data-lucide="palette" class="w-5 h-5"></i>
-                                                @else
-                                                    <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
-                                                @endif
-                                            </div>
-
-                                            <div>
-                                                <p class="font-bold text-[#0A2540] text-[15px]">
-                                                    {{ $attribute->name }}
-                                                </p>
-                                                <p class="text-[12px] text-gray-500 mt-0.5">
-                                                    Attribute ID: {{ $attribute->attribute_id }}
-                                                </p>
-                                            </div>
+                                            @if(str_contains($nameLower, 'ram'))
+                                            <i data-lucide="memory-stick" class="w-5 h-5"></i>
+                                            @elseif(str_contains($nameLower, 'rom') || str_contains($nameLower, 'bộ nhớ'))
+                                            <i data-lucide="hard-drive" class="w-5 h-5"></i>
+                                            @elseif(str_contains($nameLower, 'màu'))
+                                            <i data-lucide="palette" class="w-5 h-5"></i>
+                                            @else
+                                            <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
+                                            @endif
                                         </div>
-                                    </td>
 
-                                    <td class="py-5 px-4">
-                                        @if($attribute->unit)
-                                            <span class="text-sm text-gray-600 font-mono">
-                                                {{ $attribute->unit }}
-                                            </span>
-                                        @else
-                                            <span class="text-xs font-bold text-gray-400 uppercase">
-                                                Không có
-                                            </span>
-                                        @endif
-                                    </td>
-
-                                    <td class="py-5 px-4">
-                                        <div class="flex flex-wrap gap-1.5">
-                                            @forelse($attribute->values as $value)
-                                                <span class="px-2.5 py-1 rounded-md bg-[#F4F5F7] border border-gray-200 text-[12px] font-bold text-gray-600">
-                                                    {{ $value->value }}{{ $attribute->unit ? $attribute->unit : '' }}
-                                                </span>
-                                            @empty
-                                                <span class="text-sm text-gray-400 italic">
-                                                    Chưa có giá trị
-                                                </span>
-                                            @endforelse
+                                        <div>
+                                            <p class="font-bold text-[#0A2540] text-[15px]">
+                                                {{ $attribute->name }}
+                                            </p>
+                                            <p class="text-[12px] text-gray-500 mt-0.5">
+                                                Attribute ID: {{ $attribute->attribute_id }}
+                                            </p>
                                         </div>
-                                    </td>
+                                    </div>
+                                </td>
 
-                                    <td class="py-5 px-4">
-                                        @if($attribute->values->count() > 0)
-                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 text-green-700 text-[11px] font-bold uppercase">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                                Active
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 text-[11px] font-bold uppercase">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
-                                                Empty
-                                            </span>
-                                        @endif
-                                    </td>
+                                <td class="py-5 px-4">
+                                    @if($attribute->unit)
+                                    <span class="text-sm text-gray-600 font-mono">
+                                        {{ $attribute->unit }}
+                                    </span>
+                                    @else
+                                    <span class="text-xs font-bold text-gray-400 uppercase">
+                                        Không có
+                                    </span>
+                                    @endif
+                                </td>
 
-                                    <td class="py-5 px-6">
-                                        <div class="flex items-center justify-end gap-3 text-[#0A2540]">
-                                            <a href="{{ route('admin.attributes.edit', $attribute->attribute_id) }}"
-                                               class="hover:text-blue-600 transition-colors"
-                                               title="Chỉnh sửa">
-                                                <i data-lucide="edit-2" class="w-[18px] h-[18px]"></i>
-                                            </a>
+                                <td class="py-5 px-4">
+                                    <div class="flex flex-wrap gap-1.5">
+                                        @forelse($attribute->values as $value)
+                                        <span class="px-2.5 py-1 rounded-md bg-[#F4F5F7] border border-gray-200 text-[12px] font-bold text-gray-600">
+                                            {{ $value->value }}{{ $attribute->unit ? $attribute->unit : '' }}
+                                        </span>
+                                        @empty
+                                        <span class="text-sm text-gray-400 italic">
+                                            Chưa có giá trị
+                                        </span>
+                                        @endforelse
+                                    </div>
+                                </td>
 
-                                            <form action="{{ route('admin.attributes.destroy', $attribute->attribute_id) }}"
-                                                  method="POST"
-                                                  class="inline-block"
-                                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa thuộc tính này?');">
-                                                @csrf
-                                                @method('DELETE')
+                                <td class="py-5 px-4">
+                                    @if($attribute->values->count() > 0)
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 text-green-700 text-[11px] font-bold uppercase">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                        Active
+                                    </span>
+                                    @else
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 text-[11px] font-bold uppercase">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                        Empty
+                                    </span>
+                                    @endif
+                                </td>
 
-                                                <button type="submit" class="hover:text-red-500 transition-colors" title="Xóa">
-                                                    <i data-lucide="trash-2" class="w-[18px] h-[18px] text-red-500"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
+                                <td class="py-5 px-6">
+                                    <div class="flex items-center justify-end gap-3 text-[#0A2540]">
+                                        <a href="{{ route('admin.attributes.edit', $attribute->attribute_id) }}"
+                                            class="hover:text-blue-600 transition-colors"
+                                            title="Chỉnh sửa">
+                                            <i data-lucide="edit-2" class="w-[18px] h-[18px]"></i>
+                                        </a>
+
+                                        <form action="{{ route('admin.attributes.destroy', $attribute->attribute_id) }}"
+                                            method="POST"
+                                            class="inline-block"
+                                            onsubmit="return confirm('Bạn có chắc chắn muốn xóa thuộc tính này?');">
+                                            @csrf
+                                            @method('DELETE')
+
+                                            <button type="submit" class="hover:text-red-500 transition-colors" title="Xóa">
+                                                <i data-lucide="trash-2" class="w-[18px] h-[18px] text-red-500"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
                             @empty
-                                <tr>
-                                    <td colspan="6" class="py-8 text-center text-gray-500">
-                                        Không tìm thấy thuộc tính nào.
-                                    </td>
-                                </tr>
+                            <tr>
+                                <td colspan="6" class="py-8 text-center text-gray-500">
+                                    Không tìm thấy thuộc tính nào.
+                                </td>
+                            </tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -271,15 +270,15 @@
                     </p>
 
                     @if(method_exists($attributes, 'links'))
-                        <div class="flex items-center gap-1.5">
-                            {{ $attributes->links('pagination::tailwind') }}
-                        </div>
+                    <div class="flex items-center gap-1.5">
+                        {{ $attributes->links('pagination::tailwind') }}
+                    </div>
                     @else
-                        <div class="flex items-center gap-1.5">
-                            <span class="w-8 h-8 rounded bg-[#0A2540] text-white flex items-center justify-center text-xs font-bold">
-                                1
-                            </span>
-                        </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-8 h-8 rounded bg-[#0A2540] text-white flex items-center justify-center text-xs font-bold">
+                            1
+                        </span>
+                    </div>
                     @endif
                 </div>
             </div>
@@ -307,28 +306,28 @@
                 <div class="p-6 bg-gradient-to-r from-[#F4F5F7] via-white to-[#EEF3F8]">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                         @if($selectedAttribute)
-                            @forelse($selectedAttribute->values as $value)
-                                <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                                    <p class="text-[11px] text-gray-400 font-mono mb-3">
-                                        VAL-{{ str_pad($value->value_id, 3, '0', STR_PAD_LEFT) }}
-                                    </p>
+                        @forelse($selectedAttribute->values as $value)
+                        <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                            <p class="text-[11px] text-gray-400 font-mono mb-3">
+                                VAL-{{ str_pad($value->value_id, 3, '0', STR_PAD_LEFT) }}
+                            </p>
 
-                                    <p class="text-2xl font-black text-[#0A2540]">
-                                        {{ $value->value }}{{ $selectedAttribute->unit ? $selectedAttribute->unit : '' }}
-                                    </p>
+                            <p class="text-2xl font-black text-[#0A2540]">
+                                {{ $value->value }}{{ $selectedAttribute->unit ? $selectedAttribute->unit : '' }}
+                            </p>
 
-                                    <p class="text-[11px] text-gray-400 font-bold uppercase tracking-wider mt-2">
-                                        Attribute Value
-                                    </p>
-                                </div>
-                            @empty
-                                <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                                    <p class="text-2xl font-black text-[#0A2540]">--</p>
-                                    <p class="text-[11px] text-gray-400 font-bold uppercase tracking-wider mt-2">
-                                        No Value
-                                    </p>
-                                </div>
-                            @endforelse
+                            <p class="text-[11px] text-gray-400 font-bold uppercase tracking-wider mt-2">
+                                Attribute Value
+                            </p>
+                        </div>
+                        @empty
+                        <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                            <p class="text-2xl font-black text-[#0A2540]">--</p>
+                            <p class="text-[11px] text-gray-400 font-bold uppercase tracking-wider mt-2">
+                                No Value
+                            </p>
+                        </div>
+                        @endforelse
                         @endif
 
                         <a href="#quick-create" class="min-h-[130px] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:bg-white/70 hover:text-[#0A2540] transition-colors">
@@ -409,8 +408,7 @@
                             value="{{ old('name') }}"
                             class="w-full bg-[#F4F5F7] border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A2540] focus:bg-white transition-colors"
                             placeholder="Ví dụ: RAM, ROM, Màu sắc"
-                            required
-                        >
+                            required>
                     </div>
 
                     <div>
@@ -422,8 +420,7 @@
                             name="unit"
                             value="{{ old('unit') }}"
                             class="w-full bg-[#F4F5F7] border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A2540] focus:bg-white transition-colors"
-                            placeholder="Ví dụ: GB, inch, mAh hoặc bỏ trống"
-                        >
+                            placeholder="Ví dụ: GB, inch, mAh hoặc bỏ trống">
                     </div>
 
                     <div>
@@ -435,8 +432,7 @@
                             name="values"
                             value="{{ old('values') }}"
                             class="w-full bg-[#F4F5F7] border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A2540] focus:bg-white transition-colors"
-                            placeholder="Ví dụ: 8, 16, 32"
-                        >
+                            placeholder="Ví dụ: 8, 16, 32">
                         <p class="text-xs text-gray-400 mt-2">
                             Nhập nhiều giá trị, cách nhau bằng dấu phẩy.
                         </p>
