@@ -10,16 +10,14 @@ use App\Models\Brand;
 
 class Product extends Model
 {
-    // 🔥 bảng products
     protected $table = 'products';
-
-    // 🔥 khóa chính
     protected $primaryKey = 'product_id';
-
     public $incrementing = true;
 
-    // 🔥 vì không có updated_at
-    public $timestamps = false;
+    // Bảng chỉ có created_at, không có updated_at
+    const CREATED_AT = 'created_at';
+    const UPDATED_AT = null;
+    public $timestamps = true;
 
     protected $fillable = [
         'category_id',
@@ -36,9 +34,19 @@ class Product extends Model
         'view_count'
     ];
 
+    protected $casts = [
+        'specs'      => 'array',
+        'is_active'  => 'boolean',
+        'is_new'     => 'boolean',
+        'is_hot'     => 'boolean',
+        'is_trending' => 'boolean',
+        'created_at' => 'datetime',
+    ];
+
     // ================== QUAN HỆ ==================
 
     public function category()
+
     {
         return $this->belongsTo(Category::class, 'category_id', 'category_id');
     }
@@ -51,6 +59,19 @@ class Product extends Model
     // 🔥 1 sản phẩm có nhiều ảnh
     public function images()
     {
+
+    {
+        return $this->belongsTo(Category::class, 'category_id', 'category_id');
+    }
+
+    public function brand()
+    {
+        return $this->belongsTo(Brand::class, 'brand_id', 'brand_id');
+    }
+
+    public function images()
+    {
+
         return $this->hasMany(ProductImage::class, 'product_id', 'product_id');
     }
 
@@ -59,7 +80,6 @@ class Product extends Model
         return $this->hasOne(ProductImage::class, 'product_id', 'product_id')->where('is_primary', 1);
     }
 
-    // 🔥 1 sản phẩm có nhiều biến thể (RAM, ROM…)
     public function variants()
     {
         return $this->hasMany(ProductVariant::class, 'product_id', 'product_id');
@@ -68,6 +88,6 @@ class Product extends Model
     // 🔥 1 sản phẩm có nhiều đánh giá
     public function reviews()
     {
-        return $this->hasMany(Review::class, 'product_id', 'product_id');
+        return $this->hasMany(ProductReview::class, 'product_id', 'product_id');
     }
 }

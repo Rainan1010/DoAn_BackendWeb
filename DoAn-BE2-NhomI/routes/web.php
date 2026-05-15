@@ -14,7 +14,12 @@ use App\Http\Controllers\OTPController;
 use App\Http\Controllers\ShippingAddressController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
+
 use App\Http\Controllers\Admin\DashboardController;
+
+use App\Http\Controllers\Admin\AttributeController;
+use App\Http\Controllers\Admin\ProductController as AdminProductController;
+
 
 
 /*
@@ -90,14 +95,28 @@ Route::post('/logout', function () {
 /*
 |--------------------------------------------------------------------------
 | USER ROUTES (Cần đăng nhập - Đổi mật khẩu)
+| USER & ADMIN ROUTES (Cần đăng nhập)
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])->group(function () {
+    // Đổi mật khẩu
     Route::get('/password/change', [CrudUserController::class, 'showChangePassword'])->name('password.change');
     Route::post('/password/change', [CrudUserController::class, 'changePassword'])->name('password.update');
+
+    // Lịch sử đơn hàng
+    Route::get('/orders/history', [OrderController::class, 'history'])->name('orders.history');
+    Route::get('/orders/{id}', [OrderController::class, 'detail'])->name('orders.detail');
 });
 
 /*
+    // Profile
+    Route::get('/profile', [CrudUserController::class, 'profile'])->name('profile');
+    Route::post('/profile/update', [CrudUserController::class, 'updateProfile'])->name('profile.update');
+
+    // Review
+    Route::post('/product/{id}/review', [App\Http\Controllers\ProductController::class, 'storeReview'])->name('product.review.store');
+
+    /*
 |--------------------------------------------------------------------------
 | ADMIN ROUTES (Quản trị viên - Có Prefix 'admin' và Name 'admin.')
 |--------------------------------------------------------------------------
@@ -109,6 +128,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 
     // Quản lý Sản phẩm (Products)
     Route::resource('products', \App\Http\Controllers\Admin\ProductController::class);
+
+    // Quản lý Sản phẩm (Products)
+    Route::resource('products', AdminProductController::class);
 
     // Quản lý Danh mục (Categories)
     Route::resource('categories', CategoryController::class);
@@ -128,7 +150,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::patch('reviews/{id}/status', [ReviewController::class, 'updateStatus'])->name('reviews.updateStatus');
     Route::delete('reviews/{id}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
 
-    // Quản lý Backup/Restore
+    // Quản lý Phân quyền
+    Route::patch('permissions/{id}/toggle-status', [App\Http\Controllers\Admin\PermissionController::class, 'toggleStatus'])->name('permissions.toggle-status');
+    Route::resource('permissions', App\Http\Controllers\Admin\PermissionController::class);
     Route::get('backups', [App\Http\Controllers\Admin\BackupController::class, 'index'])->name('backups.index');
     Route::post('backups', [App\Http\Controllers\Admin\BackupController::class, 'create'])->name('backups.create');
     Route::post('backups/upload', [App\Http\Controllers\Admin\BackupController::class, 'uploadRestore'])->name('backups.upload');
@@ -136,6 +160,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::post('backups/{id}/restore', [App\Http\Controllers\Admin\BackupController::class, 'restore'])->name('backups.restore');
     Route::delete('backups/{id}', [App\Http\Controllers\Admin\BackupController::class, 'destroy'])->name('backups.destroy');
 
+    // Quản lý Thuộc tính (Attributes)
+    Route::resource('attributes', AttributeController::class);
 });
 
 
@@ -149,7 +175,7 @@ Route::post('/password/change', [CrudUserController::class, 'changePassword'])->
 Route::get('/profile', [CrudUserController::class, 'profile'])
     ->middleware('auth')
     ->name('profile');
-    
+
 // update profile
 Route::post('/profile/update', [CrudUserController::class, 'updateProfile'])
     ->name('profile.update')
@@ -210,9 +236,9 @@ Route::middleware('auth')->group(function () {
 
     //thiết lập địa chỉ mặc định
     Route::post(
-    '/change-address/default/{id}',
-    [ShippingAddressController::class, 'setDefault']
-)->name('addresses.default');
+        '/change-address/default/{id}',
+        [ShippingAddressController::class, 'setDefault']
+    )->name('addresses.default');
 });
 
 // CART
@@ -220,8 +246,13 @@ Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
 Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
 Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
+Route::post('/cart/select', [CartController::class, 'select'])->name('cart.select');
+Route::post('/cart/toggle-select', [CartController::class, 'toggleSelect'])->name('cart.toggleSelect');
+Route::post('/cart/apply-voucher', [CartController::class, 'applyVoucher'])->name('cart.applyVoucher');
+Route::post('/cart/remove-voucher', [CartController::class, 'removeVoucher'])->name('cart.removeVoucher');
 
 // Phải có dấu {id} trong ngoặc nhọn
+
 Route::get('/api/compare-product/{id}', [App\Http\Controllers\CompareController::class, 'getCompareProduct']);
 
 // lịch sử đơn hàng
@@ -231,3 +262,106 @@ Route::get('/orders', [OrderController::class, 'history'])
 // xem chi tiet don hang
 Route::get('/orders/{id}', [OrderController::class, 'detail'])
     ->name('orders.detail');
+
+// huỷ đơn hàng
+Route::post(
+    '/orders/cancel/{id}',
+    [OrderController::class, 'cancel']
+)->name('orders.cancel');
+
+
+// mua lại
+Route::post(
+    '/orders/reorder/{id}',
+    [OrderController::class, 'reorder']
+)->name('orders.reorder');
+
+
+/*
+|--------------------------------------------------------------------------
+| CHECKOUT
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth')->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 1
+    |--------------------------------------------------------------------------
+    */
+    Route::get(
+        '/checkout',
+        [OrderController::class, 'checkout']
+    )->name('checkout');
+
+    /*
+    |--------------------------------------------------------------------------
+    | SAVE INFORMATION
+    |--------------------------------------------------------------------------
+    */
+    Route::post(
+        '/checkout/save-information',
+        [OrderController::class, 'saveInformation']
+    )->name('checkout.saveInformation');
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 2
+    |--------------------------------------------------------------------------
+    */
+    Route::get(
+        '/checkout/payment',
+        [OrderController::class, 'payment']
+    )->name('checkout.payment');
+
+    /*
+    |--------------------------------------------------------------------------
+    | STORE ORDER
+    |--------------------------------------------------------------------------
+    */
+    Route::post(
+        '/checkout/store',
+        [OrderController::class, 'store']
+    )->name('checkout.store');
+
+    /*
+|--------------------------------------------------------------------------
+| MOMO
+|--------------------------------------------------------------------------
+*/
+    Route::post(
+        '/payment/momo',
+        [OrderController::class, 'momoPayment']
+    )->name('payment.momo');
+
+    Route::get(
+        '/momo/return',
+        [OrderController::class, 'momoReturn']
+    )->name('momo.return');
+
+    Route::post(
+        '/momo/ipn',
+        [OrderController::class, 'momoIPN']
+    )->name('momo.ipn');
+
+
+    /*
+|--------------------------------------------------------------------------
+| VNPAY
+|--------------------------------------------------------------------------
+*/
+Route::post(
+    '/payment/vnpay',
+    [OrderController::class, 'vnpayPayment']
+)->name('payment.vnpay');
+Route::get('/vnpay-portal', [OrderController::class, 'vnpayMockPortal'])->name('vnpay.mock_portal');
+Route::get(
+    '/vnpay/return',
+    [OrderController::class, 'vnpayReturn']
+)->name('vnpay.return');
+});
+
+
+Route::get('/api/compare-product/{id}', [App\Http\Controllers\CompareController::class, 'getCompareProduct']);
+

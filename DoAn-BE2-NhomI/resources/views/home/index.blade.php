@@ -64,6 +64,9 @@
                         </div>
                     @endforeach
                 </div>
+
+                {{-- Dot Pagination --}}
+                <div class="flex items-center justify-center gap-2 mt-4" id="trending-dots"></div>
             </div>
         </div>
     </section>
@@ -154,15 +157,88 @@
     <style>
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .trending-dot {
+            width: 8px; height: 8px;
+            border-radius: 9999px;
+            background: rgba(255,255,255,0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+        .trending-dot.active {
+            width: 24px;
+            background: linear-gradient(to right, #f97316, #ef4444);
+        }
     </style>
     <script>
-        function scrollTrending(direction) {
+        (function () {
             const slider = document.getElementById('trending-slider');
-            if (slider) {
-                const cardWidth = slider.firstElementChild.offsetWidth + 16;
-                slider.scrollBy({ left: direction * cardWidth, behavior: 'smooth' });
+            const dotsContainer = document.getElementById('trending-dots');
+            if (!slider || !dotsContainer) return;
+
+            let autoTimer = null;
+            let currentPage = 0;
+
+            function getPageCount() {
+                const pageWidth = slider.clientWidth;
+                return Math.max(1, Math.ceil(slider.scrollWidth / pageWidth));
             }
-        }
+
+            function buildDots() {
+                dotsContainer.innerHTML = '';
+                const count = getPageCount();
+                for (let i = 0; i < count; i++) {
+                    const btn = document.createElement('button');
+                    btn.className = 'trending-dot' + (i === currentPage ? ' active' : '');
+                    btn.setAttribute('aria-label', 'Trang ' + (i + 1));
+                    btn.addEventListener('click', () => goToPage(i));
+                    dotsContainer.appendChild(btn);
+                }
+            }
+
+            function updateDots() {
+                const dots = dotsContainer.querySelectorAll('.trending-dot');
+                dots.forEach((d, i) => d.classList.toggle('active', i === currentPage));
+            }
+
+            function goToPage(page) {
+                const count = getPageCount();
+                currentPage = (page + count) % count;
+                slider.scrollTo({ left: currentPage * slider.clientWidth, behavior: 'smooth' });
+                updateDots();
+            }
+
+            window.scrollTrending = function (direction) {
+                goToPage(currentPage + direction);
+            };
+
+            // Sync dot khi user kéo tay / scroll
+            slider.addEventListener('scroll', () => {
+                const page = Math.round(slider.scrollLeft / slider.clientWidth);
+                if (page !== currentPage) {
+                    currentPage = page;
+                    updateDots();
+                }
+            });
+
+            // Auto-scroll
+            function startAuto() {
+                autoTimer = setInterval(() => goToPage(currentPage + 1), 5000);
+            }
+            function stopAuto() {
+                clearInterval(autoTimer);
+            }
+
+            slider.addEventListener('mouseenter', stopAuto);
+            slider.addEventListener('mouseleave', startAuto);
+
+            // Init
+            buildDots();
+            startAuto();
+
+            // Rebuild dots khi resize
+            window.addEventListener('resize', () => { buildDots(); });
+        })();
     </script>
 
 @endsection
