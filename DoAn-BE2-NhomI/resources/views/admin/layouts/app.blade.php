@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -28,7 +27,6 @@
         }
     </style>
 </head>
-
 <body class="flex h-screen overflow-hidden text-gray-800">
     <!-- Sidebar -->
     <aside class="w-64 bg-[#0A2540] hidden md:flex flex-col h-full">
@@ -77,11 +75,13 @@
             </a>
 
 
+
             <a href="{{ route('home') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.backups.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
                 <i data-lucide="arrow-big-right" class="w-5 h-5"></i> Quay về Trang chủ
             </a>
-
-
+            <a href="{{ route('admin.permissions.index') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.permissions.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
+                <i data-lucide="shield-check" class="w-5 h-5"></i> Phân quyền
+            </a>
         </nav>
 
         <div class="p-4 border-t border-white/10">
@@ -133,5 +133,4 @@
     </script>
     @stack('scripts')
 </body>
-
 </html>

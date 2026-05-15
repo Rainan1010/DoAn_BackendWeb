@@ -22,7 +22,6 @@ use App\Http\Controllers\Admin\AttributeController;
 | PUBLIC ROUTES (Trang chủ & Sản phẩm)
 |--------------------------------------------------------------------------
 */
-
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/search-ajax', [ProductController::class, 'searchAjax'])->name('search.ajax');
 Route::get('/product/{id}', [ProductController::class, 'show'])->name('product.show');
@@ -91,14 +90,28 @@ Route::post('/logout', function () {
 /*
 |--------------------------------------------------------------------------
 | USER ROUTES (Cần đăng nhập - Đổi mật khẩu)
+| USER & ADMIN ROUTES (Cần đăng nhập)
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])->group(function () {
+    // Đổi mật khẩu
     Route::get('/password/change', [CrudUserController::class, 'showChangePassword'])->name('password.change');
     Route::post('/password/change', [CrudUserController::class, 'changePassword'])->name('password.update');
+
+    // Lịch sử đơn hàng
+    Route::get('/orders/history', [OrderController::class, 'history'])->name('orders.history');
+    Route::get('/orders/{id}', [OrderController::class, 'detail'])->name('orders.detail');
 });
 
 /*
+    // Profile
+    Route::get('/profile', [CrudUserController::class, 'profile'])->name('profile');
+    Route::post('/profile/update', [CrudUserController::class, 'updateProfile'])->name('profile.update');
+
+    // Review
+    Route::post('/product/{id}/review', [App\Http\Controllers\ProductController::class, 'storeReview'])->name('product.review.store');
+
+    /*
 |--------------------------------------------------------------------------
 | ADMIN ROUTES (Quản trị viên - Có Prefix 'admin' và Name 'admin.')
 |--------------------------------------------------------------------------
@@ -107,6 +120,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 
     // Quản lý Sản phẩm (Products)
     Route::resource('products', \App\Http\Controllers\Admin\ProductController::class);
+
+    Route::resource('products', ProductController::class);
 
     // Quản lý Danh mục (Categories)
     Route::resource('categories', CategoryController::class);
@@ -126,7 +141,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::patch('reviews/{id}/status', [ReviewController::class, 'updateStatus'])->name('reviews.updateStatus');
     Route::delete('reviews/{id}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
 
-    // Quản lý Backup/Restore
+    // Quản lý Phân quyền
+    Route::patch('permissions/{id}/toggle-status', [App\Http\Controllers\Admin\PermissionController::class, 'toggleStatus'])->name('permissions.toggle-status');
+    Route::resource('permissions', App\Http\Controllers\Admin\PermissionController::class);
     Route::get('backups', [App\Http\Controllers\Admin\BackupController::class, 'index'])->name('backups.index');
     Route::post('backups', [App\Http\Controllers\Admin\BackupController::class, 'create'])->name('backups.create');
     Route::post('backups/upload', [App\Http\Controllers\Admin\BackupController::class, 'uploadRestore'])->name('backups.upload');
@@ -226,6 +243,7 @@ Route::post('/cart/apply-voucher', [CartController::class, 'applyVoucher'])->nam
 Route::post('/cart/remove-voucher', [CartController::class, 'removeVoucher'])->name('cart.removeVoucher');
 
 // Phải có dấu {id} trong ngoặc nhọn
+
 Route::get('/api/compare-product/{id}', [App\Http\Controllers\CompareController::class, 'getCompareProduct']);
 
 // lịch sử đơn hàng
@@ -334,4 +352,7 @@ Route::get(
     [OrderController::class, 'vnpayReturn']
 )->name('vnpay.return');
 });
+
+
+Route::get('/api/compare-product/{id}', [App\Http\Controllers\CompareController::class, 'getCompareProduct']);
 
