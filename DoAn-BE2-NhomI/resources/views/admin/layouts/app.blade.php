@@ -43,6 +43,15 @@
             </div>
         </div>
 
+        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
+            <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.dashboard') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Bảng điều khiển
+            </a>
+          
+            <a href="{{ route('admin.products.index') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.products.*') ? 'bg-[#002B6B] text-white shadow-inner' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
+                <i data-lucide="box" class="w-5 h-5"></i> Sản phẩm
+            </a>
+
         <nav class="sidebar-scroll flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
             <a href="#" class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-blue-200 rounded-lg hover:bg-white/10 transition-colors">
                 <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Bảng điều khiển

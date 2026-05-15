@@ -14,8 +14,12 @@ use App\Http\Controllers\OTPController;
 use App\Http\Controllers\ShippingAddressController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
+
+use App\Http\Controllers\Admin\DashboardController;
+
 use App\Http\Controllers\Admin\AttributeController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
+
 
 
 /*
@@ -118,6 +122,12 @@ Route::middleware(['auth'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
+    // Dashboard
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index']);
+
+    // Quản lý Sản phẩm (Products)
+    Route::resource('products', \App\Http\Controllers\Admin\ProductController::class);
 
     // Quản lý Sản phẩm (Products)
     Route::resource('products', AdminProductController::class);

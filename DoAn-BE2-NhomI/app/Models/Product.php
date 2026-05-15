@@ -46,6 +46,20 @@ class Product extends Model
     // ================== QUAN HỆ ==================
 
     public function category()
+
+    {
+        return $this->belongsTo(Category::class, 'category_id', 'category_id');
+    }
+
+    public function brand()
+    {
+        return $this->belongsTo(Brand::class, 'brand_id', 'brand_id');
+    }
+
+    // 🔥 1 sản phẩm có nhiều ảnh
+    public function images()
+    {
+
     {
         return $this->belongsTo(Category::class, 'category_id', 'category_id');
     }
@@ -57,6 +71,7 @@ class Product extends Model
 
     public function images()
     {
+
         return $this->hasMany(ProductImage::class, 'product_id', 'product_id');
     }
 
