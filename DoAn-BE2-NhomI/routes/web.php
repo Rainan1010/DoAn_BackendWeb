@@ -15,6 +15,7 @@ use App\Http\Controllers\ShippingAddressController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\Admin\AttributeController;
+use App\Http\Controllers\Admin\ProductController as AdminProductController;
 
 
 /*
@@ -119,9 +120,7 @@ Route::middleware(['auth'])->group(function () {
 Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
 
     // Quản lý Sản phẩm (Products)
-    Route::resource('products', \App\Http\Controllers\Admin\ProductController::class);
-
-    Route::resource('products', ProductController::class);
+    Route::resource('products', AdminProductController::class);
 
     // Quản lý Danh mục (Categories)
     Route::resource('categories', CategoryController::class);
