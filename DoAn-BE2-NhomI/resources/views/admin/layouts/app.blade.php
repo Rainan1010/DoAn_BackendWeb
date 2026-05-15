@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -27,6 +28,7 @@
         }
     </style>
 </head>
+
 <body class="flex h-screen overflow-hidden text-gray-800">
     <!-- Sidebar -->
     <aside class="w-64 bg-[#0A2540] hidden md:flex flex-col h-full">
@@ -43,8 +45,10 @@
             </div>
         </div>
 
+
+
         <nav class="sidebar-scroll flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
-            <a href="#" class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-blue-200 rounded-lg hover:bg-white/10 transition-colors">
+            <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.dashboard') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
                 <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Bảng điều khiển
             </a>
 
@@ -133,4 +137,5 @@
     </script>
     @stack('scripts')
 </body>
+
 </html>
