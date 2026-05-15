@@ -102,10 +102,6 @@ Route::middleware(['auth'])->group(function () {
     // Đổi mật khẩu
     Route::get('/password/change', [CrudUserController::class, 'showChangePassword'])->name('password.change');
     Route::post('/password/change', [CrudUserController::class, 'changePassword'])->name('password.update');
-
-    // Lịch sử đơn hàng
-    Route::get('/orders/history', [OrderController::class, 'history'])->name('orders.history');
-    Route::get('/orders/{id}', [OrderController::class, 'detail'])->name('orders.detail');
 });
 
 /*
