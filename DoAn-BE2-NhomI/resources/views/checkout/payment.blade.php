@@ -407,7 +407,10 @@
                                     {{-- IMAGE --}}
                                     <div class="w-[90px] h-[90px] rounded-3xl overflow-hidden border bg-gray-50 flex-shrink-0">
 
-<img src="{{ asset($item['image'] ?? 'images/default-product.png') }}"
+<img
+    src="{{ asset($item['image'] ?? 'images/default-product.png') }}"
+    class="w-full h-full object-cover"
+>
                                     </div>
 
                                     {{-- INFO --}}
@@ -528,89 +531,66 @@
 
     <script>
 
-        function changePayment() {
+    function changePayment() {
 
-            let cod =
-                document.querySelector(
-                    'input[value="cod"]'
-                );
+        let cod =
+            document.querySelector(
+                'input[value="cod"]'
+            );
 
-            let momo =
-                document.querySelector(
-                    'input[value="momo"]'
-                );
-
-            let vnpay =
-                document.querySelector(
-                    'input[value="vnpay"]'
-                );
-
-            let codCard =
-                document.getElementById(
-                    'cod_card'
-                );
-
-            let momoCard =
-                document.getElementById(
-                    'momo_card'
-                );
-
-            let vnpayCard =
-                document.getElementById(
-                    'vnpay_card'
-                );
-
-            codCard.classList.remove('active');
-            momoCard.classList.remove('active');
-            vnpayCard.classList.remove('active');
-
-            if (cod.checked) {
-
-                codCard.classList.add(
-                    'active'
-                );
-            }
-
-            if (momo.checked) {
-
-                momoCard.classList.add(
-                    'active'
-                );
-            }
-
-            if (vnpay.checked) {
-
-                vnpayCard.classList.add(
-                    'active'
-                );
-            }
-
-        }
-        function changePayment() {
-
-            let momo = document.querySelector(
+        let momo =
+            document.querySelector(
                 'input[value="momo"]'
             );
 
-            let momoCard = document.getElementById(
+        let vnpay =
+            document.querySelector(
+                'input[value="vnpay"]'
+            );
+
+        let codCard =
+            document.getElementById(
+                'cod_card'
+            );
+
+        let momoCard =
+            document.getElementById(
                 'momo_card'
             );
 
-            momoCard.classList.remove(
-                'border-[#ae2070]',
-                'bg-[#ae2070]/5'
+        let vnpayCard =
+            document.getElementById(
+                'vnpay_card'
             );
 
-            if (momo.checked) {
+        codCard.classList.remove('active');
+        momoCard.classList.remove('active');
+        vnpayCard.classList.remove('active');
 
-                momoCard.classList.add(
-                    'border-[#ae2070]',
-                    'bg-[#ae2070]/5'
-                );
-            }
+        if (cod.checked) {
+
+            codCard.classList.add(
+                'active'
+            );
         }
 
-        window.onload = changePayment;
-    </script>
+        if (momo.checked) {
+
+            momoCard.classList.add(
+                'active'
+            );
+        }
+
+        if (vnpay.checked) {
+
+            vnpayCard.classList.add(
+                'active'
+            );
+        }
+    }
+
+    window.onload = changePayment;
+
+</script>
 
 @endsection

@@ -289,228 +289,228 @@ class OrderController extends Controller
     public function reorder($id)
     {
 
-    /*
-    |--------------------------------------------------------------------------
-    | GET ORDER
-    |--------------------------------------------------------------------------
-    */
-    $order = Order::with('items')
-        ->where('user_id', Auth::id())
-        ->findOrFail($id);
+        /*
+        |--------------------------------------------------------------------------
+        | GET ORDER
+        |--------------------------------------------------------------------------
+        */
+        $order = Order::with('items')
+            ->where('user_id', Auth::id())
+            ->findOrFail($id);
 
-    /*
-    |--------------------------------------------------------------------------
-    | CLEAR OLD SESSION
-    |--------------------------------------------------------------------------
-    */
-    session()->forget([
+        /*
+        |--------------------------------------------------------------------------
+        | CLEAR OLD SESSION
+        |--------------------------------------------------------------------------
+        */
+        session()->forget([
 
-        'checkout_items',
+            'checkout_items',
 
-        'selected_cart_ids',
+            'selected_cart_ids',
 
-        'checkout_information',
+            'checkout_information',
 
-        'checkout_total',
+            'checkout_total',
 
-        'shipping_fee',
+            'shipping_fee',
 
-        'discount_amount',
+            'discount_amount',
 
-        'coupon',
+            'coupon',
 
-        'is_reorder'
-    ]);
+            'is_reorder'
+        ]);
 
-    /*
-    |--------------------------------------------------------------------------
-    | CHECKOUT ITEMS
-    |--------------------------------------------------------------------------
-    */
-    $checkoutItems = [];
+        /*
+        |--------------------------------------------------------------------------
+        | CHECKOUT ITEMS
+        |--------------------------------------------------------------------------
+        */
+        $checkoutItems = [];
 
-    $subtotal = 0;
+        $subtotal = 0;
 
-    foreach ($order->items as $item) {
+        foreach ($order->items as $item) {
 
-        $product = DB::table('product_variants')
+            $product = DB::table('product_variants')
 
-            ->join(
-                'products',
-                'products.product_id',
-                '=',
-                'product_variants.product_id'
-            )
+                ->join(
+                    'products',
+                    'products.product_id',
+                    '=',
+                    'product_variants.product_id'
+                )
 
-            ->leftJoin(
-                'product_images',
-                function ($join) {
+                ->leftJoin(
+                    'product_images',
+                    function ($join) {
 
-                    $join->on(
-                        'product_images.product_id',
-                        '=',
-                        'products.product_id'
-                    )
+                        $join->on(
+                            'product_images.product_id',
+                            '=',
+                            'products.product_id'
+                        )
 
-                    ->where(
-                        'product_images.is_primary',
-                        1
-                    );
-                }
-            )
+                            ->where(
+                                'product_images.is_primary',
+                                1
+                            );
+                    }
+                )
 
-            ->where(
-                'product_variants.variant_id',
-                $item->variant_id
-            )
+                ->where(
+                    'product_variants.variant_id',
+                    $item->variant_id
+                )
 
-            ->select(
-                'products.product_id',
-                'product_images.image_url'
-            )
+                ->select(
+                    'products.product_id',
+                    'product_images.image_url'
+                )
+
+                ->first();
+
+            $image = $product->image_url
+                ?? 'images/default-product.png';
+
+            $checkoutItems[] = [
+
+                'product_id' =>
+                    $product->product_id ?? null,
+
+                'variant_id' =>
+                    $item->variant_id,
+
+                'name' =>
+                    $item->product_name,
+
+                'variant_name' =>
+                    $item->variant_info,
+
+                'quantity' =>
+                    $item->quantity,
+
+                'price' =>
+                    $item->unit_price,
+
+                'image' =>
+                    $image,
+            ];
+
+            $subtotal +=
+                $item->unit_price
+                * $item->quantity;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | SHIPPING
+        |--------------------------------------------------------------------------
+        */
+        $shippingFee = session(
+            'shipping_fee',
+            30000
+        );
+
+        $discount = session(
+            'discount_amount',
+            0
+        );
+        $vat = $subtotal * 0.1;
+
+        $total =
+            $subtotal
+            + $shippingFee
+            + $vat
+            - $discount;
+
+        /*
+        |--------------------------------------------------------------------------
+        | SHIPPING ADDRESS
+        |--------------------------------------------------------------------------
+        */
+        $shippingAddress = ShippingAddress::where(
+            'user_id',
+            Auth::id()
+        )
+
+            ->orderByDesc('address_id')
 
             ->first();
 
-        $image = $product->image_url
-            ?? 'images/default-product.png';
+        /*
+        |--------------------------------------------------------------------------
+        | AUTO CHECKOUT INFO
+        |--------------------------------------------------------------------------
+        */
+        if ($shippingAddress) {
 
-        $checkoutItems[] = [
+            session([
 
-            'product_id' =>
-                $product->product_id ?? null,
+                'checkout_information' => [
 
-            'variant_id' =>
-                $item->variant_id,
+                    'delivery_type' => 'home',
 
-            'name' =>
-                $item->product_name,
+                    'address_type' => 'saved',
 
-            'variant_name' =>
-                $item->variant_info,
+                    'shipping_address_id' =>
+                        $shippingAddress->address_id,
 
-            'quantity' =>
-                $item->quantity,
+                    'full_name' =>
+                        $shippingAddress->full_name,
 
-            'price' =>
-                $item->unit_price,
+                    'phone' =>
+                        $shippingAddress->phone,
 
-            'image' =>
-                $image,
-        ];
+                    'province' =>
+                        $shippingAddress->province,
 
-        $subtotal +=
-            $item->unit_price
-            * $item->quantity;
-    }
+                    'district' =>
+                        $shippingAddress->district,
 
-    /*
-    |--------------------------------------------------------------------------
-    | SHIPPING
-    |--------------------------------------------------------------------------
-    */
-  $shippingFee = session(
-    'shipping_fee',
-    30000
-);
+                    'ward' =>
+                        $shippingAddress->ward,
 
-$discount = session(
-    'discount_amount',
-    0
-);
-    $vat = $subtotal * 0.1;
+                    'street_address' =>
+                        $shippingAddress->street_address,
 
-    $total =
-        $subtotal
-        + $shippingFee
-        + $vat
-        - $discount;
+                    'note' => null,
+                ]
+            ]);
+        }
 
-    /*
-    |--------------------------------------------------------------------------
-    | SHIPPING ADDRESS
-    |--------------------------------------------------------------------------
-    */
- $shippingAddress = ShippingAddress::where(
-    'user_id',
-    Auth::id()
-)
-
-->orderByDesc('address_id')
-
-->first();
-
-    /*
-    |--------------------------------------------------------------------------
-    | AUTO CHECKOUT INFO
-    |--------------------------------------------------------------------------
-    */
-    if ($shippingAddress) {
-
+        /*
+        |--------------------------------------------------------------------------
+        | SAVE SESSION
+        |--------------------------------------------------------------------------
+        */
         session([
 
-            'checkout_information' => [
+            'checkout_items' =>
+                $checkoutItems,
 
-                'delivery_type' => 'home',
+            'shipping_fee' =>
+                $shippingFee,
 
-                'address_type' => 'saved',
+            'discount_amount' =>
+                $discount,
 
-                'shipping_address_id' =>
-                    $shippingAddress->address_id,
+            'checkout_total' =>
+                $total,
 
-                'full_name' =>
-                    $shippingAddress->full_name,
-
-                'phone' =>
-                    $shippingAddress->phone,
-
-                'province' =>
-                    $shippingAddress->province,
-
-                'district' =>
-                    $shippingAddress->district,
-
-                'ward' =>
-                    $shippingAddress->ward,
-
-                'street_address' =>
-                    $shippingAddress->street_address,
-
-                'note' => null,
-            ]
+            'is_reorder' =>
+                true
         ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | REDIRECT
+        |--------------------------------------------------------------------------
+        */
+        return redirect()
+            ->route('checkout.payment');
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | SAVE SESSION
-    |--------------------------------------------------------------------------
-    */
-    session([
-
-        'checkout_items' =>
-            $checkoutItems,
-
-        'shipping_fee' =>
-            $shippingFee,
-
-        'discount_amount' =>
-            $discount,
-
-        'checkout_total' =>
-            $total,
-
-        'is_reorder' =>
-            true
-    ]);
-
-    /*
-    |--------------------------------------------------------------------------
-    | REDIRECT
-    |--------------------------------------------------------------------------
-    */
-   return redirect()
-    ->route('checkout.payment');
-}
     /*
     |--------------------------------------------------------------------------
     | CHECKOUT PAGE - STEP 1
@@ -1353,7 +1353,17 @@ $discount = session(
                     $total
                 );
             }
+            /*
+           |--------------------------------------------------------------------------
+           | VNPAY
+           |--------------------------------------------------------------------------
+           */
+           if ($request->payment_method === 'vnpay') {
 
+    DB::commit();
+
+    return $this->vnpayPayment($order);
+}
             /*
             |--------------------------------------------------------------------------
             | CLEAR SESSION
@@ -1697,43 +1707,43 @@ $discount = session(
         | PAYMENT FAIL
         |--------------------------------------------------------------------------
         */
-       $order->update([
+        $order->update([
 
-    'payment_status' => 'pending',
+            'payment_status' => 'pending',
 
-    'order_status' => 'pending'
-]);
+            'order_status' => 'pending'
+        ]);
 
-Payment::where(
+        Payment::where(
 
-    'order_id',
+            'order_id',
 
-    $order->order_id
+            $order->order_id
 
-)->update([
+        )->update([
 
-    'status' => 'pending'
-]);
+                    'status' => 'pending'
+                ]);
 
-return redirect()
+        return redirect()
 
-    ->route('order.history')
+            ->route('order.history')
 
-    ->with(
+            ->with(
 
-        'success_order',
+                'success_order',
 
-        [
+                [
 
-            'code' =>
+                    'code' =>
 
-                $order->order_code,
+                        $order->order_code,
 
-            'total' =>
+                    'total' =>
 
-                $order->total_amount
-        ]
-    );
+                        $order->total_amount
+                ]
+            );
     }
     private function execPostRequest($url, $data)
     {
@@ -1771,4 +1781,93 @@ return redirect()
 
         return $result;
     }
+
+
+
+// =========================
+// VNPAY PAYMENT
+// =========================
+
+public function vnpayPayment($order)
+{
+    $vnp_Url = env('VNP_URL'); // Lấy từ .env của bạn
+    $vnp_Returnurl = env('VNP_RETURN_URL'); // http://localhost:8000/vnpay/return
+
+    // Các tham số giả lập y hệt tài liệu VNPAY
+    $vnp_Params = [
+        "vnp_Amount" => $order->total_amount * 100,
+        "vnp_Command" => "pay",
+        "vnp_CreateDate" => date('YmdHis'),
+        "vnp_CurrCode" => "VND",
+        "vnp_IpAddr" => request()->ip(),
+        "vnp_Locale" => "vn",
+        "vnp_OrderInfo" => "Thanh toan don hang #" . $order->order_code,
+        "vnp_OrderType" => "billpayment",
+        "vnp_ReturnUrl" => $vnp_Returnurl,
+        "vnp_TmnCode" => env('VNP_TMN_CODE'),
+        "vnp_TxnRef" => $order->order_code, // Dùng mã đơn hàng để đối soát
+        "vnp_Version" => "2.1.0",
+    ];
+
+    // Thay vì tạo chữ ký thật (Hash), mình chỉ cần Build Query
+    $queryString = http_build_query($vnp_Params);
+    
+    // Giả lập: thay vì đi đến cổng VNPAY thật, mình đi đến một view trung gian
+    // Bạn có thể redirect thẳng về vnp_ReturnUrl nếu muốn bỏ qua bước nhấn nút
+    return redirect()->route('vnpay.mock_portal', $vnp_Params);
+}
+
+public function vnpayMockPortal(Request $request)
+{
+    // Đây là trang giao diện giả lập cổng VNPAY
+    // Bạn có thể cho người dùng thấy số tiền và nút "Xác nhận thanh toán"
+    return "
+        <div style='max-width:500px; margin:50px auto; text-align:center; font-family:Arial; border:1px solid #ddd; padding:20px;'>
+            <img src='https://sandbox.vnpayment.vn/paymentv2/Images/brands/logo.svg' width='150'>
+            <h2>CỔNG THANH TOÁN (GIẢ LẬP)</h2>
+            <p>Đơn hàng: <b>#{$request->vnp_TxnRef}</b></p>
+            <p>Số tiền: <b style='color:red;'>" . number_format($request->vnp_Amount / 100) . " VNĐ</b></p>
+            <hr>
+            <form action='{$request->vnp_ReturnUrl}' method='GET'>
+                <!-- Gửi ngược lại toàn bộ data VNPAY gửi sang -->
+                " . collect($request->all())->map(fn($v, $k) => "<input type='hidden' name='{$k}' value='{$v}'>")->implode('') . "
+                
+                <button name='vnp_ResponseCode' value='00' style='background:#0056b3; color:white; border:none; padding:10px 20px; cursor:pointer;'>
+                    XÁC NHẬN THANH TOÁN THÀNH CÔNG
+                </button>
+                <br><br>
+                <button name='vnp_ResponseCode' value='24' style='background:none; border:none; color:red; cursor:pointer; text-decoration:underline;'>
+                    Hủy giao dịch
+                </button>
+            </form>
+        </div>
+    ";
+}
+// =========================
+// VNPAY RETURN
+// =========================
+
+public function vnpayReturn(Request $request)
+{
+    $orderCode = $request->vnp_TxnRef;
+    $responseCode = $request->vnp_ResponseCode; // '00' là thành công
+
+    $order = Order::where('order_code', $orderCode)->first();
+
+    if ($responseCode == '00') {
+        // Cập nhật Database
+        $order->update([
+            'payment_status' => 'paid',
+            'order_status' => 'pending',
+            'paid_at' => now()
+        ]);
+
+        // Xóa giỏ hàng, trừ kho ở đây...
+        session()->forget(['checkout_items', 'selected_cart_ids']);
+
+        return redirect()->route('orders.history')->with('success', 'Thanh toán qua VNPAY thành công!');
+    }
+
+    return redirect()->route('checkout.payment')->with('error', 'Thanh toán thất bại hoặc bị hủy.');
+}
 }
