@@ -38,6 +38,12 @@ Route::get('/product/{id}', [ProductController::class, 'show'])
 Route::get('/product-detail/{id}', [HomeController::class, 'detail'])
     ->name('product.detail');
 
+Route::get('/category/{slug}', [ProductController::class, 'category'])
+    ->name('category.show');
+
+Route::get('/promotions', [ProductController::class, 'promotions'])
+    ->name('promotions.index');
+
 /*
 |--------------------------------------------------------------------------
 | AUTH ROUTES
