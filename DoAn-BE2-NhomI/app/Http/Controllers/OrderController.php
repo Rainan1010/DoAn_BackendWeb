@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-
+use App\Models\ShippingFee;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
@@ -672,7 +672,21 @@ class OrderController extends Controller
                 * $item['quantity'];
         }
 
-        $shippingFee = 30000;
+        $province = null;
+
+        if (!empty($oldInfo['province'])) {
+
+            $province = $oldInfo['province'];
+
+        } elseif ($addresses->count()) {
+
+            $province = $addresses->first()->province;
+        }
+
+        $shippingFee =
+            $this->getShippingFeeByProvince(
+                $province
+            );
 
         $discount = 0;
 
@@ -967,7 +981,23 @@ class OrderController extends Controller
                 * $item['quantity'];
         }
 
-        $shippingFee = 30000;
+        // FIX
+        $info = session(
+            'checkout_information',
+            []
+        );
+
+        $province =
+            str_replace(
+                ['Tỉnh ', 'Thành phố '],
+                '',
+                $info['province'] ?? ''
+            );
+
+        $shippingFee =
+            $this->getShippingFeeByProvince(
+                $province
+            );
 
         $discount = 0;
 
@@ -978,11 +1008,6 @@ class OrderController extends Controller
             + $shippingFee
             + $vat
             - $discount;
-
-        $info = session(
-            'checkout_information',
-            []
-        );
 
         $addresses = ShippingAddress::where(
             'user_id',
@@ -1080,7 +1105,10 @@ class OrderController extends Controller
                     * $item['quantity'];
             }
 
-            $shippingFee = 30000;
+            $shippingFee =
+                $this->getShippingFeeByProvince(
+                    $info['province']
+                );
 
             $discount = 0;
 
@@ -1353,50 +1381,105 @@ class OrderController extends Controller
                     $total
                 );
             }
-            /*
-           |--------------------------------------------------------------------------
-           | VNPAY
-           |--------------------------------------------------------------------------
-           */
-           if ($request->payment_method === 'vnpay') {
 
-    DB::commit();
-
-    return $this->vnpayPayment($order);
-}
             /*
             |--------------------------------------------------------------------------
-            | CLEAR SESSION
+            | VNPAY
             |--------------------------------------------------------------------------
             */
-            session()->forget(
-                'checkout_items'
-            );
-            session()->forget(
-                'is_reorder'
-            );
-            session()->forget(
-                'selected_cart_ids'
-            );
+            if ($request->payment_method === 'vnpay') {
 
-            session()->forget(
-                'checkout_information'
-            );
+                DB::commit();
 
-            session()->forget(
-                'is_reorder'
-            );
+                return $this->vnpayPayment($order);
+            }
 
             /*
             |--------------------------------------------------------------------------
             | COD SUCCESS
             |--------------------------------------------------------------------------
             */
+            $selectedCartIds = session()->get(
+                'selected_cart_ids',
+                []
+            );
+
+            foreach ($selectedCartIds as $cartKey) {
+
+                $parts = explode(
+                    '_variant_',
+                    $cartKey
+                );
+
+                $variantId = $parts[1] ?? null;
+
+                if (!$variantId) {
+                    continue;
+                }
+
+                DB::table('cart_items')
+
+                    ->whereIn(
+
+                        'cart_id',
+
+                        Cart::where(
+                            'user_id',
+                            Auth::id()
+                        )->pluck('cart_id')
+
+                    )
+
+                    ->where(
+                        'variant_id',
+                        $variantId
+                    )
+
+                    ->delete();
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | UPDATE COD
+            |--------------------------------------------------------------------------
+            */
+            $order->update([
+
+                'order_status' => 'processing'
+            ]);
+
+            Payment::where(
+
+                'order_id',
+
+                $order->order_id
+
+            )->update([
+
+                        'status' => 'success'
+                    ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | CLEAR SESSION
+            |--------------------------------------------------------------------------
+            */
+            session()->forget([
+
+                'checkout_items',
+
+                'selected_cart_ids',
+
+                'checkout_information',
+
+                'is_reorder'
+            ]);
+
             DB::commit();
 
             return redirect()
 
-                ->route('order.history')
+                ->route('orders.history')
 
                 ->with(
 
@@ -1452,14 +1535,14 @@ class OrderController extends Controller
     }
 
 
+
     /*
-   |--------------------------------------------------------------------------
-   | MOMO PAYMENT
-   |--------------------------------------------------------------------------
-   */
+    |--------------------------------------------------------------------------
+    | MOMO PAYMENT
+    |--------------------------------------------------------------------------
+    */
     public function momoPayment($amount)
     {
-
         $endpoint = env('MOMO_ENDPOINT');
 
         $partnerCode = env('MOMO_PARTNER_CODE');
@@ -1568,19 +1651,31 @@ class OrderController extends Controller
         dd($jsonResult);
     }
 
+
+
     /*
-   |--------------------------------------------------------------------------
-   | MOMO RETURN
-   |--------------------------------------------------------------------------
-   */
+    |--------------------------------------------------------------------------
+    | MOMO RETURN
+    |--------------------------------------------------------------------------
+    */
+
     public function momoReturn(Request $request)
     {
+        /*
+        |--------------------------------------------------------------------------
+        | GET ORDER
+        |--------------------------------------------------------------------------
+        */
+        $order = Order::with('items')
 
-        $orderId = session(
-            'pending_order_id'
-        );
+            ->latest('order_id')
 
-        $order = Order::find($orderId);
+            ->where(
+                'user_id',
+                Auth::id()
+            )
+
+            ->first();
 
         /*
         |--------------------------------------------------------------------------
@@ -1644,37 +1739,58 @@ class OrderController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | CLEAR SESSION
+            | DELETE CART ITEMS
             |--------------------------------------------------------------------------
             */
-            Cart::where(
+            $cartIds = Cart::where(
                 'user_id',
-                Auth::id()
-            )->delete();
-            session()->forget(
-                'pending_order_id'
-            );
+                $order->user_id
+            )->pluck('cart_id');
 
-            session()->forget(
-                'selected_cart_ids'
-            );
+            $variantIds = $order->items
+                ->pluck('variant_id')
+                ->toArray();
 
-            session()->forget(
-                'checkout_information'
-            );
+            DB::table('cart_items')
 
-            session()->forget(
-                'checkout_items'
-            );
+                ->whereIn(
+                    'cart_id',
+                    $cartIds
+                )
+
+                ->whereIn(
+                    'variant_id',
+                    $variantIds
+                )
+
+                ->delete();
 
             /*
             |--------------------------------------------------------------------------
-            | SUCCESS REDIRECT
+            | CLEAR SESSION
+            |--------------------------------------------------------------------------
+            */
+            session()->forget([
+
+                'pending_order_id',
+
+                'selected_cart_ids',
+
+                'checkout_information',
+
+                'checkout_items',
+
+                'is_reorder'
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | SUCCESS
             |--------------------------------------------------------------------------
             */
             return redirect()
 
-                ->route('order.history')
+                ->route('orders.history')
 
                 ->with(
 
@@ -1692,16 +1808,7 @@ class OrderController extends Controller
                     ]
                 );
         }
-        foreach ($order->items as $item) {
 
-            ProductVariant::where(
-                'variant_id',
-                $item->variant_id
-            )->increment(
-                    'stock_quantity',
-                    $item->quantity
-                );
-        }
         /*
         |--------------------------------------------------------------------------
         | PAYMENT FAIL
@@ -1711,7 +1818,7 @@ class OrderController extends Controller
 
             'payment_status' => 'pending',
 
-            'order_status' => 'pending'
+            'order_status' => 'pending',
         ]);
 
         Payment::where(
@@ -1727,22 +1834,13 @@ class OrderController extends Controller
 
         return redirect()
 
-            ->route('order.history')
+            ->route('orders.history')
 
             ->with(
 
-                'success_order',
+                'warning',
 
-                [
-
-                    'code' =>
-
-                        $order->order_code,
-
-                    'total' =>
-
-                        $order->total_amount
-                ]
+                'Đơn hàng đã được tạo nhưng chưa thanh toán.'
             );
     }
     private function execPostRequest($url, $data)
@@ -1784,90 +1882,404 @@ class OrderController extends Controller
 
 
 
-// =========================
+    // =========================
 // VNPAY PAYMENT
 // =========================
 
-public function vnpayPayment($order)
-{
-    $vnp_Url = env('VNP_URL'); // Lấy từ .env của bạn
-    $vnp_Returnurl = env('VNP_RETURN_URL'); // http://localhost:8000/vnpay/return
-
-    // Các tham số giả lập y hệt tài liệu VNPAY
-    $vnp_Params = [
-        "vnp_Amount" => $order->total_amount * 100,
-        "vnp_Command" => "pay",
-        "vnp_CreateDate" => date('YmdHis'),
-        "vnp_CurrCode" => "VND",
-        "vnp_IpAddr" => request()->ip(),
-        "vnp_Locale" => "vn",
-        "vnp_OrderInfo" => "Thanh toan don hang #" . $order->order_code,
-        "vnp_OrderType" => "billpayment",
-        "vnp_ReturnUrl" => $vnp_Returnurl,
-        "vnp_TmnCode" => env('VNP_TMN_CODE'),
-        "vnp_TxnRef" => $order->order_code, // Dùng mã đơn hàng để đối soát
-        "vnp_Version" => "2.1.0",
-    ];
-
-    // Thay vì tạo chữ ký thật (Hash), mình chỉ cần Build Query
-    $queryString = http_build_query($vnp_Params);
-    
-    // Giả lập: thay vì đi đến cổng VNPAY thật, mình đi đến một view trung gian
-    // Bạn có thể redirect thẳng về vnp_ReturnUrl nếu muốn bỏ qua bước nhấn nút
-    return redirect()->route('vnpay.mock_portal', $vnp_Params);
-}
-
-public function vnpayMockPortal(Request $request)
-{
-    // Đây là trang giao diện giả lập cổng VNPAY
-    // Bạn có thể cho người dùng thấy số tiền và nút "Xác nhận thanh toán"
-    return "
-        <div style='max-width:500px; margin:50px auto; text-align:center; font-family:Arial; border:1px solid #ddd; padding:20px;'>
-            <img src='https://sandbox.vnpayment.vn/paymentv2/Images/brands/logo.svg' width='150'>
-            <h2>CỔNG THANH TOÁN (GIẢ LẬP)</h2>
-            <p>Đơn hàng: <b>#{$request->vnp_TxnRef}</b></p>
-            <p>Số tiền: <b style='color:red;'>" . number_format($request->vnp_Amount / 100) . " VNĐ</b></p>
-            <hr>
-            <form action='{$request->vnp_ReturnUrl}' method='GET'>
-                <!-- Gửi ngược lại toàn bộ data VNPAY gửi sang -->
-                " . collect($request->all())->map(fn($v, $k) => "<input type='hidden' name='{$k}' value='{$v}'>")->implode('') . "
-                
-                <button name='vnp_ResponseCode' value='00' style='background:#0056b3; color:white; border:none; padding:10px 20px; cursor:pointer;'>
-                    XÁC NHẬN THANH TOÁN THÀNH CÔNG
-                </button>
-                <br><br>
-                <button name='vnp_ResponseCode' value='24' style='background:none; border:none; color:red; cursor:pointer; text-decoration:underline;'>
-                    Hủy giao dịch
-                </button>
-            </form>
-        </div>
-    ";
-}
+    // =========================
+// VNPAY PAYMENT
 // =========================
+
+    public function vnpayPayment($order)
+    {
+        $vnp_Url = env('VNP_URL');
+
+        $vnp_Returnurl = env('VNP_RETURN_URL');
+
+        $vnp_Params = [
+
+            "vnp_Amount" => $order->total_amount * 100,
+
+            "vnp_Command" => "pay",
+
+            "vnp_CreateDate" => date('YmdHis'),
+
+            "vnp_CurrCode" => "VND",
+
+            "vnp_IpAddr" => request()->ip(),
+
+            "vnp_Locale" => "vn",
+
+            "vnp_OrderInfo" =>
+                "Thanh toan don hang #"
+                . $order->order_code,
+
+            "vnp_OrderType" => "billpayment",
+
+            "vnp_ReturnUrl" => $vnp_Returnurl,
+
+            "vnp_TmnCode" => env('VNP_TMN_CODE'),
+
+            "vnp_TxnRef" => $order->order_code,
+
+            "vnp_Version" => "2.1.0",
+        ];
+
+        return redirect()->route(
+            'vnpay.mock_portal',
+            $vnp_Params
+        );
+    }
+
+
+
+    // =========================
+// VNPAY MOCK PORTAL
+// =========================
+
+    public function vnpayMockPortal(Request $request)
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | THÔNG TIN
+        |--------------------------------------------------------------------------
+        */
+        $amount =
+            $request->vnp_Amount / 100;
+
+        $orderCode =
+            $request->vnp_TxnRef;
+
+        /*
+     |--------------------------------------------------------------------------
+     | QR VIETQR
+     |--------------------------------------------------------------------------
+     */
+        $bank = "VCB";
+
+        $accountNo = "1833438176";
+
+        $accountName = "NGUYEN XUAN THU TRANG";
+
+        $amount = (int) $amount;
+
+        $content = urlencode($orderCode);
+
+        $qr =
+
+            "https://img.vietqr.io/image/"
+
+            . $bank
+
+            . "-"
+
+            . $accountNo
+
+            . "-compact2.png"
+
+            . "?amount=" . $amount
+
+            . "&addInfo=" . $content
+
+            . "&accountName=" . urlencode($accountName);
+        /*
+        |--------------------------------------------------------------------------
+        | RETURN VIEW
+        |--------------------------------------------------------------------------
+        */
+        return view(
+
+            'checkout.vnpay',
+
+            compact(
+
+                'amount',
+
+                'orderCode',
+
+                'qr',
+
+                'request'
+            )
+        );
+    }
+
+
+
+    // =========================
 // VNPAY RETURN
 // =========================
 
-public function vnpayReturn(Request $request)
-{
-    $orderCode = $request->vnp_TxnRef;
-    $responseCode = $request->vnp_ResponseCode; // '00' là thành công
+    public function vnpayReturn(Request $request)
+    {
+        $orderCode = $request->vnp_TxnRef;
 
-    $order = Order::where('order_code', $orderCode)->first();
+        $responseCode = $request->vnp_ResponseCode;
 
-    if ($responseCode == '00') {
-        // Cập nhật Database
-        $order->update([
-            'payment_status' => 'paid',
-            'order_status' => 'pending',
-            'paid_at' => now()
-        ]);
+        $order = Order::where(
+            'order_code',
+            $orderCode
+        )->first();
 
-        // Xóa giỏ hàng, trừ kho ở đây...
-        session()->forget(['checkout_items', 'selected_cart_ids']);
+        /*
+        |--------------------------------------------------------------------------
+        | ORDER NOT FOUND
+        |--------------------------------------------------------------------------
+        */
+        if (!$order) {
 
-        return redirect()->route('orders.history')->with('success', 'Thanh toán qua VNPAY thành công!');
+            return redirect()
+
+                ->route('orders.history')
+
+                ->with(
+
+                    'error',
+
+                    'Không tìm thấy đơn hàng'
+                );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | PAYMENT SUCCESS
+        |--------------------------------------------------------------------------
+        */
+        if ($responseCode == '00') {
+
+            /*
+            |--------------------------------------------------------------------------
+            | UPDATE ORDER
+            |--------------------------------------------------------------------------
+            */
+            $order->update([
+
+                'payment_status' => 'paid',
+
+                'order_status' => 'processing',
+
+                'paid_at' => now()
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | UPDATE PAYMENT
+            |--------------------------------------------------------------------------
+            */
+            Payment::where(
+
+                'order_id',
+
+                $order->order_id
+
+            )->update([
+
+                        'status' => 'success'
+                    ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | DELETE CART ITEMS
+            |--------------------------------------------------------------------------
+            */
+            foreach ($order->items as $item) {
+
+                DB::table('cart_items')
+
+                    ->whereIn(
+
+                        'cart_id',
+
+                        Cart::where(
+                            'user_id',
+                            $order->user_id
+                        )->pluck('cart_id')
+
+                    )
+
+                    ->where(
+                        'variant_id',
+                        $item->variant_id
+                    )
+
+                    ->delete();
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | CLEAR SESSION
+            |--------------------------------------------------------------------------
+            */
+            session()->forget([
+
+                'checkout_items',
+
+                'selected_cart_ids',
+
+                'checkout_information',
+
+                'is_reorder',
+
+                'pending_order_id'
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | SUCCESS REDIRECT
+            |--------------------------------------------------------------------------
+            */
+            return redirect()
+
+                ->route('orders.history')
+
+                ->with(
+
+                    'success_order',
+
+                    [
+
+                        'code' =>
+
+                            $order->order_code,
+
+                        'total' =>
+
+                            $order->total_amount
+                    ]
+                );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | PAYMENT FAIL
+        |--------------------------------------------------------------------------
+        */
+        foreach ($order->items as $item) {
+
+            ProductVariant::where(
+                'variant_id',
+                $item->variant_id
+            )->increment(
+
+                    'stock_quantity',
+
+                    $item->quantity
+                );
+        }
+
+        return redirect()
+
+            ->route('checkout.payment')
+
+            ->with(
+
+                'error',
+
+                'Thanh toán thất bại hoặc bị hủy.'
+            );
     }
+    /*
+    |--------------------------------------------------------------------------
+    | AJAX LẤY PHÍ SHIP
+    |--------------------------------------------------------------------------
+    */
+    public function getShippingFeeAjax(Request $request)
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | LẤY TÊN TỈNH
+        |--------------------------------------------------------------------------
+        */
+        $province = $request->province;
 
-    return redirect()->route('checkout.payment')->with('error', 'Thanh toán thất bại hoặc bị hủy.');
-}
+        /*
+        |--------------------------------------------------------------------------
+        | XOÁ "Tỉnh" / "Thành phố"
+        |--------------------------------------------------------------------------
+        */
+        $province = str_replace(
+
+            ['Tỉnh ', 'Thành phố '],
+
+            '',
+
+            trim($province)
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | TÌM PHÍ SHIP TRONG DATABASE
+        |--------------------------------------------------------------------------
+        */
+        $shipping = ShippingFee::where(
+
+            'province',
+
+            $province
+
+        )->first();
+
+        /*
+        |--------------------------------------------------------------------------
+        | TRẢ JSON VỀ FRONTEND
+        |--------------------------------------------------------------------------
+        */
+        return response()->json([
+
+            // phí ship
+            'fee' =>
+
+                $shipping->fee ?? 30000,
+
+            // số ngày giao
+            'estimated_days' =>
+
+                $shipping->estimated_days ?? 3,
+        ]);
+    }
+    /*
+    |--------------------------------------------------------------------------
+    | HÀM LẤY PHÍ SHIP THEO TỈNH
+    |--------------------------------------------------------------------------
+    */
+    private function getShippingFeeByProvince($province)
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | XOÁ "Tỉnh" / "Thành phố"
+        |--------------------------------------------------------------------------
+        */
+        $province = str_replace(
+
+            ['Tỉnh ', 'Thành phố '],
+
+            '',
+
+            trim($province)
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | TÌM SHIPPING
+        |--------------------------------------------------------------------------
+        */
+        $shipping = ShippingFee::where(
+
+            'province',
+
+            $province
+
+        )->first();
+
+        /*
+        |--------------------------------------------------------------------------
+        | NẾU KHÔNG TÌM THẤY -> 30K
+        |--------------------------------------------------------------------------
+        */
+        return $shipping
+
+            ? $shipping->fee
+
+            : 30000;
+    }
 }
