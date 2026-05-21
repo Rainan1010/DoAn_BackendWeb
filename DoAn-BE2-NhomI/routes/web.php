@@ -308,3 +308,11 @@ Route::middleware('auth')->group(function () {
 */
 
 Route::get('/api/compare-product/{id}', [App\Http\Controllers\CompareController::class, 'getCompareProduct']);
+
+// ======================================================
+// AJAX LẤY PHÍ SHIP THEO TỈNH / THÀNH
+// ======================================================
+Route::post(
+    '/get-shipping-fee',
+    [OrderController::class, 'getShippingFeeAjax']
+)->name('shipping.fee');
