@@ -37,7 +37,7 @@ class ProductController extends Controller
         $variants = DB::table('product_variants')->where('product_id', $id)->get();
 
         // 4. Truyền đầy đủ cả 3 biến sang View
-        return view('products.show', compact('product', 'images', 'variants'));
+        return view('products.product_detail', compact('product', 'images', 'variants'));
     }
 
     public function storeReview(Request $request, $id)
