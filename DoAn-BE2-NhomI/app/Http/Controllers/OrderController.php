@@ -936,6 +936,65 @@ class OrderController extends Controller
             . "&addInfo=" . $content
             . "&accountName=" . urlencode($accountName);
 
+        $checkoutItems = session()->get(
+            'checkout_items',
+            []
+        );
+
+        $subtotal = 0;
+
+        foreach ($checkoutItems as $item) {
+
+            $subtotal +=
+                $item['price']
+                * $item['quantity'];
+        }
+
+        $shippingFee = session(
+            'shipping_fee',
+            30000
+        );
+
+        $discount = session(
+            'discount_amount',
+            0
+        );
+
+        $total =
+            $subtotal
+            + $shippingFee
+            - $discount;
+        /*
+        |--------------------------------------------------------------------------
+        | RETURN VIEW
+        |--------------------------------------------------------------------------
+        */
+        return view(
+
+            'checkout.vnpay',
+
+            compact(
+
+                'amount',
+
+                'orderCode',
+
+                'qr',
+
+                'request',
+
+                'checkoutItems',
+
+                'subtotal',
+
+                'shippingFee',
+
+                'discount',
+
+                'total'
+            )
+        );
+
         return view(
             'checkout.vnpay',
             compact(
@@ -945,6 +1004,7 @@ class OrderController extends Controller
                 'request'
             )
         );
+
     }
 
     /**
