@@ -1,45 +1,318 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\HomeController; 
+use Illuminate\Support\Facades\Auth;
+
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CrudUserController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ShippingAddressController;
+use App\Http\Controllers\OTPController;
+use App\Http\Controllers\Auth\SocialAuthController;
 
-// Khai báo đường dẫn trang chủ 
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\BrandController;
+use App\Http\Controllers\Admin\VoucherController;
+use App\Http\Controllers\Admin\ReviewController;
+use App\Http\Controllers\Admin\AttributeController;
+use App\Http\Controllers\Admin\OrderStatisticController;
+
+/*
+|--------------------------------------------------------------------------
+| PUBLIC ROUTES
+|--------------------------------------------------------------------------
+*/
+
 Route::get('/', [HomeController::class, 'index'])->name('home');
-// Route dành riêng cho Ajax tìm kiếm
-Route::get('/search-ajax', [App\Http\Controllers\ProductController::class, 'searchAjax'])->name('search.ajax');
-// Route hiển thị trang chi tiết sản phẩm
-Route::get('/product/{id}', [App\Http\Controllers\ProductController::class, 'show'])->name('product.show');
 
-// ---------------------------------------------------
-// Các route của Trung
-// ---------------------------------------------------
+Route::get('/search-ajax', [ProductController::class, 'searchAjax'])
+    ->name('search.ajax');
 
-Route::prefix('admin')->name('admin.')->group(function () {
-    Route::resource('categories', App\Http\Controllers\Admin\CategoryController::class);
+Route::get('/product/{id}', [ProductController::class, 'show'])
+    ->name('product.show');
+
+Route::get('/product-detail/{id}', [HomeController::class, 'detail'])
+    ->name('product.detail');
+
+/*
+|--------------------------------------------------------------------------
+| AUTH ROUTES
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [CrudUserController::class, 'showLogin'])->name('login');
+    Route::post('/login', [CrudUserController::class, 'login']);
+
+    Route::get('/register', [CrudUserController::class, 'showRegister'])->name('register');
+    Route::post('/register', [CrudUserController::class, 'register']);
+
+    // Login Google & Github
+    Route::get('auth/google', [SocialAuthController::class, 'redirectToGoogle'])
+        ->name('google.login');
+
+    Route::get('auth/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
+
+    Route::get('auth/github', [SocialAuthController::class, 'redirectToGithub'])
+        ->name('github.login');
+
+    Route::get('auth/github/callback', [SocialAuthController::class, 'handleGithubCallback']);
+
+    // OTP
+    Route::middleware('otp.session')->group(function () {
+        Route::get('/verify-otp', [OTPController::class, 'showVerifyForm'])
+            ->name('otp.view');
+
+        Route::post('/verify-otp', [OTPController::class, 'verifyOTP'])
+            ->name('otp.verify');
+
+        Route::post('/resend-otp', [OTPController::class, 'resendOTP'])
+            ->name('otp.resend');
+    });
 });
 
-// ---------------------------------------------------
-// Các route của Trang, Thực sẽ viết tiếp xuống đây...
-// ---------------------------------------------------
-// hiển thị form login
-Route::get('/login', [CrudUserController::class, 'showLogin']);
+Route::post('/logout', function () {
+    Auth::logout();
+    return redirect('/');
+})->name('logout');
 
-// xử lý login khi submit form
-Route::post('/login', [CrudUserController::class, 'login']);
+/*
+|--------------------------------------------------------------------------
+| USER ROUTES
+|--------------------------------------------------------------------------
+*/
 
-// hiển thị form đăng ký
-Route::get('/register', [CrudUserController::class, 'showRegister']);
-// xử lý đăng ký
-Route::post('/register', [CrudUserController::class, 'register']);
+Route::middleware('auth')->group(function () {
+    // Đổi mật khẩu
+    Route::get('/password/change', [CrudUserController::class, 'showChangePassword'])
+        ->name('password.change');
 
-//chi tiết sản phẩm
-Route::get('/product/{id}', [HomeController::class, 'detail']);
+    Route::post('/password/change', [CrudUserController::class, 'changePassword'])
+        ->name('password.update');
 
+    // Profile
+    Route::get('/profile', [CrudUserController::class, 'profile'])
+        ->name('profile');
 
-// hiển thị form đổi mật khẩu
-Route::get('/password/change', [CrudUserController::class, 'showChangePassword'])->middleware('auth');
+    Route::post('/profile/update', [CrudUserController::class, 'updateProfile'])
+        ->name('profile.update');
 
-// xử lý đổi mật khẩu
-Route::post('/password/change', [CrudUserController::class, 'changePassword'])->middleware('auth');
+    // Review
+    Route::post('/product/{id}/review', [ProductController::class, 'storeReview'])
+        ->name('product.review.store');
+});
 
+/*
+|--------------------------------------------------------------------------
+| ADMIN ROUTES
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
+    // Dashboard
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+
+    // Quản lý Sản phẩm
+    Route::resource('products', AdminProductController::class);
+
+    // Quản lý Danh mục
+    Route::resource('categories', CategoryController::class);
+
+    // Quản lý Thương hiệu
+    Route::view('/brands/create', 'admin.brands.create')->name('brands.create');
+    Route::patch('brands/{id}/toggle-status', [BrandController::class, 'toggleStatus'])
+        ->name('brands.toggleStatus');
+    Route::resource('brands', BrandController::class)->except(['create']);
+
+    // Quản lý Voucher
+    Route::patch('vouchers/{id}/toggle-status', [VoucherController::class, 'toggleStatus'])
+        ->name('vouchers.toggleStatus');
+    Route::resource('vouchers', VoucherController::class);
+
+    // Quản lý Đánh giá
+    Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
+    Route::get('reviews/{id}', [ReviewController::class, 'show'])->name('reviews.show');
+    Route::patch('reviews/{id}/status', [ReviewController::class, 'updateStatus'])->name('reviews.updateStatus');
+    Route::delete('reviews/{id}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
+
+    // Quản lý Phân quyền
+    Route::patch('permissions/{id}/toggle-status', [App\Http\Controllers\Admin\PermissionController::class, 'toggleStatus'])
+        ->name('permissions.toggle-status');
+    Route::resource('permissions', App\Http\Controllers\Admin\PermissionController::class);
+
+    // Backup / Restore
+    Route::get('backups', [App\Http\Controllers\Admin\BackupController::class, 'index'])
+        ->name('backups.index');
+
+    Route::post('backups', [App\Http\Controllers\Admin\BackupController::class, 'create'])
+        ->name('backups.create');
+
+    Route::post('backups/upload', [App\Http\Controllers\Admin\BackupController::class, 'uploadRestore'])
+        ->name('backups.upload');
+
+    Route::get('backups/{id}/download', [App\Http\Controllers\Admin\BackupController::class, 'download'])
+        ->name('backups.download');
+
+    Route::post('backups/{id}/restore', [App\Http\Controllers\Admin\BackupController::class, 'restore'])
+        ->name('backups.restore');
+
+    Route::delete('backups/{id}', [App\Http\Controllers\Admin\BackupController::class, 'destroy'])
+        ->name('backups.destroy');
+
+    // Quản lý Thuộc tính
+    Route::resource('attributes', AttributeController::class);
+
+    // Thống kê đơn hàng theo trạng thái
+    Route::get('order-statistics', [OrderStatisticController::class, 'index'])
+        ->name('order-statistics.index');
+});
+
+/*
+|--------------------------------------------------------------------------
+| SHIPPING ADDRESS
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth')->group(function () {
+    Route::get('/change-address', [ShippingAddressController::class, 'index'])
+        ->name('addresses.index');
+
+    Route::get('/change-address/create', [ShippingAddressController::class, 'create'])
+        ->name('addresses.create');
+
+    Route::post('/change-address/store', [ShippingAddressController::class, 'store'])
+        ->name('addresses.store');
+
+    Route::get('/change-address/edit/{id}', [ShippingAddressController::class, 'edit'])
+        ->name('addresses.edit');
+
+    Route::post('/change-address/update/{id}', [ShippingAddressController::class, 'update'])
+        ->name('addresses.update');
+
+    Route::delete('/change-address/delete/{id}', [ShippingAddressController::class, 'destroy'])
+        ->name('addresses.destroy');
+
+    Route::post('/change-address/default/{id}', [ShippingAddressController::class, 'setDefault'])
+        ->name('addresses.default');
+});
+
+/*
+|--------------------------------------------------------------------------
+| CART
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/cart', [CartController::class, 'index'])
+    ->name('cart.index');
+
+Route::post('/cart/add', [CartController::class, 'add'])
+    ->name('cart.add');
+
+Route::post('/cart/update', [CartController::class, 'update'])
+    ->name('cart.update');
+
+Route::post('/cart/remove', [CartController::class, 'remove'])
+    ->name('cart.remove');
+
+Route::post('/cart/select', [CartController::class, 'select'])
+    ->name('cart.select');
+
+Route::post('/cart/toggle-select', [CartController::class, 'toggleSelect'])
+    ->name('cart.toggleSelect');
+
+Route::post('/cart/apply-voucher', [CartController::class, 'applyVoucher'])
+    ->name('cart.applyVoucher');
+
+Route::post('/cart/remove-voucher', [CartController::class, 'removeVoucher'])
+    ->name('cart.removeVoucher');
+
+/*
+|--------------------------------------------------------------------------
+| ORDERS
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth')->group(function () {
+    Route::get('/orders', [OrderController::class, 'history'])
+        ->name('orders.history');
+
+    Route::get('/orders/{id}', [OrderController::class, 'detail'])
+        ->name('orders.detail');
+
+    Route::post('/orders/cancel/{id}', [OrderController::class, 'cancel'])
+        ->name('orders.cancel');
+
+    Route::post('/orders/reorder/{id}', [OrderController::class, 'reorder'])
+        ->name('orders.reorder');
+});
+
+/*
+|--------------------------------------------------------------------------
+| CHECKOUT
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth')->group(function () {
+    Route::get('/checkout', [OrderController::class, 'checkout'])
+        ->name('checkout');
+
+    Route::post('/checkout/save-information', [OrderController::class, 'saveInformation'])
+        ->name('checkout.saveInformation');
+
+    Route::get('/checkout/payment', [OrderController::class, 'payment'])
+        ->name('checkout.payment');
+
+    Route::post('/checkout/store', [OrderController::class, 'store'])
+        ->name('checkout.store');
+
+    /*
+    |--------------------------------------------------------------------------
+    | MOMO
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post('/payment/momo', [OrderController::class, 'momoPayment'])
+        ->name('payment.momo');
+
+    Route::get('/momo/return', [OrderController::class, 'momoReturn'])
+        ->name('momo.return');
+
+    Route::post('/momo/ipn', [OrderController::class, 'momoIPN'])
+        ->name('momo.ipn');
+
+    /*
+    |--------------------------------------------------------------------------
+    | VNPAY
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post('/payment/vnpay', [OrderController::class, 'vnpayPayment'])
+        ->name('payment.vnpay');
+
+    Route::get('/vnpay-portal', [OrderController::class, 'vnpayMockPortal'])
+        ->name('vnpay.mock_portal');
+
+    Route::get('/vnpay/return', [OrderController::class, 'vnpayReturn'])
+        ->name('vnpay.return');
+});
+
+/*
+|--------------------------------------------------------------------------
+| API
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/api/compare-product/{id}', [App\Http\Controllers\CompareController::class, 'getCompareProduct']);
+
+// ======================================================
+// AJAX LẤY PHÍ SHIP THEO TỈNH / THÀNH
+// ======================================================
+Route::post(
+    '/get-shipping-fee',
+    [OrderController::class, 'getShippingFeeAjax']
+)->name('shipping.fee');

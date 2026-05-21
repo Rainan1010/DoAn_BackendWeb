@@ -1,108 +1,344 @@
 <?php
+
 namespace App\Http\Controllers;
+
 use App\Models\User;
-use Illuminate\Http\Request; // dùng để lấy dữ liệu từ form
-use Illuminate\Support\Facades\Auth; // dùng cho login/logout
-use Illuminate\Support\Facades\Hash; // đổi mật khẩu 
+use App\Models\Cart;
+use App\Models\CartItem;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\VerifyOTPMail;
 
 class CrudUserController extends Controller
 {
-    // hiển thị form login
-public function showLogin()
-{
-    return view('auth.login'); // trả về file giao diện login
-}
-
-// xử lý login
-public function login(Request $request)
-{
-    // lấy dữ liệu người dùng nhập
-    $login = $request->identifier; // email hoặc username
-    $password = $request->password; // mật khẩu
-
-    // thử đăng nhập bằng email
-    if (Auth::attempt([
-        'email' => $login,
-        'password' => $password, // mật khẩu người dùng nhập
-        'is_active' => 1      // chỉ cho login nếu active = 1
-    ])) {
-
-        // nếu đúng → chuyển về trang chủ
-        return redirect('/');
+    // =====================================================
+    // 1. ĐĂNG NHẬP (LOGIN)
+    // =====================================================
+    public function showLogin()
+    {
+        return view('auth.login');
     }
 
-    // nếu sai → quay lại form + báo lỗi
-    return back()->with('error', 'Sai tài khoản hoặc mật khẩu');
-}
+    public function login(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ], [
+            'email.required' => 'Vui lòng nhập email.',
+            'email.email' => 'Định dạng email không hợp lệ.',
+            'password.required' => 'Vui lòng nhập mật khẩu.',
+        ]);
 
-public function showRegister()
-{
-    return view('auth.register');
-}
+        $credentials = $request->only('email', 'password');
+        $remember = $request->has('remember');
 
-public function register(Request $request)
-{
-    $request->validate([
-        'full_name' => 'required|string|max:100',
-        'email' => 'required|string|email|max:100|unique:users',
-        'phone' => 'required|string|max:20',
-        'password' => 'required|string|min:6|confirmed',
-    ], [
-        'full_name.required' => 'Vui lòng nhập họ và tên.',
-        'email.required' => 'Vui lòng nhập email.',
-        'email.email' => 'Email không hợp lệ.',
-        'email.unique' => 'Email này đã được đăng ký.',
-        'phone.required' => 'Vui lòng nhập số điện thoại.',
-        'password.required' => 'Vui lòng nhập mật khẩu.',
-        'password.min' => 'Mật khẩu phải có ít nhất 6 ký tự.',
-        'password.confirmed' => 'Xác nhận mật khẩu không khớp.',
-    ]);
+        if (Auth::attempt($credentials, $remember)) {
+            $request->session()->regenerate();
 
-    User::create([
-        'full_name' => $request->full_name,
-        'email' => $request->email,
-        'phone' => $request->phone,
-        'password_hash' => \Illuminate\Support\Facades\Hash::make($request->password),
-        'role' => 'user',
-        'is_active' => 1    
-    ]);
+            $user = Auth::user();
 
-    return redirect('/login')->with('success', 'Đăng ký thành công! Vui lòng đăng nhập.');
-}
-public function showChangePassword()
-{
-    return view('auth.change_password');
-}
+            // Kiểm tra tài khoản bị khóa
+            if ($user->is_active == 0) {
+                Auth::logout();
 
-public function changePassword(Request $request)
-{
-    $request->validate([
-        'current_password' => 'required',
-        'new_password' => 'required|min:6|confirmed',
-    ], [
-        'current_password.required' => 'Vui lòng nhập mật khẩu hiện tại.',
-        'new_password.required' => 'Vui lòng nhập mật khẩu mới.',
-        'new_password.min' => 'Mật khẩu mới phải có ít nhất 6 ký tự.',
-        'new_password.confirmed' => 'Xác nhận mật khẩu mới không khớp.',
-    ]);
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
 
-    $user = Auth::user();
+                return back()->with('error', 'Tài khoản của bạn đã bị khóa.');
+            }
 
-    // kiểm tra mật khẩu hiện tại
-    if (!Hash::check($request->current_password, $user->password_hash)) {
-        return back()->withErrors(['current_password' => 'Mật khẩu hiện tại không đúng.']);
+            // Kiểm tra xác thực OTP
+            if ($user->is_verified == 0) {
+                $userId = $user->user_id;
+
+                Auth::logout();
+
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                session(['otp_user_id' => $userId]);
+
+                $otpCode = rand(100000, 999999);
+
+                DB::table('otp_verifications')->updateOrInsert(
+                    [
+                        'user_id' => $userId,
+                        'purpose' => 'register',
+                    ],
+                    [
+                        'otp_code' => $otpCode,
+                        'expires_at' => now()->addMinutes(10),
+                        'used' => 0,
+                    ]
+                );
+
+                Mail::to($user->email)->send(new VerifyOTPMail($otpCode));
+
+                return redirect()
+                    ->route('otp.view')
+                    ->with('error', 'Tài khoản chưa xác thực. Mã OTP mới đã được gửi qua email.');
+            }
+
+            // Chuyển giỏ hàng session sang database sau khi đăng nhập thành công
+            $this->mergeSessionCartToDatabase();
+
+            // Chuyển hướng theo vai trò
+            if ($user->role === 'admin') {
+                return redirect('/admin/categories')
+                    ->with('success', 'Chào mừng Admin quay trở lại!');
+            }
+
+            return redirect('/')
+                ->with('success', 'Đăng nhập thành công!');
+        }
+
+        return back()
+            ->with('error', 'Tài khoản hoặc mật khẩu không chính xác.')
+            ->withInput();
     }
 
-    // cập nhật mật khẩu mới
-    $user->password_hash = Hash::make($request->new_password);
-    $user->save();
+    /**
+     * Chuyển giỏ hàng lưu trong session sang database sau khi user đăng nhập.
+     *
+     * Lưu ý:
+     * - cart_items của bạn chỉ lưu: cart_id, variant_id, quantity, price
+     * - Nếu session cart thiếu variant_id, hàm sẽ tự lấy variant đầu tiên theo product_id
+     */
+    private function mergeSessionCartToDatabase()
+    {
+        if (!auth()->check()) {
+            return;
+        }
 
-    // đăng xuất session cũ để tránh lỗi
-    Auth::logout();
+        $sessionCart = session()->get('cart', []);
 
-    // chuyển về trang login
-    return redirect('/login')->with('success', 'Đổi mật khẩu thành công! Vui lòng đăng nhập lại.');
-}
+        if (empty($sessionCart)) {
+            return;
+        }
 
+        $userCart = Cart::firstOrCreate(
+            ['user_id' => auth()->id()],
+            [
+                'session_id' => null,
+                'updated_at' => now(),
+            ]
+        );
 
+        $mergedCount = 0;
+
+        foreach ($sessionCart as $cartKey => $details) {
+            $variantId = $details['variant_id'] ?? null;
+
+            /*
+        |--------------------------------------------------------------------------
+        | Trường hợp session cart không có variant_id
+        | Thử lấy variant_id từ product_id
+        |--------------------------------------------------------------------------
+        */
+            if (empty($variantId) && !empty($details['product_id'])) {
+                $variantId = DB::table('product_variants')
+                    ->where('product_id', $details['product_id'])
+                    ->where('is_active', 1)
+                    ->orderBy('variant_id', 'asc')
+                    ->value('variant_id');
+            }
+
+            /*
+        |--------------------------------------------------------------------------
+        | Nếu vẫn không có variant_id thì bỏ qua item này,
+        | nhưng KHÔNG xoá session cart để tránh mất giỏ hàng.
+        |--------------------------------------------------------------------------
+        */
+            if (empty($variantId)) {
+                continue;
+            }
+
+            $variant = DB::table('product_variants')
+                ->where('variant_id', $variantId)
+                ->first();
+
+            if (!$variant) {
+                continue;
+            }
+
+            $quantity = max(1, (int) ($details['quantity'] ?? 1));
+
+            $price = $details['price'] ?? null;
+
+            if (empty($price)) {
+                $price = $variant->sale_price ?? $variant->price ?? 0;
+            }
+
+            $cartItem = CartItem::where('cart_id', $userCart->cart_id)
+                ->where('variant_id', $variantId)
+                ->first();
+
+            if ($cartItem) {
+                $cartItem->quantity += $quantity;
+                $cartItem->price = $price;
+                $cartItem->save();
+            } else {
+                CartItem::create([
+                    'cart_id' => $userCart->cart_id,
+                    'variant_id' => $variantId,
+                    'quantity' => $quantity,
+                    'price' => $price,
+                ]);
+            }
+
+            $mergedCount++;
+        }
+
+        $userCart->update([
+            'updated_at' => now(),
+        ]);
+
+        /*
+    |--------------------------------------------------------------------------
+    | Chỉ xoá session cart nếu đã merge được ít nhất 1 sản phẩm
+    |--------------------------------------------------------------------------
+    */
+        if ($mergedCount > 0) {
+            session()->forget('cart');
+        }
+    }
+
+    // =====================================================
+    // 2. ĐĂNG KÝ (REGISTER)
+    // =====================================================
+    public function showRegister()
+    {
+        return view('auth.register');
+    }
+
+    public function register(Request $request)
+    {
+        $request->validate([
+            'full_name' => 'required|string|max:100',
+            'email' => 'required|string|email|max:100|unique:users',
+            'phone' => 'required|string|digits:10',
+            'password' => 'required|string|min:6|confirmed',
+        ], [
+            'full_name.required' => 'Vui lòng nhập họ và tên.',
+            'email.unique' => 'Email này đã được đăng ký.',
+            'phone.digits' => 'Số điện thoại phải gồm đúng 10 số.',
+            'password.confirmed' => 'Xác nhận mật khẩu không khớp.',
+        ]);
+
+        $user = User::create([
+            'full_name' => $request->full_name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'password_hash' => Hash::make($request->password),
+            'role' => 'user',
+            'is_active' => 1,
+            'is_verified' => 0,
+        ]);
+
+        $otpCode = rand(100000, 999999);
+
+        DB::table('otp_verifications')->insert([
+            'user_id' => $user->user_id,
+            'otp_code' => $otpCode,
+            'purpose' => 'register',
+            'expires_at' => now()->addMinutes(10),
+        ]);
+
+        Mail::to($user->email)->send(new VerifyOTPMail($otpCode));
+
+        session(['otp_user_id' => $user->user_id]);
+
+        return redirect()
+            ->route('otp.view')
+            ->with('success', 'Đăng ký thành công! Vui lòng nhập mã OTP gửi tới email.');
+    }
+
+    // =====================================================
+    // 3. QUẢN LÝ THÔNG TIN (PROFILE & AVATAR)
+    // =====================================================
+    public function profile()
+    {
+        return view('auth.profile');
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'full_name' => ['required', 'max:50', 'regex:/^[\pL\s]+$/u'],
+            'phone' => ['required', 'digits:10', 'regex:/^0[0-9]{9}$/'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ], [
+            'full_name.required' => 'Vui lòng nhập Họ và tên.',
+            'phone.digits' => 'Số điện thoại phải gồm đúng 10 số.',
+            'avatar.image' => 'File tải lên phải là hình ảnh.',
+            'avatar.max' => 'Dung lượng ảnh tối đa là 2MB.',
+        ]);
+
+        $user->full_name = trim($request->full_name);
+        $user->phone = $request->phone;
+
+        if ($request->hasFile('avatar')) {
+            $file = $request->file('avatar');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $path = public_path('images/users');
+
+            if (!file_exists($path)) {
+                mkdir($path, 0777, true);
+            }
+
+            if ($user->avatar_url && file_exists(public_path($user->avatar_url))) {
+                unlink(public_path($user->avatar_url));
+            }
+
+            $file->move($path, $fileName);
+
+            $user->avatar_url = 'images/users/' . $fileName;
+        }
+
+        $user->save();
+
+        return back()->with('success', 'Cập nhật thông tin tài khoản thành công.');
+    }
+
+    // =====================================================
+    // 4. ĐỔI MẬT KHẨU (CHANGE PASSWORD)
+    // =====================================================
+    public function showChangePassword()
+    {
+        return view('auth.change_password');
+    }
+
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:6|confirmed',
+        ], [
+            'current_password.required' => 'Vui lòng nhập mật khẩu hiện tại.',
+            'new_password.min' => 'Mật khẩu mới tối thiểu 6 ký tự.',
+            'new_password.confirmed' => 'Xác nhận mật khẩu mới không khớp.',
+        ]);
+
+        $user = Auth::user();
+
+        if (!Hash::check($request->current_password, $user->password_hash)) {
+            return back()->withErrors([
+                'current_password' => 'Mật khẩu hiện tại không chính xác.',
+            ]);
+        }
+
+        $user->password_hash = Hash::make($request->new_password);
+        $user->save();
+
+        Auth::logout();
+
+        return redirect('/login')
+            ->with('success', 'Đổi mật khẩu thành công! Vui lòng đăng nhập lại.');
+    }
 }
