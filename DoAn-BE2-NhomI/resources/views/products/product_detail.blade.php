@@ -13,15 +13,54 @@
             <span class="font-bold text-gray-800">{{ $product->name }}</span>
         </div>
 
+        {{-- ===== FIX BIẾN THIẾU + ẢNH SẢN PHẨM ===== --}}
+        @php
+            $relatedProducts = $relatedProducts ?? collect();
+            $reviews = $reviews ?? collect();
+
+            $productImage = $product->image_url ?? null;
+
+            if (!$productImage && isset($images) && count($images) > 0) {
+                $primaryImg = $images->where('is_primary', 1)->first() ?? $images->first();
+
+                if ($primaryImg) {
+                    $productImage = $primaryImg->image_url
+                        ?? $primaryImg->url
+                        ?? $primaryImg->image
+                        ?? $primaryImg->path
+                        ?? null;
+                }
+            }
+
+            $productImage = $productImage ?: 'images/products/default.png';
+        @endphp
+
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
 
             {{-- ===== ẢNH SẢN PHẨM ===== --}}
-            <div class="lg:col-span-6 sticky top-24">
+            <div class="lg:col-span-6 sticky top-24 space-y-6">
                 <div class="border-2 border-gray-50 p-8 rounded-3xl bg-white shadow-sm hover:shadow-md transition-shadow">
-                    <img src="{{ asset(str_replace(['public/', '/storage/products/'], ['', '/products/'], $product->image_url)) }}"
+                    <img id="mainProductImage" src="{{ asset(str_replace(['public/', '/storage/products/'], ['', '/products/'], $productImage)) }}"
                          class="w-full h-[450px] object-contain hover:scale-105 transition-transform duration-500"
                          alt="{{ $product->name }}">
                 </div>
+
+                {{-- DANH SÁCH ẢNH NHỎ (THUMBNAILS) --}}
+                @if(isset($images) && count($images) > 0)
+                <div class="grid grid-cols-5 gap-4">
+                    @foreach($images as $img)
+                        @php 
+                            $imgUrl = asset(str_replace(['public/', '/storage/products/'], ['', '/products/'], $img->image_url)); 
+                            $isCurrentPrimary = ($img->is_primary || ($img->image_url == $productImage) || (str_replace('public/', '', $img->image_url) == str_replace('public/', '', $productImage)));
+                        @endphp
+                        <div onclick="changeMainImage(this, '{{ $imgUrl }}')"
+                             class="thumbnail-item aspect-square bg-white rounded-2xl border-2 {{ $isCurrentPrimary ? 'border-blue-900 shadow-md' : 'border-gray-100 hover:border-blue-200' }} overflow-hidden cursor-pointer transition-all p-2 flex items-center justify-center group shadow-sm">
+                            <img alt="Thumbnail" class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300" 
+                                 src="{{ $imgUrl }}"/>
+                        </div>
+                    @endforeach
+                </div>
+                @endif
             </div>
 
 
@@ -155,7 +194,7 @@
                 </div>
                 <div class="flex flex-col border-r text-center">
                     <div class="h-44 p-6 flex flex-col items-center justify-end border-b">
-                        <img src="{{ asset(str_replace(['public/', '/storage/products/'], ['', '/products/'], $product->image_url)) }}" class="h-24 object-contain mb-2" />
+                        <img src="{{ asset(str_replace(['public/', '/storage/products/'], ['', '/products/'], $productImage)) }}" class="h-24 object-contain mb-2" />
                         <span class="text-sm font-black text-blue-900">{{ $product->name }}</span>
                     </div>
                     <div class="flex-1 text-sm font-bold text-blue-900">
@@ -197,9 +236,17 @@
                 <h2 class="text-2xl font-black text-blue-900 mb-8 uppercase tracking-tight">Cùng dòng sản phẩm</h2>
                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
                     @foreach($relatedProducts as $item)
+                        @php
+                            $itemImage = $item->image_url
+                                ?? $item->image
+                                ?? $item->thumbnail
+                                ?? $item->path
+                                ?? 'images/products/default.png';
+                        @endphp
+
                         <a href="{{ url('/product/' . $item->product_id) }}" class="group border border-gray-100 rounded-2xl p-4 hover:shadow-2xl hover:-translate-y-1 transition-all bg-white flex flex-col">
                             <div class="aspect-square mb-4 overflow-hidden rounded-xl">
-                                <img src="{{ asset(str_replace(['public/', '/storage/products/'], ['', '/products/'], $item->image_url)) }}" 
+                                <img src="{{ asset(str_replace(['public/', '/storage/products/'], ['', '/products/'], $itemImage)) }}"
                                      class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500" 
                                      alt="{{ $item->name }}">
                             </div>
@@ -310,9 +357,8 @@
                             </div>
                             
                             <style>
-                                /* Để hover 1 sao thì các sao bên trái nó cũng sáng theo */
                                 #star-rating label:hover ~ label {
-                                    color: #facc15; /* tailwind yellow-400 */
+                                    color: #facc15;
                                 }
                                 #star-rating input:checked ~ label {
                                     color: #facc15;
@@ -375,16 +421,14 @@
 
         variantBtns.forEach(btn => {
             btn.addEventListener('click', function () {
-                // Reset style tất cả button
                 variantBtns.forEach(b => {
                     b.classList.remove('bg-blue-900', 'text-white', 'border-blue-900', 'shadow-md');
                     b.classList.add('bg-white', 'text-gray-500', 'border-gray-100');
                 });
-                // Active button được chọn
+
                 this.classList.remove('bg-white', 'text-gray-500', 'border-gray-100');
                 this.classList.add('bg-blue-900', 'text-white', 'border-blue-900', 'shadow-md');
 
-                // Cập nhật thông tin hiển thị và input ẩn
                 if (selectedVariantLabel) selectedVariantLabel.innerText = "(" + this.dataset.value + ")";
                 if (mainPrice) mainPrice.innerText = this.dataset.price;
                 if (hiddenVariantInput) hiddenVariantInput.value = this.dataset.variantId;
@@ -417,7 +461,6 @@
         }
     });
 
-    // --- 3. Các hàm hỗ trợ ---
     function resetCompare() {
         document.getElementById('select-compare-product').value = "";
         document.getElementById('compare-info-2').classList.add('hidden');
@@ -427,7 +470,6 @@
         document.querySelectorAll('#compare-specs-2 .spec-value').forEach(s => s.innerText = "-");
     }
 
-    // ── Lightbox ──
     let _lbIdx = 0;
     let _lbScale = 1;
     window._lbSrcs = [];
@@ -468,7 +510,6 @@
         _lbScale = 1;
     };
 
-    // Wheel zoom
     document.getElementById('lightbox').addEventListener('wheel', e => {
         if (document.getElementById('lightbox').classList.contains('hidden')) return;
         e.preventDefault();
@@ -483,8 +524,25 @@
         if (!lb || lb.classList.contains('hidden')) return;
 
         if (e.key === 'Escape') closeLightbox();
-        if (e.key === 'ArrowLeft')  lbNav(-1);
+        if (e.key === 'ArrowLeft') lbNav(-1);
         if (e.key === 'ArrowRight') lbNav(1);
     });
+
+    function changeMainImage(el, url) {
+        const mainImg = document.getElementById('mainProductImage');
+        if (mainImg) {
+            mainImg.src = url;
+        }
+
+        // Bỏ active border của toàn bộ thumbnails
+        document.querySelectorAll('.thumbnail-item').forEach(item => {
+            item.classList.remove('border-blue-900', 'shadow-md');
+            item.classList.add('border-gray-100', 'hover:border-blue-200');
+        });
+
+        // Thêm active border cho thumbnail được click
+        el.classList.remove('border-gray-100', 'hover:border-blue-200');
+        el.classList.add('border-blue-900', 'shadow-md');
+    }
 </script>
 @endpush

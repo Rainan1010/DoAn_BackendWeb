@@ -89,8 +89,8 @@ class CartController extends Controller
                 'variant_id' => $variant->variant_id,
                 'name' => $product->name,
                 'variant_name' => $this->formatVariantName($variant->attribute_values),
-                'quantity' => $item->quantity,
-                'price' => $item->price,
+                'quantity' => (int) $item->quantity,
+                'price' => (float) $item->price,
                 'image' => $image ?? 'images/default-product.png',
             ];
         }
@@ -98,13 +98,38 @@ class CartController extends Controller
         return $cart;
     }
 
-    private function getCartForCurrentUser()
+    private function updateCartCountFromCartArray(array $cart)
     {
-        if (auth()->check()) {
-            return $this->getDatabaseCartAsSessionFormat();
+        $totalQuantity = 0;
+
+        foreach ($cart as $item) {
+            $totalQuantity += (int) ($item['quantity'] ?? 1);
         }
 
-        return session()->get('cart', []);
+        session()->put('cart_count', $totalQuantity);
+
+        return $totalQuantity;
+    }
+
+    private function syncCartSession()
+    {
+        if (auth()->check()) {
+            $cart = $this->getDatabaseCartAsSessionFormat();
+            session()->put('cart', $cart);
+            $this->updateCartCountFromCartArray($cart);
+
+            return $cart;
+        }
+
+        $cart = session()->get('cart', []);
+        $this->updateCartCountFromCartArray($cart);
+
+        return $cart;
+    }
+
+    private function getCartForCurrentUser()
+    {
+        return $this->syncCartSession();
     }
 
     public function index()
@@ -130,14 +155,15 @@ class CartController extends Controller
         $shipping = $subtotal > 0 ? 45000 : 0;
         $tax = $subtotal * 0.1;
 
-        // Tính discount từ voucher đang apply trong session
         $discount = 0;
         $appliedVoucher = null;
 
         $voucherId = session('applied_voucher');
+
         if ($voucherId && $subtotal > 0) {
             $voucher = DB::table('vouchers')->where('voucher_id', $voucherId)->first();
             $now = now();
+
             $isValid = $voucher
                 && $voucher->is_active
                 && (!$voucher->end_at || $now->lte($voucher->end_at))
@@ -147,12 +173,14 @@ class CartController extends Controller
             if ($isValid) {
                 if ($voucher->type === 'percent') {
                     $discount = $subtotal * ($voucher->value / 100);
+
                     if ($voucher->max_discount) {
                         $discount = min($discount, $voucher->max_discount);
                     }
                 } else {
                     $discount = min(max(0, $voucher->value), $subtotal);
                 }
+
                 $appliedVoucher = $voucher;
             } else {
                 session()->forget('applied_voucher');
@@ -212,7 +240,7 @@ class CartController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | USER ĐÃ ĐĂNG NHẬP: LƯU GIỎ HÀNG VÀO DATABASE
+        | USER ĐÃ ĐĂNG NHẬP: LƯU DATABASE + ĐỒNG BỘ SESSION
         |--------------------------------------------------------------------------
         */
         if (auth()->check()) {
@@ -257,6 +285,9 @@ class CartController extends Controller
 
             session()->put('selected_cart_ids', $selectedCartIds);
 
+            // Quan trọng: đồng bộ database cart sang session để navbar trang chủ đọc được
+            $this->syncCartSession();
+
             return redirect()
                 ->route('cart.index')
                 ->with('success', 'Đã thêm vào giỏ hàng!');
@@ -264,7 +295,7 @@ class CartController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | KHÁCH CHƯA ĐĂNG NHẬP: GIỮ SESSION NHƯ CŨ
+        | KHÁCH CHƯA ĐĂNG NHẬP: LƯU SESSION
         |--------------------------------------------------------------------------
         */
         $cart = session()->get('cart', []);
@@ -293,6 +324,7 @@ class CartController extends Controller
         }
 
         session()->put('cart', $cart);
+        $this->updateCartCountFromCartArray($cart);
 
         $selectedCartIds = session()->get('selected_cart_ids', []);
 
@@ -390,6 +422,9 @@ class CartController extends Controller
                 'updated_at' => now(),
             ]);
 
+            // Đồng bộ lại session để navbar trang chủ cũng hiện đúng số
+            $this->syncCartSession();
+
             return redirect()
                 ->route('cart.index')
                 ->with('success', 'Giỏ hàng đã được cập nhật!');
@@ -406,6 +441,7 @@ class CartController extends Controller
         $cart[$request->id]['quantity'] = (int) $request->quantity;
 
         session()->put('cart', $cart);
+        $this->updateCartCountFromCartArray($cart);
 
         return redirect()
             ->route('cart.index')
@@ -434,12 +470,16 @@ class CartController extends Controller
                     ]);
                 }
             }
+
+            // Đồng bộ lại session sau khi xóa
+            $this->syncCartSession();
         } else {
             $cart = session()->get('cart', []);
 
             if (isset($cart[$request->id])) {
                 unset($cart[$request->id]);
                 session()->put('cart', $cart);
+                $this->updateCartCountFromCartArray($cart);
             }
         }
 
@@ -477,6 +517,7 @@ class CartController extends Controller
         }
 
         $now = now();
+
         if ($voucher->start_at && $now->lt($voucher->start_at)) {
             return redirect()->route('cart.index')
                 ->with('voucher_error', 'Mã giảm giá chưa đến thời gian sử dụng.');
@@ -492,10 +533,10 @@ class CartController extends Controller
                 ->with('voucher_error', 'Mã giảm giá đã được sử dụng hết lượt.');
         }
 
-        // Tính subtotal từ selected items
         $cart = $this->getCartForCurrentUser();
         $selectedCartIds = session()->get('selected_cart_ids', []);
         $subtotal = 0;
+
         foreach ($selectedCartIds as $id) {
             if (isset($cart[$id])) {
                 $subtotal += $cart[$id]['price'] * $cart[$id]['quantity'];
