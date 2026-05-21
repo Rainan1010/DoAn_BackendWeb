@@ -76,4 +76,43 @@ class ProductController extends Controller
 
         return back()->with('success', 'Đánh giá của bạn đã được gửi và đang chờ duyệt.');
     }
+
+    public function category($slug)
+    {
+        $category = DB::table('categories')
+            ->where('slug', $slug)
+            ->where('is_active', 1)
+            ->first();
+
+        if (!$category) {
+            abort(404);
+        }
+
+        // Lấy danh sách sản phẩm thuộc danh mục này
+        $products = DB::table('products')
+            ->join('product_images', 'products.product_id', '=', 'product_images.product_id')
+            ->where('product_images.is_primary', 1)
+            ->where('products.category_id', $category->category_id)
+            ->where('products.is_active', 1)
+            ->select('products.*', 'product_images.image_url')
+            ->orderBy('products.created_at', 'desc')
+            ->paginate(12);
+
+        return view('products.category', compact('category', 'products'));
+    }
+
+    public function promotions()
+    {
+        // Lấy các sản phẩm có is_hot = 1 (sản phẩm khuyến mãi)
+        $products = DB::table('products')
+            ->join('product_images', 'products.product_id', '=', 'product_images.product_id')
+            ->where('product_images.is_primary', 1)
+            ->where('products.is_hot', 1)
+            ->where('products.is_active', 1)
+            ->select('products.*', 'product_images.image_url')
+            ->orderBy('products.created_at', 'desc')
+            ->paginate(12);
+
+        return view('products.promotions', compact('products'));
+    }
 }

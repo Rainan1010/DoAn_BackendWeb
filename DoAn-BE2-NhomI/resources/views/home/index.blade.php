@@ -229,8 +229,14 @@
                 clearInterval(autoTimer);
             }
 
-            slider.addEventListener('mouseenter', stopAuto);
-            slider.addEventListener('mouseleave', startAuto);
+            const trendingSection = document.getElementById('trending');
+            if (trendingSection) {
+                trendingSection.addEventListener('mouseenter', stopAuto);
+                trendingSection.addEventListener('mouseleave', startAuto);
+            } else {
+                slider.addEventListener('mouseenter', stopAuto);
+                slider.addEventListener('mouseleave', startAuto);
+            }
 
             // Init
             buildDots();
