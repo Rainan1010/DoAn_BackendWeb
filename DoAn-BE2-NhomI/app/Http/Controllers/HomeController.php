@@ -79,10 +79,12 @@ class HomeController extends Controller
         // Tăng view_count mỗi khi có người truy cập trang chi tiết
         Product::where('product_id', $id)->increment('view_count');
 
-        $image = DB::table('product_images')
+        $images = DB::table('product_images')
             ->where('product_id', $id)
-            ->where('is_primary', 1)
-            ->first();
+            ->orderBy('sort_order', 'asc')
+            ->get();
+
+        $image = $images->where('is_primary', 1)->first() ?? $images->first();
 
         $product->image_url = $image->image_url ?? null;
 
@@ -114,6 +116,7 @@ class HomeController extends Controller
 
         return view('products.product_detail', compact(
             'product',
+            'images',
             'variants',
             'relatedProducts',
             'reviews'
