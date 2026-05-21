@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\VoucherController;
 use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\AttributeController;
 use App\Http\Controllers\Admin\OrderStatisticController;
+use App\Http\Controllers\Admin\RevenueReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -170,6 +171,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     // Thống kê đơn hàng theo trạng thái
     Route::get('order-statistics', [OrderStatisticController::class, 'index'])
         ->name('order-statistics.index');
+
+    //Báo cáo doanh thu
+    // Route::get('/admin/revenue-reports', [RevenueReportController::class, 'index'])
+    //     ->name('admin.revenue_reports.index');
+    Route::get('/revenue-reports',[RevenueReportController::class, 'index'])
+        ->name('revenue_reports.index');
 });
 
 /*
