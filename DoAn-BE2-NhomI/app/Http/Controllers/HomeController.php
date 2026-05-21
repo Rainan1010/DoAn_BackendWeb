@@ -32,8 +32,10 @@ class HomeController extends Controller
             ->orderBy('products.created_at', 'desc')
             ->paginate(16);
 
-        // 3. Lấy danh sách sản phẩm trending (Từ nhánh Trung/51_San_pham_Trending)
-        // Ưu tiên sản phẩm is_trending = 1, nếu không có thì fallback sang is_hot và view_count
+        // 3. Lấy danh sách sản phẩm trending: ưu tiên is_trending, bổ sung top view_count cho đủ 20
+        $limit = 20;
+
+        // Bước 1: Lấy các sản phẩm is_trending = 1
         $trendingProducts = DB::table('products')
             ->leftJoin('product_images', function($join) {
                 $join->on('products.product_id', '=', 'product_images.product_id')
@@ -43,22 +45,27 @@ class HomeController extends Controller
             ->where('products.is_trending', 1)
             ->select('products.*', 'product_images.image_url')
             ->orderBy('products.view_count', 'desc')
-            ->limit(10)
+            ->limit($limit)
             ->get();
 
-        // Fallback: Nếu không có sản phẩm trending nào
-        if ($trendingProducts->isEmpty()) {
-            $trendingProducts = DB::table('products')
+        // Bước 2: Nếu chưa đủ 20, bổ sung top view_count (tránh trùng)
+        $remaining = $limit - $trendingProducts->count();
+        if ($remaining > 0) {
+            $existingIds = $trendingProducts->pluck('product_id')->toArray();
+
+            $topViewProducts = DB::table('products')
                 ->leftJoin('product_images', function($join) {
                     $join->on('products.product_id', '=', 'product_images.product_id')
                          ->where('product_images.is_primary', 1);
                 })
                 ->where('products.is_active', 1)
+                ->when(!empty($existingIds), fn($q) => $q->whereNotIn('products.product_id', $existingIds))
                 ->select('products.*', 'product_images.image_url')
-                ->orderBy('products.is_hot', 'desc')
                 ->orderBy('products.view_count', 'desc')
-                ->limit(10)
+                ->limit($remaining)
                 ->get();
+
+            $trendingProducts = $trendingProducts->concat($topViewProducts);
         }
 
         // Trả về view với đầy đủ 3 biến: newProducts, trendingProducts, promoProduct
@@ -67,8 +74,10 @@ class HomeController extends Controller
 
     public function detail($id)
     {
-        // Hàm detail giống hệt nhau ở cả 2 nhánh nên giữ nguyên
         $product = Product::findOrFail($id);
+
+        // Tăng view_count mỗi khi có người truy cập trang chi tiết
+        Product::where('product_id', $id)->increment('view_count');
 
         $image = DB::table('product_images')
             ->where('product_id', $id)

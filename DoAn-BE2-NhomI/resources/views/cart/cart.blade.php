@@ -197,7 +197,20 @@
                     Sản phẩm đã chọn
                 </h2>
 
-                @if(count($cart) > 0)
+            @if(count($cart) > 0)
+                    {{-- Flash message voucher --}}
+                    @if(session('voucher_error'))
+                        <div class="mb-4 flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm font-medium">
+                            <span class="material-symbols-outlined text-base">error</span>
+                            {{ session('voucher_error') }}
+                        </div>
+                    @endif
+                    @if(session('voucher_success'))
+                        <div class="mb-4 flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-md text-sm font-medium">
+                            <span class="material-symbols-outlined text-base">check_circle</span>
+                            {{ session('voucher_success') }}
+                        </div>
+                    @endif
                     <div class="space-y-4 mb-8">
                         <div class="flex justify-between text-on-surface-variant border-b border-outline-variant/10 pb-4">
                             <span class="text-sm font-medium">
@@ -238,7 +251,70 @@
                                 {{ number_format($tax, 0, ',', '.') }}₫
                             </span>
                         </div>
+
+                        @if($discount > 0)
+                            <div class="flex justify-between text-green-600 pt-3 border-t border-outline-variant/10 mt-3">
+                                <span class="text-sm font-medium">
+                                    Đã giảm
+                                </span>
+                                <span class="font-black">
+                                    -{{ number_format($discount, 0, ',', '.') }}₫
+                                </span>
+                            </div>
+                        @endif
                     </div>
+
+                    {{-- VOUCHER INPUT --}}
+                    @if($appliedVoucher)
+                        <div class="mb-6 flex items-center justify-between gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-md">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-green-600 text-base">local_activity</span>
+                                <div>
+                                    <span class="text-xs font-black text-green-700 uppercase tracking-widest">{{ $appliedVoucher->code }}</span>
+                                    <p class="text-xs text-green-600 mt-0.5">
+                                        @if($appliedVoucher->type === 'percent')
+                                            Giảm {{ rtrim(rtrim(number_format($appliedVoucher->value, 2), '0'), '.') }}%
+                                            @if($appliedVoucher->max_discount)
+                                                (tối đa {{ number_format($appliedVoucher->max_discount, 0, ',', '.') }}₫)
+                                            @endif
+                                        @else
+                                            Giảm {{ number_format($appliedVoucher->value, 0, ',', '.') }}₫
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+                            <form action="{{ route('cart.removeVoucher') }}" method="POST">
+                                @csrf
+                                <button type="submit" title="Xóa mã" class="text-green-600 hover:text-red-500 transition-colors">
+                                    <span class="material-symbols-outlined text-base">close</span>
+                                </button>
+                            </form>
+                        </div>
+                    @else
+                        <div class="mb-6">
+                            <label for="voucher_code_input" class="text-[10px] text-on-surface-variant uppercase font-black tracking-widest mb-2 block">Mã giảm giá</label>
+                            <form action="{{ route('cart.applyVoucher') }}" method="POST" class="flex gap-2">
+                                @csrf
+                                <input
+                                    type="text"
+                                    id="voucher_code_input"
+                                    name="voucher_code"
+                                    placeholder="Nhập mã voucher"
+                                    required
+                                    maxlength="20"
+                                    pattern="[A-Za-z0-9]+"
+                                    aria-invalid="{{ session('voucher_error') ? 'true' : 'false' }}"
+                                    class="flex-1 border border-outline-variant/30 rounded-md px-3 py-2.5 text-sm font-medium text-primary placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue uppercase tracking-widest"
+                                >
+                                <button
+                                    type="submit"
+                                    class="px-4 py-2.5 bg-brand-blue text-white text-xs font-black uppercase tracking-widest rounded-md hover:bg-[#002244] transition-all whitespace-nowrap"
+                                >
+                                    Áp dụng
+                                </button>
+                            </form>
+                        </div>
+                    @endif
 
                     <div class="flex justify-between items-baseline mb-8 pt-6 border-t border-outline-variant/10">
                         <span class="text-lg font-black text-primary">

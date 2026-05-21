@@ -45,8 +45,10 @@
             </div>
         </div>
 
+
+
         <nav class="sidebar-scroll flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
-            <a href="#" class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-blue-200 rounded-lg hover:bg-white/10 transition-colors">
+            <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.dashboard') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
                 <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Bảng điều khiển
             </a>
 
@@ -76,11 +78,19 @@
                 <i data-lucide="database-backup" class="w-5 h-5"></i> Sao lưu Dữ liệu
             </a>
 
+            <a href="{{ route('admin.order-statistics.index') }}"
+                class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.order-statistics.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
+                <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                Thống kê đơn hàng
+            </a>
+
+            <a href="{{ route('admin.permissions.index') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.permissions.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
+                <i data-lucide="shield-check" class="w-5 h-5"></i> Phân quyền
+            </a>
 
             <a href="{{ route('home') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.backups.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
                 <i data-lucide="arrow-big-right" class="w-5 h-5"></i> Quay về Trang chủ
             </a>
-
 
         </nav>
 
