@@ -45,13 +45,14 @@ class BrandController extends Controller
         $request->validate([
             'name' => 'required|max:100',
             'slug' => 'required|unique:brands,slug|max:100',
-            'logo_url' => 'nullable|url',
+            'logo_url' => 'nullable|url|max:255',
             'description' => 'nullable|string',
         ], [
             'name.required' => 'Vui lòng nhập tên thương hiệu.',
             'slug.required' => 'Vui lòng nhập đường dẫn thân thiện.',
             'slug.unique' => 'Đường dẫn này đã tồn tại trong hệ thống.',
-            'logo_url.url' => 'URL logo không hợp lệ.'
+            'logo_url.url' => 'URL logo không hợp lệ.',
+            'logo_url.max' => 'URL logo không được vượt quá 255 ký tự.'
         ]);
 
         Brand::create([
@@ -67,30 +68,40 @@ class BrandController extends Controller
 
     public function show(string $id)
     {
-        $brand = Brand::findOrFail($id);
+        $brand = Brand::find($id);
+        if (!$brand) {
+            return redirect()->route('admin.brands.index')->with('error', 'Thương hiệu không tồn tại hoặc đã bị xóa.');
+        }
         return view('admin.brands.show', compact('brand'));
     }
 
     public function edit(string $id)
     {
-        $brand = Brand::findOrFail($id);
+        $brand = Brand::find($id);
+        if (!$brand) {
+            return redirect()->route('admin.brands.index')->with('error', 'Thương hiệu không tồn tại hoặc đã bị xóa trước đó.');
+        }
         return view('admin.brands.edit', compact('brand'));
     }
 
     public function update(Request $request, string $id)
     {
-        $brand = Brand::findOrFail($id);
+        $brand = Brand::find($id);
+        if (!$brand) {
+            return redirect()->route('admin.brands.index')->with('error', 'Thương hiệu này đã bị xóa bởi người dùng khác hoặc không tồn tại.');
+        }
 
         $request->validate([
             'name' => 'required|max:100',
             'slug' => 'required|max:100|unique:brands,slug,' . $brand->brand_id . ',brand_id',
-            'logo_url' => 'nullable|url',
+            'logo_url' => 'nullable|url|max:255',
             'description' => 'nullable|string',
         ], [
             'name.required' => 'Vui lòng nhập tên thương hiệu.',
             'slug.required' => 'Vui lòng nhập đường dẫn thân thiện.',
             'slug.unique' => 'Đường dẫn này đã tồn tại trong hệ thống.',
-            'logo_url.url' => 'URL logo không hợp lệ.'
+            'logo_url.url' => 'URL logo không hợp lệ.',
+            'logo_url.max' => 'URL logo không được vượt quá 255 ký tự.'
         ]);
 
         $brand->update([
@@ -106,7 +117,10 @@ class BrandController extends Controller
 
     public function destroy(string $id)
     {
-        $brand = Brand::findOrFail($id);
+        $brand = Brand::find($id);
+        if (!$brand) {
+            return redirect()->route('admin.brands.index')->with('error', 'Thương hiệu không tồn tại hoặc đã bị xóa trước đó.');
+        }
         $brand->delete();
         
         return redirect()->route('admin.brands.index')->with('success', 'Đã xóa thương hiệu thành công!');
@@ -114,7 +128,10 @@ class BrandController extends Controller
 
     public function toggleStatus(string $id)
     {
-        $brand = Brand::findOrFail($id);
+        $brand = Brand::find($id);
+        if (!$brand) {
+            return redirect()->route('admin.brands.index')->with('error', 'Thương hiệu này đã bị xóa bởi người dùng khác hoặc không tồn tại.');
+        }
         $brand->is_active = !$brand->is_active;
         $brand->save();
 
