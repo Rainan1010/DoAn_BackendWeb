@@ -68,11 +68,11 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Voucher ID (Cố định)</label>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Mã hệ thống (Cố định)</label>
                             <input type="text" value="VCH-{{ str_pad($voucher->voucher_id, 3, '0', STR_PAD_LEFT) }}" disabled class="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-bold text-gray-400 cursor-not-allowed">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Mã Voucher (Code)</label>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Mã voucher</label>
                             <input type="text" name="code" x-model="code" placeholder="Ví dụ: TECHSPRING20" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10 uppercase tracking-wider">
                         </div>
                         <div>
@@ -172,7 +172,7 @@
                     <div class="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
                     <div class="flex items-center gap-3 mb-6">
                         <i data-lucide="eye" class="w-4 h-4 text-gray-400"></i>
-                        <span class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Live Preview</span>
+                        <span class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Xem trước</span>
                     </div>
 
                     <div class="bg-[#F8FAFC] rounded-2xl p-6 relative">
@@ -228,7 +228,7 @@
                     <div class="relative z-10">
                         <div class="flex items-center gap-3 mb-4">
                             <i data-lucide="lightbulb" class="w-5 h-5 text-yellow-400"></i>
-                            <h3 class="text-lg font-black tracking-tight">Mẹo Editorial</h3>
+                            <h3 class="text-lg font-black tracking-tight">Mẹo hữu ích</h3>
                         </div>
                         <p class="text-xs leading-relaxed text-blue-100/80 font-medium">
                             Sử dụng mã ngắn gọn, dễ nhớ như "SPRING24" thay vì mã tự động. Điều này giúp tăng tỷ lệ chuyển đổi đơn hàng lên tới 22% cho các chiến dịch theo mùa.

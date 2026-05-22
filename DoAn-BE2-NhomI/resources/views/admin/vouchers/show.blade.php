@@ -13,9 +13,9 @@
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
             <nav class="flex text-xs font-medium text-gray-400 mb-2 gap-2">
-                <span>Vouchers</span>
+                <span>Voucher</span>
                 <span>&rsaquo;</span>
-                <span class="text-gray-600">Xem Chi Tiết Voucher</span>
+                <span class="text-gray-600">Xem chi tiết voucher</span>
             </nav>
             <h1 class="text-4xl font-black text-[#0A2540] tracking-tight uppercase">Voucher: {{ $voucher->code }}</h1>
         </div>
@@ -241,7 +241,7 @@
                             </div>
                         </td>
                         <td class="py-5 px-8 text-gray-500">
-                            {{ \Carbon\Carbon::parse($order->created_at)->diffForHumans() }}
+                            {{ \Carbon\Carbon::parse($order->created_at)->locale('vi')->diffForHumans() }}
                         </td>
                         <td class="py-5 px-8 font-bold text-[#0A2540]">{{ number_format($order->total_amount) }} đ</td>
                         <td class="py-5 px-8 font-black text-green-500">-{{ number_format($order->discount_amount) }} đ</td>
@@ -253,9 +253,15 @@
                                     'delivered' => 'bg-green-50 text-green-600',
                                     'cancelled' => 'bg-red-50 text-red-600',
                                 ];
+                                $statusLabels = [
+                                    'pending' => 'Chờ xử lý',
+                                    'confirmed' => 'Đã xác nhận',
+                                    'delivered' => 'Đã giao',
+                                    'cancelled' => 'Đã hủy',
+                                ];
                             @endphp
                             <span class="{{ $statusColors[$order->order_status] ?? 'bg-gray-50 text-gray-600' }} text-[9px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider">
-                                {{ $order->order_status }}
+                                {{ $statusLabels[$order->order_status] ?? $order->order_status }}
                             </span>
                         </td>
                     </tr>
