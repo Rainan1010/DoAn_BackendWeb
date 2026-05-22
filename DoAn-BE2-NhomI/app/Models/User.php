@@ -12,7 +12,7 @@ class User extends Authenticatable
     protected $primaryKey = 'user_id'; // khóa chính không phải id mà là user_id
 
     public $incrementing = true; // khóa chính tự tăng
-    const UPDATED_AT = null; // Bỏ qua cập nhật cột updated_at do DB không có
+    
     // các cột cho phép insert/update
     protected $fillable = [
         'email',
@@ -25,7 +25,24 @@ class User extends Authenticatable
         'provider_id',
         'is_active',
         'is_verified',
+        'permissions',
+        'id_code',
     ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+            'permissions' => 'array',
+        ];
+    }
 
     // ẩn khi trả dữ liệu ra ngoài
     protected $hidden = [
