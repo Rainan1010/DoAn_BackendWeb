@@ -367,10 +367,12 @@ class OrderController extends Controller
         }
 
         $shippingFee = $this->getShippingFeeByProvince($province);
+
         $discount = 0;
 
-        $total = $subtotal + $shippingFee - $discount;
+        $vat = $subtotal * 0.1;
 
+        $total = $subtotal + $shippingFee + $vat - $discount;
         return view(
             'checkout.index',
             compact(
@@ -380,6 +382,7 @@ class OrderController extends Controller
                 'shippingFee',
                 'discount',
                 'total',
+                'vat',
                 'oldInfo'
             )
         );
@@ -729,7 +732,21 @@ class OrderController extends Controller
         $ipnUrl = env('MOMO_IPN_URL');
 
         $amount = $amount ?? request('amount') ?? session('checkout_total') ?? 0;
+        $checkoutItems = session()->get('checkout_items', []);
 
+        $subtotal = 0;
+
+        foreach ($checkoutItems as $item) {
+            $subtotal += $item['price'] * $item['quantity'];
+        }
+
+        $shippingFee = session('shipping_fee', 30000);
+
+        $discount = session('discount_amount', 0);
+
+        $vat = $subtotal * 0.1;
+
+        $amount = $subtotal + $shippingFee + $vat - $discount;
         $orderInfo = "Thanh toan don hang";
         $amount = (string) $amount;
         $orderId = time() . "";
@@ -959,10 +976,12 @@ class OrderController extends Controller
             'discount_amount',
             0
         );
+        $vat = $subtotal * 0.1;
 
         $total =
             $subtotal
             + $shippingFee
+            + $vat
             - $discount;
         /*
         |--------------------------------------------------------------------------
@@ -990,6 +1009,8 @@ class OrderController extends Controller
                 'shippingFee',
 
                 'discount',
+
+                'vat',
 
                 'total'
             )

@@ -487,7 +487,19 @@
                             </span>
 
                         </div>
+<div class="flex items-center justify-between gap-3">
 
+    <span class="text-gray-500 text-lg">
+        VAT (10%)
+    </span>
+
+    <span class="font-black text-[#001e40] text-[18px] text-right break-words">
+
+        {{ number_format($vat) }}đ
+
+    </span>
+
+</div>
                         <div class="flex justify-between">
 
                             <span class="text-gray-500
