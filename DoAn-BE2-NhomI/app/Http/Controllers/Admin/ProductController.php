@@ -85,7 +85,7 @@ class ProductController extends Controller
             'base_price'  => 'required|numeric|min:0',
             'description' => 'nullable|string',
             'specs'       => 'nullable|string',
-            'images.*.url'    => 'nullable|string',
+            'images.*.url'    => 'nullable|string|max:255',
             'variants.*.sku'        => 'nullable|string|max:100',
             'variants.*.price'      => 'nullable|numeric|min:0',
             'variants.*.sale_price' => 'nullable|numeric|min:0',
@@ -103,6 +103,7 @@ class ProductController extends Controller
             'base_price.required'  => 'Vui lòng nhập giá niêm yết.',
             'base_price.numeric'   => 'Giá niêm yết phải là số hợp lệ.',
             'base_price.min'       => 'Giá niêm yết không được nhỏ hơn 0.',
+            'images.*.url.max'     => 'Một hoặc nhiều URL hình ảnh không được vượt quá 255 ký tự.',
             'images.*.url.url'     => 'Một hoặc nhiều URL hình ảnh không hợp lệ.',
             'variants.*.sku.max'   => 'Mã SKU không được vượt quá 100 ký tự.',
             'variants.*.price.numeric'      => 'Giá biến thể phải là số hợp lệ.',
@@ -178,7 +179,12 @@ class ProductController extends Controller
     {
         $product = Product::with(['category', 'brand', 'images', 'variants'])
             ->where('product_id', $id)
-            ->firstOrFail();
+            ->first();
+
+        if (!$product) {
+            return redirect()->route('admin.products.index')
+                ->with('error', 'Sản phẩm không tồn tại hoặc đã bị xóa.');
+        }
 
         // Tăng view_count
         Product::where('product_id', $id)->increment('view_count');
@@ -193,7 +199,12 @@ class ProductController extends Controller
     {
         $product    = Product::with(['category', 'brand', 'images', 'variants'])
             ->where('product_id', $id)
-            ->firstOrFail();
+            ->first();
+
+        if (!$product) {
+            return redirect()->route('admin.products.index')
+                ->with('error', 'Sản phẩm không tồn tại hoặc đã bị xóa trước đó.');
+        }
         $categories = Category::orderBy('name')->get();
         $brands     = Brand::orderBy('name')->get();
 
@@ -205,7 +216,12 @@ class ProductController extends Controller
     // ─────────────────────────────────────────────
     public function update(Request $request, string $id)
     {
-        $product = Product::where('product_id', $id)->firstOrFail();
+        $product = Product::where('product_id', $id)->first();
+
+        if (!$product) {
+            return redirect()->route('admin.products.index')
+                ->with('error', 'Sản phẩm này đã bị xóa bởi người dùng khác hoặc không tồn tại.');
+        }
 
         // Loại bỏ các ảnh trống trước khi validate
         if ($request->has('images')) {
@@ -223,7 +239,7 @@ class ProductController extends Controller
             'base_price'  => 'required|numeric|min:0',
             'description' => 'nullable|string',
             'specs'       => 'nullable|string',
-            'images.*.url'          => 'nullable|string',
+            'images.*.url'          => 'nullable|string|max:255',
             'variants.*.sku'        => 'nullable|string|max:100',
             'variants.*.price'      => 'nullable|numeric|min:0',
             'variants.*.sale_price' => 'nullable|numeric|min:0',
@@ -241,6 +257,7 @@ class ProductController extends Controller
             'base_price.required'  => 'Vui lòng nhập giá niêm yết.',
             'base_price.numeric'   => 'Giá niêm yết phải là số hợp lệ.',
             'base_price.min'       => 'Giá niêm yết không được nhỏ hơn 0.',
+            'images.*.url.max'     => 'Một hoặc nhiều URL hình ảnh không được vượt quá 255 ký tự.',
             'images.*.url.url'     => 'Một hoặc nhiều URL hình ảnh không hợp lệ.',
             'variants.*.sku.max'   => 'Mã SKU không được vượt quá 100 ký tự.',
             'variants.*.price.numeric'      => 'Giá biến thể phải là số hợp lệ.',
@@ -314,7 +331,13 @@ class ProductController extends Controller
     // ─────────────────────────────────────────────
     public function destroy(string $id)
     {
-        $product = Product::where('product_id', $id)->firstOrFail();
+        $product = Product::where('product_id', $id)->first();
+
+        if (!$product) {
+            return redirect()->route('admin.products.index')
+                ->with('error', 'Sản phẩm không tồn tại hoặc đã bị xóa trước đó.');
+        }
+
         $name    = $product->name;
 
         // Xóa ảnh và biến thể liên quan
