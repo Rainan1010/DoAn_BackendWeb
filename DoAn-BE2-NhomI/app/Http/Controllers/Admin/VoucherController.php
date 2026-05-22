@@ -8,6 +8,20 @@ use App\Models\Voucher;
 
 class VoucherController extends Controller
 {
+    private const VOUCHER_NOT_FOUND_MESSAGE = 'Voucher này không còn tồn tại hoặc đã bị người khác xóa. Vui lòng tải lại danh sách.';
+
+    private function findVoucher($id): ?Voucher
+    {
+        return Voucher::find($id);
+    }
+
+    private function voucherNotFoundRedirect()
+    {
+        return redirect()
+            ->route('admin.vouchers.index')
+            ->with('error', self::VOUCHER_NOT_FOUND_MESSAGE);
+    }
+
     public function index()
     {
         $vouchers = Voucher::all();
@@ -61,7 +75,10 @@ class VoucherController extends Controller
 
     public function show($id)
     {
-        $voucher = Voucher::findOrFail($id);
+        $voucher = $this->findVoucher($id);
+        if (!$voucher) {
+            return $this->voucherNotFoundRedirect();
+        }
         
         // Fetch real statistics from orders table
         $revenue = \DB::table('orders')
@@ -87,13 +104,19 @@ class VoucherController extends Controller
 
     public function edit($id)
     {
-        $voucher = Voucher::findOrFail($id);
+        $voucher = $this->findVoucher($id);
+        if (!$voucher) {
+            return $this->voucherNotFoundRedirect();
+        }
         return view('admin.vouchers.edit', compact('voucher'));
     }
 
     public function update(Request $request, $id)
     {
-        $voucher = Voucher::findOrFail($id);
+        $voucher = $this->findVoucher($id);
+        if (!$voucher) {
+            return $this->voucherNotFoundRedirect();
+        }
         
         $request->validate([
             'code' => 'required|unique:vouchers,code,' . $id . ',voucher_id',
@@ -126,13 +149,20 @@ class VoucherController extends Controller
 
     public function destroy($id)
     {
-        Voucher::destroy($id);
+        $voucher = $this->findVoucher($id);
+        if (!$voucher) {
+            return $this->voucherNotFoundRedirect();
+        }
+        $voucher->delete();
         return redirect()->route('admin.vouchers.index')->with('success', 'Xóa voucher thành công!');
     }
 
     public function toggleStatus($id)
     {
-        $voucher = Voucher::findOrFail($id);
+        $voucher = $this->findVoucher($id);
+        if (!$voucher) {
+            return $this->voucherNotFoundRedirect();
+        }
         $voucher->is_active = !$voucher->is_active;
         $voucher->save();
 
