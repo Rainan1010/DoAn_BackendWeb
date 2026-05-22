@@ -228,6 +228,10 @@ Route::get('/cart', [CartController::class, 'index'])
 Route::post('/cart/add', [CartController::class, 'add'])
     ->name('cart.add');
 
+// xem chi tiet don hang
+Route::get('/orders/{id}', [OrderController::class, 'detail'])
+    ->name('orders.detail');
+
 Route::post('/cart/update', [CartController::class, 'update'])
     ->name('cart.update');
 

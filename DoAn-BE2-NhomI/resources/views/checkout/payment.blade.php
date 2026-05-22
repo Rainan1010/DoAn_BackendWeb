@@ -297,10 +297,10 @@
                                 <div class="flex items-center gap-5">
 
                                     <div class="w-[60px] h-[60px]
-                    rounded-2xl
-                    bg-[#ae2070]/10
-                    flex items-center justify-center
-                    text-3xl">
+                        rounded-2xl
+                        bg-[#ae2070]/10
+                        flex items-center justify-center
+                        text-3xl">
 
                                         💗
 
@@ -407,10 +407,8 @@
                                     {{-- IMAGE --}}
                                     <div class="w-[90px] h-[90px] rounded-3xl overflow-hidden border bg-gray-50 flex-shrink-0">
 
-<img
-    src="{{ asset($item['image'] ?? 'images/default-product.png') }}"
-    class="w-full h-full object-cover"
->
+                                        <img src="{{ asset($item['image'] ?? 'images/default-product.png') }}"
+                                            class="w-full h-full object-cover">
                                     </div>
 
                                     {{-- INFO --}}
@@ -477,7 +475,19 @@
                             </span>
 
                         </div>
+                        <div class="flex items-center justify-between gap-3">
 
+                            <span class="text-gray-500 text-lg">
+                                VAT (10%)
+                            </span>
+
+                            <span class="font-black text-[#001e40] text-[18px] text-right break-words">
+
+                                {{ number_format($vat) }}đ
+
+                            </span>
+
+                        </div>
                         <div class="flex items-center justify-between gap-3">
 
                             <span class="text-gray-500 text-lg">
@@ -531,66 +541,66 @@
 
     <script>
 
-    function changePayment() {
+        function changePayment() {
 
-        let cod =
-            document.querySelector(
-                'input[value="cod"]'
-            );
+            let cod =
+                document.querySelector(
+                    'input[value="cod"]'
+                );
 
-        let momo =
-            document.querySelector(
-                'input[value="momo"]'
-            );
+            let momo =
+                document.querySelector(
+                    'input[value="momo"]'
+                );
 
-        let vnpay =
-            document.querySelector(
-                'input[value="vnpay"]'
-            );
+            let vnpay =
+                document.querySelector(
+                    'input[value="vnpay"]'
+                );
 
-        let codCard =
-            document.getElementById(
-                'cod_card'
-            );
+            let codCard =
+                document.getElementById(
+                    'cod_card'
+                );
 
-        let momoCard =
-            document.getElementById(
-                'momo_card'
-            );
+            let momoCard =
+                document.getElementById(
+                    'momo_card'
+                );
 
-        let vnpayCard =
-            document.getElementById(
-                'vnpay_card'
-            );
+            let vnpayCard =
+                document.getElementById(
+                    'vnpay_card'
+                );
 
-        codCard.classList.remove('active');
-        momoCard.classList.remove('active');
-        vnpayCard.classList.remove('active');
+            codCard.classList.remove('active');
+            momoCard.classList.remove('active');
+            vnpayCard.classList.remove('active');
 
-        if (cod.checked) {
+            if (cod.checked) {
 
-            codCard.classList.add(
-                'active'
-            );
+                codCard.classList.add(
+                    'active'
+                );
+            }
+
+            if (momo.checked) {
+
+                momoCard.classList.add(
+                    'active'
+                );
+            }
+
+            if (vnpay.checked) {
+
+                vnpayCard.classList.add(
+                    'active'
+                );
+            }
         }
 
-        if (momo.checked) {
+        window.onload = changePayment;
 
-            momoCard.classList.add(
-                'active'
-            );
-        }
-
-        if (vnpay.checked) {
-
-            vnpayCard.classList.add(
-                'active'
-            );
-        }
-    }
-
-    window.onload = changePayment;
-
-</script>
+    </script>
 
 @endsection
