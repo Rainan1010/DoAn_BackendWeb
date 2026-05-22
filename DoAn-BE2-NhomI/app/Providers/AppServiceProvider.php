@@ -5,6 +5,8 @@ namespace App\Providers;
 
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\View;
+use App\Models\Category;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -22,5 +24,13 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Schema::defaultStringLength(191);
+
+        // Chia sẻ danh mục sản phẩm active cho layout
+        View::composer('layouts.app', function ($view) {
+            $categories = Category::where('is_active', 1)
+                ->orderBy('sort_order', 'asc')
+                ->get();
+            $view->with('categories', $categories);
+        });
     }
 }
