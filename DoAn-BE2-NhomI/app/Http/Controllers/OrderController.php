@@ -368,11 +368,14 @@ class OrderController extends Controller
 
         $shippingFee = $this->getShippingFeeByProvince($province);
 
-        $discount = 0;
+        $discount = $this->getDiscountAmount($subtotal);
 
         $vat = $subtotal * 0.1;
 
         $total = $subtotal + $shippingFee + $vat - $discount;
+        if ($total < 0) {
+            $total = 0;
+        }
         return view(
             'checkout.index',
             compact(
@@ -487,10 +490,13 @@ class OrderController extends Controller
         );
 
         $shippingFee = $this->getShippingFeeByProvince($province);
-        $discount = 0;
+        $discount = $this->getDiscountAmount($subtotal);
         $vat = $subtotal * 0.1;
 
         $total = $subtotal + $shippingFee + $vat - $discount;
+        if ($total < 0) {
+            $total = 0;
+        }
 
         $addresses = ShippingAddress::where('user_id', Auth::id())->get();
 
@@ -547,10 +553,14 @@ class OrderController extends Controller
 
             $shippingFee = $this->getShippingFeeByProvince($info['province']);
 
-            $discount = 0;
+            $voucherId = null;
+            $discount = $this->getDiscountAmount($subtotal, $voucherId);
             $vat = $subtotal * 0.1;
 
             $total = $subtotal + $shippingFee + $vat - $discount;
+            if ($total < 0) {
+                $total = 0;
+            }
 
             $shippingAddressId = null;
 
@@ -587,7 +597,7 @@ class OrderController extends Controller
             $order = Order::create([
                 'user_id' => Auth::id(),
                 'shipping_address_id' => $shippingAddressId,
-                'voucher_id' => null,
+                'voucher_id' => $voucherId,
                 'order_code' => 'ORD-' . time(),
                 'subtotal' => $subtotal,
                 'shipping_fee' => $shippingFee,
@@ -678,12 +688,19 @@ class OrderController extends Controller
                     'status' => 'success',
                 ]);
 
+            if ($voucherId) {
+                DB::table('vouchers')->where('voucher_id', $voucherId)->increment('used_count');
+            }
+
             session()->forget([
                 'checkout_items',
                 'selected_cart_ids',
                 'checkout_information',
                 'is_reorder',
+                'applied_voucher',
             ]);
+
+            $this->syncCartSessionAfterCheckout();
 
             DB::commit();
 
@@ -838,13 +855,20 @@ class OrderController extends Controller
                 ->whereIn('variant_id', $variantIds)
                 ->delete();
 
+            if ($order->voucher_id) {
+                DB::table('vouchers')->where('voucher_id', $order->voucher_id)->increment('used_count');
+            }
+
             session()->forget([
                 'pending_order_id',
                 'selected_cart_ids',
                 'checkout_information',
                 'checkout_items',
                 'is_reorder',
+                'applied_voucher',
             ]);
+
+            $this->syncCartSessionAfterCheckout();
 
             return redirect()
                 ->route('orders.history')
@@ -1068,13 +1092,20 @@ class OrderController extends Controller
                     ->delete();
             }
 
+            if ($order->voucher_id) {
+                DB::table('vouchers')->where('voucher_id', $order->voucher_id)->increment('used_count');
+            }
+
             session()->forget([
                 'checkout_items',
                 'selected_cart_ids',
                 'checkout_information',
                 'is_reorder',
                 'pending_order_id',
+                'applied_voucher',
             ]);
+
+            $this->syncCartSessionAfterCheckout();
 
             return redirect()
                 ->route('orders.history')
@@ -1136,5 +1167,89 @@ class OrderController extends Controller
         $shipping = ShippingFee::where('province', $province)->first();
 
         return $shipping ? $shipping->fee : 30000;
+    }
+
+    private function getDiscountAmount($subtotal, &$voucherIdOut = null)
+    {
+        $voucherId = session('applied_voucher');
+        $discount = 0;
+
+        if ($voucherId && $subtotal > 0) {
+            $voucher = DB::table('vouchers')->where('voucher_id', $voucherId)->first();
+            if ($voucher) {
+                $now = now();
+                $isValid = $voucher->is_active
+                    && (!$voucher->end_at || $now->lte($voucher->end_at))
+                    && ($voucher->usage_limit === null || $voucher->used_count < $voucher->usage_limit)
+                    && ($voucher->min_order_value === null || $subtotal >= $voucher->min_order_value);
+
+                if ($isValid) {
+                    if ($voucher->type === 'percent') {
+                        $discount = $subtotal * ($voucher->value / 100);
+                        if ($voucher->max_discount) {
+                            $discount = min($discount, $voucher->max_discount);
+                        }
+                    } else {
+                        $discount = min(max(0, $voucher->value), $subtotal);
+                    }
+                    $voucherIdOut = $voucher->voucher_id;
+                } else {
+                    session()->forget('applied_voucher');
+                }
+            }
+        }
+
+        return $discount;
+    }
+
+    private function syncCartSessionAfterCheckout()
+    {
+        if (Auth::check()) {
+            $cart = [];
+            $userCart = Cart::with(['items.variant.product'])
+                ->where('user_id', Auth::id())
+                ->first();
+
+            if ($userCart) {
+                foreach ($userCart->items as $item) {
+                    $variant = $item->variant;
+                    if (!$variant || !$variant->product) {
+                        continue;
+                    }
+                    $product = $variant->product;
+                    $image = DB::table('product_images')
+                        ->where('product_id', $product->product_id)
+                        ->where('is_primary', 1)
+                        ->value('image_url');
+                    
+                    $cartKey = $product->product_id . '_variant_' . $variant->variant_id;
+                    
+                    $variantName = null;
+                    if (is_array($variant->attribute_values)) {
+                        $variantName = implode(' - ', $variant->attribute_values);
+                    } elseif (is_string($variant->attribute_values)) {
+                        $decoded = json_decode($variant->attribute_values, true);
+                        $variantName = is_array($decoded) ? implode(' - ', $decoded) : $variant->attribute_values;
+                    }
+
+                    $cart[$cartKey] = [
+                        'product_id' => $product->product_id,
+                        'variant_id' => $variant->variant_id,
+                        'name' => $product->name,
+                        'variant_name' => $variantName,
+                        'quantity' => (int) $item->quantity,
+                        'price' => (float) $item->price,
+                        'image' => $image ?? 'images/default-product.png',
+                    ];
+                }
+            }
+            session()->put('cart', $cart);
+
+            $totalQuantity = 0;
+            foreach ($cart as $it) {
+                $totalQuantity += (int) ($it['quantity'] ?? 1);
+            }
+            session()->put('cart_count', $totalQuantity);
+        }
     }
 }

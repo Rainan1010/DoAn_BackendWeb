@@ -669,6 +669,17 @@
                             </span>
 
                         </div>
+
+                        @if($discount > 0)
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-gray-500 text-lg">
+                                Giảm giá
+                            </span>
+                            <span class="font-black text-red-500 text-[18px] text-right break-words">
+                                -{{ number_format($discount) }}đ
+                            </span>
+                        </div>
+                        @endif
                     </div>
 
                     {{-- TOTAL --}}
