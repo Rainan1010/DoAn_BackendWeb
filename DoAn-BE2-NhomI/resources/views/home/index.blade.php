@@ -326,6 +326,15 @@
             goToPage(currentPage + direction);
         };
 
+        const trendingSection = document.getElementById('trending');
+        if (trendingSection) {
+            trendingSection.addEventListener('mouseenter', stopAuto);
+            trendingSection.addEventListener('mouseleave', startAuto);
+        } else {
+            slider.addEventListener('mouseenter', stopAuto);
+            slider.addEventListener('mouseleave', startAuto);
+        }
+
         slider.addEventListener('scroll', () => {
             const page = Math.round(slider.scrollLeft / slider.clientWidth);
 
@@ -342,9 +351,6 @@
         function stopAuto() {
             clearInterval(autoTimer);
         }
-
-        slider.addEventListener('mouseenter', stopAuto);
-        slider.addEventListener('mouseleave', startAuto);
 
         buildDots();
         startAuto();
