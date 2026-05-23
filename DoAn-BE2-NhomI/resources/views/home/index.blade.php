@@ -25,7 +25,6 @@
                     <button onclick="scrollTrending(-1)" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
                         <span class="material-symbols-outlined">chevron_left</span>
                     </button>
-
                     <button onclick="scrollTrending(1)" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
                         <span class="material-symbols-outlined">chevron_right</span>
                     </button>
@@ -44,7 +43,7 @@
                                 <img
                                     alt="{{ $product->name }}"
                                     class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
-                                    src="{{ asset(str_replace('public/', '', $product->image_url)) }}" />
+                                    src="{{ asset(str_replace(['public/', '/storage/products/'], ['', '/products/'], $product->image_url)) }}" />
 
                                 <span class="absolute top-0 left-0 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-black w-7 h-7 rounded-full flex items-center justify-center shadow-lg">
                                     #{{ $index + 1 }}
