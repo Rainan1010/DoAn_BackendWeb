@@ -252,7 +252,7 @@
                 {{-- Lý do hủy đơn (Chỉ xuất hiện khi chọn cancelled) --}}
                 <div class="space-y-2" x-show="orderStatus === 'cancelled'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0">
                     <label class="block text-xs uppercase tracking-widest font-bold text-red-500">Lý do hủy đơn hàng <span class="text-red-500">*</span></label>
-                    <textarea name="cancel_reason" placeholder="Vui lòng nhập lý do hủy đơn hàng..." required class="custom-textarea">{{ $order->cancel_reason }}</textarea>
+                    <textarea name="cancel_reason" placeholder="Vui lòng nhập lý do hủy đơn hàng..." :required="orderStatus === 'cancelled'" class="custom-textarea">{{ $order->cancel_reason }}</textarea>
                 </div>
 
                 {{-- Select Trạng thái thanh toán --}}
