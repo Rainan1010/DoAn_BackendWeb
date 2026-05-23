@@ -372,7 +372,7 @@
                         
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Thêm hình ảnh (Tuỳ chọn)</label>
-                            <input type="file" name="images[]" multiple accept="image/*" class="w-full text-sm text-gray-500
+                            <input type="file" name="images[]" multiple accept="image/*" onchange="validateReviewImages(this)" class="w-full text-sm text-gray-500
                               file:mr-4 file:py-2 file:px-4
                               file:rounded-md file:border-0
                               file:text-sm file:font-semibold
@@ -543,6 +543,22 @@
         // Thêm active border cho thumbnail được click
         el.classList.remove('border-gray-100', 'hover:border-blue-200');
         el.classList.add('border-blue-900', 'shadow-md');
+    }
+
+    window.validateReviewImages = function(input) {
+        const files = Array.from(input.files);
+        let hasInvalidFile = false;
+        
+        files.forEach(file => {
+            if (!file.type.startsWith('image/')) {
+                hasInvalidFile = true;
+            }
+        });
+        
+        if (hasInvalidFile) {
+            alert('Vui lòng chỉ chọn các file hình ảnh (jpeg, png, jpg, gif, webp...). Các file không hợp lệ đã bị loại bỏ.');
+            input.value = ''; // Reset input
+        }
     }
 </script>
 @endpush

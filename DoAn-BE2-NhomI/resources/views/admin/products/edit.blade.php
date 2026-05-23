@@ -180,10 +180,18 @@
                             selectedFiles: [],
                             handleFile(e) {
                                 const files = Array.from(e.target.files);
+                                let hasInvalidFile = false;
                                 files.forEach(file => {
+                                    if (!file.type.startsWith('image/')) {
+                                        hasInvalidFile = true;
+                                        return;
+                                    }
                                     this.selectedFiles.push(file);
                                     this.uploadPreviews.push(URL.createObjectURL(file));
                                 });
+                                if (hasInvalidFile) {
+                                    alert('Vui lòng chỉ chọn các file hình ảnh (jpeg, png, jpg, gif, webp...). Các file không hợp lệ đã bị bỏ qua.');
+                                }
                                 this.updateInput();
                             },
                             removeFile(idx) {
