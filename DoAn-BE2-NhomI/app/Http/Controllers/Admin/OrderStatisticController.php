@@ -86,9 +86,9 @@ class OrderStatisticController extends Controller
             $recentOrdersQuery->where('orders.order_status', $request->status);
         }
 
-        // Nếu muốn giống thứ tự trong phpMyAdmin thì dùng order_id ASC
+        // Sắp xếp đơn hàng theo ID giảm dần
         $recentOrders = $recentOrdersQuery
-            ->orderBy('orders.order_id', 'asc')
+            ->orderBy('orders.order_id', 'desc')
             ->limit(10)
             ->get();
 
