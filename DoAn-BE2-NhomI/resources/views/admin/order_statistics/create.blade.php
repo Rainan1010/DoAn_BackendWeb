@@ -725,9 +725,21 @@
                 if (!this.modalSelectedProduct) return '/images/default-product.png';
                 const imgs = this.modalSelectedProduct.images || [];
                 const primary = imgs.find(img => img.is_primary == 1);
-                const url = primary ? primary.image_url : (imgs.length > 0 ? imgs[0].image_url : 'images/default-product.png');
+                let url = primary ? primary.image_url : (imgs.length > 0 ? imgs[0].image_url : '');
                 
-                const cleanUrl = url.replace('public/', '');
+                if (!url) {
+                    return '/images/default-product.png';
+                }
+                
+                if (url.startsWith('http://') || url.startsWith('https://')) {
+                    return url;
+                }
+                
+                let cleanUrl = url.replace('public/', '');
+                if (cleanUrl.startsWith('storage/') || cleanUrl.startsWith('uploads/')) {
+                    return '/' + cleanUrl;
+                }
+                
                 return cleanUrl.startsWith('/') ? cleanUrl : '/' + cleanUrl;
             },
 
