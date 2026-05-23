@@ -575,6 +575,7 @@
         </div>
 
     </header>
+    <div class="space-y-4">
     @forelse($orders as $order)
 
     @php
@@ -582,40 +583,40 @@
     $item = $order->items->first();
 
     if (!$item) {
-    continue;
+        continue;
     }
 
     $statusText = [
-
-    'pending' => 'Chờ xác nhận',
-    'confirmed' => 'Đã xác nhận',
-    'processing' => 'Đang chuẩn bị hàng',
-    'shipped' => 'Đang vận chuyển',
-    'delivered' => 'Đã giao hàng',
-    'cancelled' => 'Đã huỷ',
-
+        'pending' => 'Chờ xác nhận',
+        'confirmed' => 'Đã xác nhận',
+        'processing' => 'Đang chuẩn bị hàng',
+        'shipped' => 'Đang vận chuyển',
+        'shipping' => 'Đang vận chuyển',
+        'delivered' => 'Đã giao hàng',
+        'completed' => 'Đã giao hàng',
+        'cancelled' => 'Đã huỷ',
     ];
 
     $statusColor = [
-
-    'pending' => 'yellow',
-    'confirmed' => 'sky',
-    'processing' => 'violet',
-    'shipped' => 'indigo',
-    'delivered' => 'emerald',
-    'cancelled' => 'rose',
-
+        'pending' => 'yellow',
+        'confirmed' => 'sky',
+        'processing' => 'violet',
+        'shipped' => 'indigo',
+        'shipping' => 'indigo',
+        'delivered' => 'emerald',
+        'completed' => 'emerald',
+        'cancelled' => 'rose',
     ];
 
     $statusIcon = [
-
-    'pending' => 'schedule',
-    'confirmed' => 'task_alt',
-    'processing' => 'hourglass_top',
-    'shipped' => 'local_shipping',
-    'delivered' => 'check_circle',
-    'cancelled' => 'cancel',
-
+        'pending' => 'schedule',
+        'confirmed' => 'task_alt',
+        'processing' => 'hourglass_top',
+        'shipped' => 'local_shipping',
+        'shipping' => 'local_shipping',
+        'delivered' => 'check_circle',
+        'completed' => 'check_circle',
+        'cancelled' => 'cancel',
     ];
 
     $color = $statusColor[$order->order_status] ?? 'gray';
@@ -624,421 +625,89 @@
 
     @endphp
 
-    {{-- ĐƠN ĐANG XỬ LÝ --}}
-    @if($order->order_status == 'pending')
-
-    <div class="bg-white/80 backdrop-blur-2xl
-                                                            rounded-3xl border border-white/50
-                                                            shadow-[0_10px_40px_rgba(15,23,42,.05)]
-                                                            hover:shadow-[0_20px_60px_rgba(59,130,246,.12)]
-                                                            transition-all duration-500
-                                                            p-8 flex flex-col md:flex-row
-                                                            items-center justify-between gap-6">
-
-        <div class="flex items-center gap-6">
-
-            <div class="w-20 h-20 bg-surface-container-high
-                                                                    flex items-center justify-center
-                                                                    rounded-2xl border border-outline-variant
-                                                                    overflow-hidden shadow-md">
-
-                <img src="{{ asset($item->image_url ?? 'images/no-image.png') }}" alt="{{ $item->product_name }}" class="w-full h-full object-cover
-                                                                        hover:scale-110 transition duration-700">
-
+    {{-- THỐNG NHẤT CARD ĐƠN HÀNG NHỎ GỌN, BẰNG NHAU --}}
+    <div class="group bg-white/80 backdrop-blur-2xl rounded-3xl border border-white/50 hover:border-blue-300 hover:shadow-[0_20px_50px_rgba(59,130,246,.08)] transition-all duration-500 p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        
+        {{-- BÊN TRÁI: ẢNH & THÔNG TIN SẢN PHẨM --}}
+        <div class="flex items-center gap-5 flex-1 min-w-0">
+            {{-- Ảnh sản phẩm --}}
+            <div class="w-20 h-20 bg-slate-50 border border-slate-100 flex-shrink-0 flex items-center justify-center rounded-2xl overflow-hidden shadow-sm relative">
+                @if(!empty($item->image_url))
+                    <img src="{{ asset($item->image_url) }}" alt="{{ $item->product_name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                @else
+                    <div class="w-full h-full flex items-center justify-center bg-gray-50">
+                        <span class="material-symbols-outlined text-3xl text-gray-300">inventory_2</span>
+                    </div>
+                @endif
             </div>
 
-            <div>
-
-                <div class="flex items-center gap-2 mb-1">
-
-                    <span class="w-2 h-2 rounded-full
-                                                                            bg-amber-500 animate-pulse
-                                                                            shadow-[0_0_15px_rgba(245,158,11,.6)]">
-                    </span>
-
-                    <span class="text-[10px] font-bold
-                                                                            text-amber-700 uppercase tracking-widest">
-
+            {{-- Thông tin --}}
+            <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-{{ $color }}-600 bg-{{ $color }}-50 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        <span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">{{ $icon }}</span>
                         {{ $status }}
-
                     </span>
-
+                    <span class="text-[10px] font-bold text-slate-400 font-mono">MÃ ĐƠN: #{{ $order->order_code }}</span>
                 </div>
-
-                <h4 class="font-black text-brand-blue text-lg">
-
+                <h4 class="font-black text-[#001e40] text-base truncate leading-tight group-hover:text-blue-700 transition duration-300">
                     {{ $item->product_name }}
-
                 </h4>
-
-                <p class="text-xs text-on-surface-variant">
-
-                    Đơn hàng #{{ $order->order_code }}
-                    |
-                    {{ \Carbon\Carbon::parse($order->created_at)->format('d/m/Y') }}
-
+                <p class="text-[11px] text-slate-400 mt-1 font-medium">
+                    Ngày đặt: {{ \Carbon\Carbon::parse($order->created_at)->format('d/m/Y') }} 
+                    @if($order->items->count() > 1)
+                        <span class="text-blue-600 font-bold ml-1.5">(và {{ $order->items->count() - 1 }} sản phẩm khác)</span>
+                    @endif
                 </p>
-
             </div>
-
         </div>
 
-        <div class="flex items-center gap-12">
+        {{-- GIỮA: TÀI CHÍNH & THANH TOÁN --}}
+        <div class="flex lg:flex-col lg:items-end justify-between lg:justify-center border-t lg:border-t-0 pt-4 lg:pt-0 border-slate-100/50 flex-shrink-0 gap-1">
+            <span class="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Tổng cộng</span>
+            <p class="font-black text-[#001e40] text-lg leading-tight">
+                {{ number_format($order->total_amount, 0, ',', '.') }}₫
+            </p>
+            <span class="text-[9px] font-bold text-slate-500 font-mono uppercase bg-slate-50 border border-slate-200/60 px-1.5 py-0.5 rounded mt-0.5">
+                {{ $order->payment_method }}
+            </span>
+        </div>
 
-            <div class="text-right">
-
-                <p class="text-[10px]
-                                                                        uppercase tracking-widest
-                                                                        text-on-surface-variant">
-
-                    GIÁ TRỊ
-
-                </p>
-
-                <p class="font-black text-brand-blue text-xl">
-
-                    {{ number_format($order->total_amount, 0, ',', '.') }}₫
-
-                </p>
-
-            </div>
-
-            <a href="#" class="bg-white border border-outline-variant
-                                                                    p-3 rounded-xl hover:bg-slate-50
-                                                                    hover:-translate-y-1
-                                                                    transition-all duration-300 shadow-sm">
-
-                <span class="material-symbols-outlined">
-                    chevron_right
-                </span>
-
+        {{-- BÊN PHẢI: CÁC NÚT HÀNH ĐỘNG --}}
+        <div class="flex flex-row lg:flex-col gap-2 flex-shrink-0 min-w-full lg:min-w-[160px] justify-end border-t lg:border-t-0 pt-4 lg:pt-0 border-slate-100/50">
+            {{-- Nút Xem chi tiết --}}
+            <a href="{{ route('orders.detail', $order->order_id) }}" class="flex-1 lg:flex-none text-center bg-gradient-to-r from-[#003366] to-[#0F5BCC] text-white px-4 py-2 rounded-xl text-[11px] font-black tracking-wider uppercase shadow-md shadow-blue-500/10 hover:shadow-blue-500/20 hover:-translate-y-0.5 transition duration-300">
+                Chi tiết
             </a>
 
-        </div>
-
-    </div>
-
-    @else
-
-    {{-- CARD BÌNH THƯỜNG --}}
-    <div class="group card-float bg-white/70 backdrop-blur-3xl
-                                                            rounded-3xl border border-white/50
-                                                            hover:border-blue-300
-                                                            hover:shadow-[0_25px_80px_rgba(59,130,246,.18)]
-                                                            transition-all duration-500
-                                                            overflow-hidden
-                                                            shadow-[0_10px_40px_rgba(15,23,42,.05)]
-                                                            hover:shadow-[0_20px_60px_rgba(59,130,246,.15)]
-                                                            hover:-translate-y-1">
-
-        <div class="flex flex-col lg:flex-row">
-
-            <!-- IMAGE -->
-            <div class="relative w-full lg:w-72
-                                                                    h-48 lg:h-auto overflow-hidden">
-
-                @if(!empty($item->image_url))
-
-                <img src="{{ asset($item->image_url) }}" alt="{{ $item->product_name }}" class="w-full h-full object-cover
-                                                                                            group-hover:scale-110
-                                                                                            group-hover:rotate-1
-                                                                                            transition duration-700 ease-out">
-
-                @else
-
-                <div class="w-full h-full flex
-                                                                                            items-center justify-center
-                                                                                            bg-gray-100">
-
-                    <span class="material-symbols-outlined
-                                                                                                text-5xl text-gray-400">
-
-                        inventory_2
-
-                    </span>
-
-                </div>
-
-                @endif
-
-                {{-- OVERLAY --}}
-                <div class="absolute -bottom-20 -right-20
-                                                                        w-40 h-40 bg-blue-400/30
-                                                                        blur-3xl rounded-full">
-                </div>
-
-                {{-- CODE --}}
-                <div class="absolute top-4 left-4
-                                                                        bg-white/85 backdrop-blur-xl
-                                                                        border border-white/40
-                                                                        shadow-lg
-                                                                        px-3 py-1 rounded-xl
-                                                                        text-[10px] font-black
-                                                                        tracking-widest
-                                                                        text-brand-blue uppercase">
-
-                    MÃ ĐƠN: #{{ $order->order_code }}
-
-                </div>
-
-            </div>
-
-            <!-- CONTENT -->
-            <div class="flex-1 p-8
-                                                                    flex flex-col md:flex-row
-                                                                    justify-between gap-8">
-
-                <div class="space-y-4">
-
-                    <div class="flex items-center gap-3">
-
-                        <span class="material-symbols-outlined
-                                                                                text-{{ $color }}-600
-                                                                                bg-{{ $color }}-50
-                                                                                p-1.5 rounded-full
-                                                                                drop-shadow-[0_0_12px_rgba(59,130,246,.25)]
-                                                                                float-slow glow-pulse"
-                            style="font-variation-settings: 'FILL' 1;">
-
-                            {{ $icon }}
-
-                        </span>
-
-                        <span class="text-sm font-bold
-                                                                                text-{{ $color }}-700
-                                                                                tracking-tight">
-
-                            {{ $status }}
-
-                        </span>
-
-                        <span class="text-xs
-                                                                                text-on-surface-variant font-medium">
-
-                            |
-                            {{ \Carbon\Carbon::parse($order->created_at)->format('d/m/Y') }}
-
-                        </span>
-
-                    </div>
-
-                    <h3 class="text-2xl font-black
-                                                                            text-brand-blue tracking-tight
-                                                                            group-hover:text-blue-700
-                                                                            transition duration-300">
-
-                        {{ $item->product_name }}
-
-                    </h3>
-
-                    <div class="flex gap-8 flex-wrap">
-
-                        <div>
-
-                            <p class="text-[10px]
-                                                                                    uppercase tracking-widest
-                                                                                    text-on-surface-variant mb-1">
-
-                                TỔNG CỘNG
-
-                            </p>
-
-                            <p class="text-lg font-black text-brand-blue">
-
-                                {{ number_format($order->total_amount, 0, ',', '.') }}₫
-
-                            </p>
-
-                        </div>
-
-                        <div>
-
-                            <p class="text-[10px]
-                                                                                    uppercase tracking-widest
-                                                                                    text-on-surface-variant mb-1">
-
-                                PHƯƠNG THỨC
-
-                            </p>
-
-                            <p class="text-sm font-medium
-                                                                                    text-on-surface">
-
-                                {{ strtoupper($order->payment_method) }}
-
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <!-- BUTTON -->
-                <div class="flex flex-col justify-center gap-3 min-w-[220px]">
-
-                    {{-- XEM CHI TIẾT --}}
-                    <a href="{{ route('orders.detail', $order->order_id) }}" class="relative overflow-hidden
-    shine-effect glow-pulse
-    bg-gradient-to-r
-    from-[#003366] to-[#0F5BCC]
-    text-white px-8 py-3 rounded-xl
-    text-xs font-black
-    tracking-[0.18em]
-    uppercase
-    shadow-lg shadow-blue-500/20
-    hover:shadow-blue-500/40
-    hover:-translate-y-1
-    hover:scale-[1.02]
-    hover:shadow-[0_15px_40px_rgba(59,130,246,.2)]
-    transition-all duration-300
-    text-center">
-
-                        Xem chi tiết
-
-                    </a>
-
-                    {{-- IN HÓA ĐƠN PDF --}}
-                    <a href="{{ route('orders.invoice', $order->order_id) }}"
-                        target="_blank"
-                        class="relative overflow-hidden
-    shine-effect glow-pulse
-    bg-gradient-to-r
-    from-[#0f4c81] to-[#2563eb]
-    text-white px-8 py-3 rounded-xl
-    text-xs font-black
-    tracking-[0.18em]
-    uppercase
-    shadow-lg shadow-blue-500/20
-    hover:shadow-blue-500/40
-    hover:-translate-y-1
-    hover:scale-[1.02]
-    hover:shadow-[0_15px_40px_rgba(59,130,246,.2)]
-    transition-all duration-300
-    text-center
-    flex items-center justify-center gap-2">
-
-                        <span class="material-symbols-outlined text-base">picture_as_pdf</span>
-                        In hóa đơn PDF
-
-                    </a>
-
-                    {{-- CHỜ XÁC NHẬN --}}
-                    @if(
-                    $order->order_status == 'confirmed' ||
-                    $order->order_status == 'processing' ||
-                    $order->order_status == 'pending'
-                    )
-
-                    {{-- HUỶ ĐƠN --}}
-                    <button type="button" onclick="openCancelModal(
-                                                                                                    '{{ $order->order_id }}',
-                                                                                                    '{{ $order->items->first()?->product_name }}'
-                                                                                                )" class="border border-red-200
-                                                                                                active:scale-95
-                                                                                                bg-red-50 text-red-600
-                                                                                                px-8 py-3 rounded-xl
-                                                                                                text-xs font-bold
-                                                                                                tracking-widest uppercase
-                                                                                                hover:bg-red-500
-                                                                                                hover:text-white
-                                                                                                hover:-translate-y-1
-                                                                                                hover:shadow-lg
-                                                                                                transition-all duration-300">
-
-                        Huỷ đơn hàng
-
+            {{-- Nút Hủy hoặc mua lại --}}
+            @if($order->order_status == 'confirmed' || $order->order_status == 'processing' || $order->order_status == 'pending')
+                <button type="button" onclick="openCancelModal('{{ $order->order_id }}', '{{ $item->product_name }}')" class="flex-1 lg:flex-none border border-red-200 bg-red-50 text-red-600 px-4 py-2 rounded-xl text-[11px] font-bold tracking-wider uppercase hover:bg-red-500 hover:text-white hover:-translate-y-0.5 transition duration-300">
+                    Huỷ đơn
+                </button>
+            @elseif($order->order_status == 'delivered' || $order->order_status == 'cancelled')
+                <form action="{{ route('orders.reorder', $order->order_id) }}" method="POST" class="flex-1 lg:flex-none m-0">
+                    @csrf
+                    <button type="submit" class="w-full border border-emerald-200 bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl text-[11px] font-bold tracking-wider uppercase hover:bg-emerald-500 hover:text-white hover:-translate-y-0.5 transition duration-300">
+                        Mua lại
                     </button>
-
-                    {{-- ĐÃ GIAO --}}
-                    @elseif($order->order_status == 'delivered')
-
-                    <form action="{{ route('orders.reorder', $order->order_id) }}" method="POST">
-
-                        @csrf
-
-                        <button type="submit" class="border border-emerald-200
-                                                                                                    active:scale-95
-                                                                                                    bg-emerald-50 text-emerald-600
-                                                                                                    px-8 py-3 rounded-xl
-                                                                                                    text-xs font-bold
-                                                                                                    tracking-widest uppercase
-                                                                                                    hover:bg-emerald-500
-                                                                                                    hover:text-white
-                                                                                                    hover:-translate-y-1
-                                                                                                    hover:shadow-lg
-                                                                                                    transition-all duration-300">
-
-                            Mua lại
-
-                        </button>
-
-                    </form>
-
-                    {{-- ĐÃ HUỶ --}}
-                    @elseif($order->order_status == 'cancelled')
-
-                    <form action="{{ route('orders.reorder', $order->order_id) }}" method="POST">
-
-                        @csrf
-
-                        <button type="submit" class="border border-emerald-200
-                                                                                                    active:scale-95
-                                                                                                    bg-emerald-50 text-emerald-600
-                                                                                                    px-8 py-3 rounded-xl
-                                                                                                    text-xs font-bold
-                                                                                                    tracking-widest uppercase
-                                                                                                    hover:bg-emerald-500
-                                                                                                    hover:text-white
-                                                                                                    hover:-translate-y-1
-                                                                                                    hover:shadow-lg
-                                                                                                    transition-all duration-300">
-
-                            Mua lại
-
-                        </button>
-
-                    </form>
-
-                    @endif
-
-                </div>
-
-            </div>
-
+                </form>
+            @endif
         </div>
-
     </div>
-
-    @endif
 
     @empty
 
-    <div class="bg-white rounded-3xl p-14
-                                        text-center shadow-sm border">
-
-        <div class="w-28 h-28 rounded-full
-                                            bg-blue-50 text-blue-500
-                                            flex items-center justify-center
-                                            mx-auto mb-8 glow-pulse float-slow">
-
-            <span class="material-symbols-outlined text-[60px]">
-                inventory_2
-            </span>
-
+    <div class="bg-white rounded-3xl p-14 text-center shadow-sm border">
+        <div class="w-20 h-20 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mx-auto mb-6 glow-pulse float-slow">
+            <span class="material-symbols-outlined text-[44px]">inventory_2</span>
         </div>
-
-        <h3 class="text-3xl font-black text-gray-700 mb-3">
-            Chưa có đơn hàng nào
-        </h3>
-
-        <p class="text-gray-500">
-            Hãy mua sắm để trải nghiệm hệ thống đơn hàng hiện đại.
-        </p>
-
+        <h3 class="text-2xl font-black text-gray-700 mb-2">Chưa có đơn hàng nào</h3>
+        <p class="text-gray-500 text-sm">Hãy mua sắm để trải nghiệm hệ thống đơn hàng hiện đại.</p>
     </div>
 
     @endforelse
+    </div>
     <!-- PAGINATION -->
 
     <div class="mt-14 flex flex-col md:flex-row
