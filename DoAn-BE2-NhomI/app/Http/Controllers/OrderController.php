@@ -166,24 +166,47 @@ class OrderController extends Controller
      */
     public function cancel($id)
     {
-        $order = Order::where('user_id', Auth::id())
-            ->findOrFail($id);
+        DB::beginTransaction();
+        try {
+            $order = Order::with('items')
+                ->where('user_id', Auth::id())
+                ->findOrFail($id);
 
-        if (!in_array($order->order_status, ['pending', 'confirmed', 'processing'])) {
+            if (!in_array($order->order_status, ['pending', 'confirmed', 'processing'])) {
+                return back()->with(
+                    'error',
+                    'Không thể huỷ đơn hàng này'
+                );
+            }
+
+            // Hoàn lại số lượng tồn kho
+            foreach ($order->items as $item) {
+                ProductVariant::where('variant_id', $item->variant_id)
+                    ->increment('stock_quantity', $item->quantity);
+            }
+
+            // Hoàn trả lượt dùng Voucher nếu có
+            if ($order->voucher_id) {
+                DB::table('vouchers')->where('voucher_id', $order->voucher_id)->decrement('used_count');
+            }
+
+            $order->update([
+                'order_status' => 'cancelled',
+            ]);
+
+            DB::commit();
+
+            return back()->with(
+                'success',
+                'Huỷ đơn hàng thành công'
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
             return back()->with(
                 'error',
-                'Không thể huỷ đơn hàng này'
+                'Có lỗi xảy ra khi huỷ đơn hàng: ' . $e->getMessage()
             );
         }
-
-        $order->update([
-            'order_status' => 'cancelled',
-        ]);
-
-        return back()->with(
-            'success',
-            'Huỷ đơn hàng thành công'
-        );
     }
 
     /**
@@ -610,8 +633,14 @@ class OrderController extends Controller
                 'paid_at' => null,
             ]);
 
+            if ($voucherId) {
+                DB::table('vouchers')->where('voucher_id', $voucherId)->increment('used_count');
+            }
+
             foreach ($checkoutItems as $item) {
-                $variant = ProductVariant::find($item['variant_id']);
+                $variant = ProductVariant::where('variant_id', $item['variant_id'])
+                    ->lockForUpdate()
+                    ->first();
 
                 if (!$variant) {
                     throw new \Exception('Biến thể sản phẩm không tồn tại');
@@ -687,10 +716,6 @@ class OrderController extends Controller
                 ->update([
                     'status' => 'success',
                 ]);
-
-            if ($voucherId) {
-                DB::table('vouchers')->where('voucher_id', $voucherId)->increment('used_count');
-            }
 
             session()->forget([
                 'checkout_items',
@@ -854,10 +879,6 @@ class OrderController extends Controller
                 ->whereIn('cart_id', $cartIds)
                 ->whereIn('variant_id', $variantIds)
                 ->delete();
-
-            if ($order->voucher_id) {
-                DB::table('vouchers')->where('voucher_id', $order->voucher_id)->increment('used_count');
-            }
 
             session()->forget([
                 'pending_order_id',
@@ -1092,10 +1113,6 @@ class OrderController extends Controller
                     ->delete();
             }
 
-            if ($order->voucher_id) {
-                DB::table('vouchers')->where('voucher_id', $order->voucher_id)->increment('used_count');
-            }
-
             session()->forget([
                 'checkout_items',
                 'selected_cart_ids',
@@ -1175,7 +1192,7 @@ class OrderController extends Controller
         $discount = 0;
 
         if ($voucherId && $subtotal > 0) {
-            $voucher = DB::table('vouchers')->where('voucher_id', $voucherId)->first();
+            $voucher = DB::table('vouchers')->where('voucher_id', $voucherId)->lockForUpdate()->first();
             if ($voucher) {
                 $now = now();
                 $isValid = $voucher->is_active

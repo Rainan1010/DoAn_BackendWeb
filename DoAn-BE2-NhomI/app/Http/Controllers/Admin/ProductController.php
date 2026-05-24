@@ -86,6 +86,7 @@ class ProductController extends Controller
             'description' => 'nullable|string',
             'specs'       => 'nullable|string',
             'images.*.url'    => 'nullable|string',
+            'upload_images.*'       => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'variants.*.sku'        => 'nullable|string|max:100',
             'variants.*.price'      => 'nullable|numeric|min:0',
             'variants.*.sale_price' => 'nullable|numeric|min:0',
@@ -104,6 +105,9 @@ class ProductController extends Controller
             'base_price.numeric'   => 'Giá niêm yết phải là số hợp lệ.',
             'base_price.min'       => 'Giá niêm yết không được nhỏ hơn 0.',
             'images.*.url.url'     => 'Một hoặc nhiều URL hình ảnh không hợp lệ.',
+            'upload_images.*.image' => 'File tải lên phải là định dạng hình ảnh.',
+            'upload_images.*.mimes' => 'Hình ảnh phải có định dạng: jpeg, png, jpg, gif, webp.',
+            'upload_images.*.max'   => 'Kích thước mỗi ảnh không được vượt quá 5MB.',
             'variants.*.sku.max'   => 'Mã SKU không được vượt quá 100 ký tự.',
             'variants.*.price.numeric'      => 'Giá biến thể phải là số hợp lệ.',
             'variants.*.price.min'          => 'Giá biến thể không được nhỏ hơn 0.',
@@ -135,9 +139,9 @@ class ProductController extends Controller
             'view_count'  => 0,
         ]);
 
-        // Lưu ảnh
+        // Lưu ảnh từ URL
+        $order = 0;
         if ($request->has('images')) {
-            $order = 0;
             foreach ($request->images as $img) {
                 if (!empty($img['url'])) {
                     ProductImage::create([
@@ -147,6 +151,27 @@ class ProductController extends Controller
                         'is_primary' => !empty($img['is_primary']) ? 1 : 0,
                     ]);
                 }
+            }
+        }
+
+        // Lưu ảnh upload từ thiết bị
+        if ($request->hasFile('upload_images')) {
+            $directory = public_path('products/' . $product->product_id);
+            
+            if (!file_exists($directory)) {
+                mkdir($directory, 0755, true);
+            }
+            
+            foreach ($request->file('upload_images') as $file) {
+                $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $file->move($directory, $fileName);
+                
+                ProductImage::create([
+                    'product_id' => $product->product_id,
+                    'image_url'  => '/products/' . $product->product_id . '/' . $fileName,
+                    'sort_order' => $order++,
+                    'is_primary' => ($order === 1) ? 1 : 0,
+                ]);
             }
         }
 

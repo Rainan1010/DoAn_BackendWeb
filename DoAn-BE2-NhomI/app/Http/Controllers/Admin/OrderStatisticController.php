@@ -18,9 +18,9 @@ class OrderStatisticController extends Controller
 
         $totalOrders = DB::table('orders')->count();
 
-        // Vì DB của bạn có cả pending và confirmed
+        // Đơn hàng đang chờ duyệt thực sự (chỉ trạng thái pending)
         $pendingOrders = DB::table('orders')
-            ->whereIn('order_status', ['pending', 'confirmed'])
+            ->where('order_status', 'pending')
             ->count();
 
         $completedOrders = DB::table('orders')
@@ -31,13 +31,15 @@ class OrderStatisticController extends Controller
             ->whereIn('order_status', ['cancelled', 'canceled'])
             ->count();
 
+        // Doanh thu thực tế là tổng dòng tiền từ các đơn đã thanh toán thành công (paid)
         $totalRevenue = DB::table('orders')
-            ->whereIn('order_status', ['delivered', 'shipped', 'processing'])
+            ->where('payment_status', 'paid')
             ->sum('total_amount');
 
+        // Doanh thu thực tế hôm nay
         $todayRevenue = DB::table('orders')
+            ->where('payment_status', 'paid')
             ->whereDate('created_at', today())
-            ->whereIn('order_status', ['delivered', 'shipped', 'processing'])
             ->sum('total_amount');
 
         $todayNewOrders = DB::table('orders')
@@ -86,10 +88,31 @@ class OrderStatisticController extends Controller
             $recentOrdersQuery->where('orders.order_status', $request->status);
         }
 
-        // Sắp xếp đơn hàng theo ID giảm dần
+        if ($request->filled('date_filter') && $request->date_filter !== 'all') {
+            $filter = $request->date_filter;
+            if ($filter === 'today') {
+                $recentOrdersQuery->whereDate('orders.created_at', today());
+            } elseif ($filter === 'yesterday') {
+                $recentOrdersQuery->whereDate('orders.created_at', today()->subDay());
+            } elseif ($filter === '7days') {
+                $recentOrdersQuery->where('orders.created_at', '>=', today()->subDays(7));
+            } elseif ($filter === '30days') {
+                $recentOrdersQuery->where('orders.created_at', '>=', today()->subDays(30));
+            } elseif ($filter === 'custom' && $request->filled('custom_date')) {
+                $recentOrdersQuery->whereDate('orders.created_at', $request->custom_date);
+            }
+        }
+
+        // Nhận tham số số bản ghi hiển thị (per_page)
+        $perPage = (int) $request->input('per_page', 10);
+        if (!in_array($perPage, [10, 25, 50])) {
+            $perPage = 10;
+        }
+
+        // Sắp xếp đơn hàng theo ID giảm dần và phân trang thực tế
         $recentOrders = $recentOrdersQuery
             ->orderBy('orders.order_id', 'desc')
-            ->limit(10)
+            ->limit($perPage)
             ->get();
 
         return view('admin.order_statistics.index', compact(
@@ -169,6 +192,10 @@ class OrderStatisticController extends Controller
             'phone' => 'required|string|max:20',
             'email' => 'nullable|email|max:255',
             'delivery_type' => 'required|in:home,store',
+            'province' => 'required_if:delivery_type,home|nullable|string|max:255',
+            'district' => 'required_if:delivery_type,home|nullable|string|max:255',
+            'ward' => 'required_if:delivery_type,home|nullable|string|max:255',
+            'street_address' => 'required_if:delivery_type,home|nullable|string|max:255',
             'payment_method' => 'required|in:cod,vnpay,momo',
             'payment_status' => 'required|in:pending,paid,refunded',
             'order_status' => 'required|in:pending,confirmed,processing,shipped,delivered,cancelled',
@@ -230,7 +257,10 @@ class OrderStatisticController extends Controller
             $orderItemsData = [];
 
             foreach ($request->items as $item) {
-                $variant = \App\Models\ProductVariant::with('product')->find($item['variant_id']);
+                $variant = \App\Models\ProductVariant::with('product')
+                    ->where('variant_id', $item['variant_id'])
+                    ->lockForUpdate()
+                    ->first();
                 if (!$variant) {
                     throw new \Exception('Biến thể sản phẩm không tồn tại!');
                 }
@@ -269,6 +299,25 @@ class OrderStatisticController extends Controller
             $voucherId = $request->voucher_id;
 
             if ($voucherId) {
+                $voucher = DB::table('vouchers')
+                    ->where('voucher_id', $voucherId)
+                    ->lockForUpdate()
+                    ->first();
+                
+                if (!$voucher) {
+                    throw new \Exception('Voucher không tồn tại!');
+                }
+
+                $now = now();
+                $isValid = $voucher->is_active
+                    && (!$voucher->end_at || $now->lte($voucher->end_at))
+                    && ($voucher->usage_limit === null || $voucher->used_count < $voucher->usage_limit)
+                    && ($voucher->min_order_value === null || $subtotal >= $voucher->min_order_value);
+
+                if (!$isValid) {
+                    throw new \Exception("Mã giảm giá [{$voucher->code}] đã hết lượt sử dụng hoặc không hợp lệ!");
+                }
+
                 DB::table('vouchers')->where('voucher_id', $voucherId)->increment('used_count');
             }
 
@@ -336,7 +385,9 @@ class OrderStatisticController extends Controller
         $request->validate([
             'order_status' => 'required|in:pending,confirmed,processing,shipped,delivered,cancelled',
             'payment_status' => 'required|in:pending,paid,refunded',
-            'cancel_reason' => 'nullable|string|max:500',
+            'cancel_reason' => 'required_if:order_status,cancelled|nullable|string|max:500',
+        ], [
+            'cancel_reason.required_if' => 'Vui lòng nhập lý do huỷ đơn hàng.',
         ]);
 
         DB::beginTransaction();
@@ -356,18 +407,24 @@ class OrderStatisticController extends Controller
                     \App\Models\ProductVariant::where('variant_id', $item->variant_id)
                         ->increment('stock_quantity', $item->quantity);
                 }
+                // Hoàn trả lượt dùng Voucher nếu có
+                if ($order->voucher_id) {
+                    DB::table('vouchers')->where('voucher_id', $order->voucher_id)->decrement('used_count');
+                }
             } elseif ($oldStatus == 'cancelled' && $newStatus != 'cancelled') {
-                // Khôi phục đơn từ đã hủy -> kiểm tra tồn kho trước khi trừ
+                // Khôi phục đơn từ đã hủy -> kiểm tra tồn kho trước khi trừ (đã được khóa bi quan để tránh Race Condition)
                 foreach ($order->items as $item) {
-                    $variant = \App\Models\ProductVariant::find($item->variant_id);
+                    $variant = \App\Models\ProductVariant::where('variant_id', $item->variant_id)
+                        ->lockForUpdate()
+                        ->first();
                     if (!$variant || $variant->stock_quantity < $item->quantity) {
                         throw new \Exception("Không thể khôi phục đơn hàng vì biến thể sản phẩm [ID: {$item->variant_id}] không đủ tồn kho!");
                     }
+                    $variant->decrement('stock_quantity', $item->quantity);
                 }
-                // Trừ kho
-                foreach ($order->items as $item) {
-                    \App\Models\ProductVariant::where('variant_id', $item->variant_id)
-                        ->decrement('stock_quantity', $item->quantity);
+                // Trừ lại lượt dùng Voucher nếu có
+                if ($order->voucher_id) {
+                    DB::table('vouchers')->where('voucher_id', $order->voucher_id)->increment('used_count');
                 }
             }
 
