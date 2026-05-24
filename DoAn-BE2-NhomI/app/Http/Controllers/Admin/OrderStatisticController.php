@@ -409,7 +409,10 @@ class OrderStatisticController extends Controller
                 }
                 // Hoàn trả lượt dùng Voucher nếu có
                 if ($order->voucher_id) {
-                    DB::table('vouchers')->where('voucher_id', $order->voucher_id)->decrement('used_count');
+                    DB::table('vouchers')
+                        ->where('voucher_id', $order->voucher_id)
+                        ->where('used_count', '>', 0)
+                        ->decrement('used_count');
                 }
             } elseif ($oldStatus == 'cancelled' && $newStatus != 'cancelled') {
                 // Khôi phục đơn từ đã hủy -> kiểm tra tồn kho trước khi trừ (đã được khóa bi quan để tránh Race Condition)
@@ -424,6 +427,24 @@ class OrderStatisticController extends Controller
                 }
                 // Trừ lại lượt dùng Voucher nếu có
                 if ($order->voucher_id) {
+                    $voucher = DB::table('vouchers')
+                        ->where('voucher_id', $order->voucher_id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (!$voucher) {
+                        throw new \Exception("Voucher áp dụng cho đơn hàng không tồn tại!");
+                    }
+                    if (!$voucher->is_active) {
+                        throw new \Exception("Voucher áp dụng cho đơn hàng đã bị vô hiệu hóa!");
+                    }
+                    if ($voucher->end_at && now()->gt($voucher->end_at)) {
+                        throw new \Exception("Voucher áp dụng cho đơn hàng đã hết hạn sử dụng!");
+                    }
+                    if ($voucher->usage_limit !== null && $voucher->used_count >= $voucher->usage_limit) {
+                        throw new \Exception("Voucher áp dụng cho đơn hàng đã đạt giới hạn lượt sử dụng!");
+                    }
+
                     DB::table('vouchers')->where('voucher_id', $order->voucher_id)->increment('used_count');
                 }
             }

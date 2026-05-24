@@ -18,6 +18,6 @@ class EnsureUserIsAdmin
         if (auth()->check() && auth()->user()->role === 'admin') {
             return $next($request);
         }
-        abort(403, 'Bạn không có quyền thực hiện hành động này.');
+        return redirect('/')->with('error', 'Bạn không có quyền thực hiện hành động này.');
     }
 }

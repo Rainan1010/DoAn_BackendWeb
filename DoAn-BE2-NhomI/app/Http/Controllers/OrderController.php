@@ -187,7 +187,10 @@ class OrderController extends Controller
 
             // Hoàn trả lượt dùng Voucher nếu có
             if ($order->voucher_id) {
-                DB::table('vouchers')->where('voucher_id', $order->voucher_id)->decrement('used_count');
+                DB::table('vouchers')
+                    ->where('voucher_id', $order->voucher_id)
+                    ->where('used_count', '>', 0)
+                    ->decrement('used_count');
             }
 
             $order->update([
