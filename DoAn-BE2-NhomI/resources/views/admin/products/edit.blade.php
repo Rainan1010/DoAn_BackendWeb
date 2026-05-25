@@ -262,11 +262,11 @@
 
             </div>
 
-            <!-- Right: Sidebar -->
-            <div class="space-y-6">
+            <!-- Right: Sidebar (cuộn theo trang, không sticky để không che phần tử phía dưới) -->
+            <div class="space-y-6 xl:self-start">
 
-                <!-- Preview + Actions (Sticky) -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden sticky top-6 z-10">
+                <!-- Preview + Actions -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                     <div class="p-5 border-b border-gray-50 flex items-center justify-between bg-gray-50/40">
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 rounded-full bg-[#0A2540] flex items-center justify-center text-white">
@@ -341,7 +341,7 @@
                         </div>
                     </div>
 
-                    <!-- Actions moved to directly under the preview inside the sticky card -->
+                    <!-- Actions under preview -->
                     <div class="p-5 border-t border-gray-100 bg-white grid grid-cols-2 gap-3">
                         <a href="{{ route('admin.products.show', $product->product_id) }}"
                             class="py-3 px-4 border border-gray-200 text-gray-500 text-xs font-black rounded-lg hover:bg-gray-50 hover:text-[#0A2540] transition-colors text-center uppercase tracking-widest flex items-center justify-center gap-1.5">
