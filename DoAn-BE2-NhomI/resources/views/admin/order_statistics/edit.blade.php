@@ -81,6 +81,22 @@
     </div>
 
     {{-- Error or Success alerts --}}
+    @if($errors->any())
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-xl shadow-sm">
+            <div class="flex items-start gap-3">
+                <span class="text-red-500 text-lg mt-0.5">⚠️</span>
+                <div class="text-sm font-medium text-red-700">
+                    <p class="font-bold mb-1">Đã có lỗi xảy ra:</p>
+                    <ul class="list-disc pl-5">
+                        @foreach($errors->all() as $err)
+                            <li>{{ $err }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
+        </div>
+    @endif
+
     @if(session('error'))
         <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-xl shadow-sm">
             <div class="flex items-center gap-3">

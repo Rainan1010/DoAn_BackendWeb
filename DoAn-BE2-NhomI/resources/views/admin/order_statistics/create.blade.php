@@ -68,6 +68,30 @@
         </div>
     </div>
 
+    {{-- HIỂN THỊ LỖI VALIDATE HOẶC THÔNG BÁO LỖI --}}
+    @if($errors->any())
+        <div class="p-5 bg-red-50 border-l-4 border-red-500 rounded-2xl text-red-700 text-sm space-y-1 shadow-sm">
+            <p class="font-bold flex items-center gap-2">⚠️ Đã có lỗi xảy ra:</p>
+            <ul class="list-disc pl-5 font-medium mt-1">
+                @foreach($errors->all() as $err)
+                    <li>{{ $err }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="p-5 bg-red-50 border-l-4 border-red-500 rounded-2xl text-red-700 text-sm font-bold shadow-sm">
+            ⚠️ {{ session('error') }}
+        </div>
+    @endif
+
+    @if(session('success'))
+        <div class="p-5 bg-green-50 border-l-4 border-green-500 rounded-2xl text-green-700 text-sm font-bold shadow-sm">
+            ✅ {{ session('success') }}
+        </div>
+    @endif
+
     {{-- Main Grid --}}
     <form id="orderForm" action="{{ route('admin.orders.store') }}" method="POST" class="grid lg:grid-cols-12 gap-8 items-start">
         @csrf
@@ -77,6 +101,7 @@
         <input type="hidden" name="voucher_id" x-model="voucher.voucher_id">
         <input type="hidden" name="discount_amount" x-model="discount">
         <input type="hidden" name="shipping_fee" x-model="shippingFee">
+        <input type="hidden" name="delivery_type" x-model="deliveryType">
 
         {{-- LEFT COLUMN (8 Cols) --}}
         <div class="lg:col-span-8 space-y-8">
@@ -126,7 +151,7 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div @click="setDeliveryType('home')" :class="deliveryType === 'home' ? 'active' : ''"
                             class="delivery-tab rounded-xl p-5 flex items-center gap-4">
-                            <input type="radio" name="delivery_type" value="home" :checked="deliveryType === 'home'" class="hidden">
+                            <input type="radio" value="home" :checked="deliveryType === 'home'" class="hidden">
                             <div class="text-2xl">🏠</div>
                             <div>
                                 <h4 class="font-bold text-sm text-[#001e40]">Giao hàng tận nơi</h4>
@@ -136,7 +161,7 @@
 
                         <div @click="setDeliveryType('store')" :class="deliveryType === 'store' ? 'active' : ''"
                             class="delivery-tab rounded-xl p-5 flex items-center gap-4">
-                            <input type="radio" name="delivery_type" value="store" :checked="deliveryType === 'store'" class="hidden">
+                            <input type="radio" value="store" :checked="deliveryType === 'store'" class="hidden">
                             <div class="text-2xl">🏪</div>
                             <div>
                                 <h4 class="font-bold text-sm text-[#001e40]">Nhận tại cửa hàng</h4>
@@ -290,12 +315,7 @@
                 {{-- Chọn Voucher --}}
                 <div class="space-y-2">
                     <label class="block text-xs uppercase tracking-widest font-bold text-gray-500">Mã giảm giá (Voucher)</label>
-                    <select class="custom-input font-bold text-[#001e40]" @change="selectVoucher($el.value)">
-                        <option value="">-- Áp dụng Voucher --</option>
-                        <template x-for="v in vouchers" :key="v.voucher_id">
-                            <option :value="v.voucher_id" x-text="v.code + ' (Giảm ' + (v.type === 'percent' ? parseFloat(v.value)+'%' : formatPrice(v.value)) + ')'"
-                                :disabled="calculatedSubtotal < v.min_order_value"></option>
-                        </template>
+                    <select class="custom-input font-bold text-[#001e40]" @change="selectVoucher($el.value)" x-html="voucherOptionsHTML">
                     </select>
                 </div>
 
@@ -411,22 +431,14 @@
                         {{-- Select Product --}}
                         <div>
                             <label class="block text-xs uppercase tracking-widest font-bold text-gray-500 mb-2">Chọn sản phẩm</label>
-                            <select x-model="modalSelectedProductId" @change="onModalProductChange()" class="custom-input">
-                                <option value="">-- Chọn sản phẩm --</option>
-                                <template x-for="p in products" :key="p.product_id">
-                                    <option :value="p.product_id" x-text="p.name"></option>
-                                </template>
+                            <select x-model="modalSelectedProductId" @change="onModalProductChange()" class="custom-input" x-html="productOptionsHTML">
                             </select>
                         </div>
 
                         {{-- Select Variant --}}
                         <div>
                             <label class="block text-xs uppercase tracking-widest font-bold text-gray-500 mb-2">Chọn biến thể</label>
-                            <select x-model="modalSelectedVariantId" @change="onModalVariantChange()" class="custom-input" :disabled="!modalSelectedProductId">
-                                <option value="">-- Chọn biến thể --</option>
-                                <template x-for="v in modalVariants" :key="v.variant_id">
-                                    <option :value="v.variant_id" x-text="formatVariantText(v)"></option>
-                                </template>
+                            <select x-model="modalSelectedVariantId" @change="onModalVariantChange()" class="custom-input" :disabled="!modalSelectedProductId" x-html="variantOptionsHTML">
                             </select>
                         </div>
                     </div>
@@ -534,7 +546,11 @@
             modalQty: 1,
 
             async init() {
-                await this.loadProvinces();
+                try {
+                    await this.loadProvinces();
+                } catch (e) {
+                    console.error("Lỗi tải danh sách tỉnh thành lúc khởi tạo:", e);
+                }
             },
 
             setDeliveryType(type) {
@@ -548,32 +564,43 @@
                     return;
                 }
                 fetch(`{{ route('admin.orders.search-user') }}?search=${encodeURIComponent(this.customer.phone)}`)
-                    .then(res => res.json())
+                    .then(res => {
+                        if (!res.ok) throw new Error("Search API fail");
+                        return res.json();
+                    })
                     .then(data => {
                         this.searchResults = data;
+                    })
+                    .catch(e => {
+                        console.error("Lỗi tìm kiếm khách hàng:", e);
+                        this.searchResults = [];
                     });
             },
 
             async selectCustomer(user) {
-                this.customer.user_id = user.user_id;
-                this.customer.full_name = user.full_name;
-                this.customer.phone = user.phone;
-                this.customer.email = user.email;
-                
-                if (user.address) {
-                    this.customer.province = user.address.province;
-                    this.customer.street_address = user.address.street_address;
+                try {
+                    this.customer.user_id = user.user_id;
+                    this.customer.full_name = user.full_name;
+                    this.customer.phone = user.phone;
+                    this.customer.email = user.email;
                     
-                    await this.loadDistricts(user.address.province);
-                    this.customer.district = user.address.district;
-                    
-                    await this.loadWards(user.address.district);
-                    this.customer.ward = user.address.ward;
-                } else {
-                    this.customer.province = '';
-                    this.customer.district = '';
-                    this.customer.ward = '';
-                    this.customer.street_address = '';
+                    if (user.address) {
+                        this.customer.province = user.address.province;
+                        this.customer.street_address = user.address.street_address;
+                        
+                        await this.loadDistricts(user.address.province);
+                        this.customer.district = user.address.district;
+                        
+                        await this.loadWards(user.address.district);
+                        this.customer.ward = user.address.ward;
+                    } else {
+                        this.customer.province = '';
+                        this.customer.district = '';
+                        this.customer.ward = '';
+                        this.customer.street_address = '';
+                    }
+                } catch (e) {
+                    console.error("Lỗi áp dụng thông tin khách hàng:", e);
                 }
                 
                 this.searchResults = [];
@@ -610,70 +637,95 @@
             },
 
             async loadProvinces() {
-                const response = await fetch('https://provinces.open-api.vn/api/p/');
-                const data = await response.json();
-                const provinceSelect = document.getElementById('province');
-                if (!provinceSelect) return;
-                
-                provinceSelect.length = 1;
-                
-                data.forEach(item => {
-                    let option = new Option(item.name, item.name);
-                    provinceSelect.add(option);
-                });
+                try {
+                    const response = await fetch('https://provinces.open-api.vn/api/p/');
+                    if (!response.ok) throw new Error("API provinces load failed");
+                    const data = await response.json();
+                    const provinceSelect = document.getElementById('province');
+                    if (!provinceSelect) return;
+                    
+                    provinceSelect.length = 1;
+                    
+                    data.forEach(item => {
+                        let option = new Option(item.name, item.name);
+                        provinceSelect.add(option);
+                    });
+                } catch (e) {
+                    console.error("Không thể tải danh sách tỉnh thành từ API open-api.vn:", e);
+                }
             },
 
             async loadDistricts(provinceName) {
-                const districtSelect = document.getElementById('district');
-                const wardSelect = document.getElementById('ward');
-                if (!districtSelect || !wardSelect) return;
+                try {
+                    const districtSelect = document.getElementById('district');
+                    const wardSelect = document.getElementById('ward');
+                    if (!districtSelect || !wardSelect) return;
 
-                districtSelect.length = 1;
-                wardSelect.length = 1;
+                    districtSelect.length = 1;
+                    wardSelect.length = 1;
 
-                if (!provinceName) return;
+                    if (!provinceName) return;
 
-                const response = await fetch('https://provinces.open-api.vn/api/p/');
-                const provinces = await response.json();
-                const provinceData = provinces.find(p => p.name == provinceName);
-                if (!provinceData) return;
+                    const response = await fetch('https://provinces.open-api.vn/api/p/');
+                    if (!response.ok) throw new Error("API provinces load failed");
+                    const provinces = await response.json();
+                    const provinceData = provinces.find(p => p.name == provinceName);
+                    if (!provinceData) return;
 
-                const districtResponse = await fetch(`https://provinces.open-api.vn/api/p/${provinceData.code}?depth=2`);
-                const data = await districtResponse.json();
-                data.districts.forEach(item => {
-                    let option = new Option(item.name, item.name);
-                    districtSelect.add(option);
-                });
+                    const districtResponse = await fetch(`https://provinces.open-api.vn/api/p/${provinceData.code}?depth=2`);
+                    if (!districtResponse.ok) throw new Error("API districts load failed");
+                    const data = await districtResponse.json();
+                    data.districts.forEach(item => {
+                        let option = new Option(item.name, item.name);
+                        districtSelect.add(option);
+                    });
+                } catch (e) {
+                    console.error("Không thể tải danh sách quận huyện từ API open-api.vn:", e);
+                }
             },
 
             async loadWards(districtName) {
-                const wardSelect = document.getElementById('ward');
-                if (!wardSelect) return;
+                try {
+                    const wardSelect = document.getElementById('ward');
+                    if (!wardSelect) return;
 
-                wardSelect.length = 1;
+                    wardSelect.length = 1;
 
-                if (!districtName) return;
+                    if (!districtName) return;
 
-                const response = await fetch('https://provinces.open-api.vn/api/d/');
-                const districts = await response.json();
-                const districtData = districts.find(d => d.name == districtName);
-                if (!districtData) return;
+                    const response = await fetch('https://provinces.open-api.vn/api/d/');
+                    if (!response.ok) throw new Error("API districts load failed");
+                    const districts = await response.json();
+                    const districtData = districts.find(d => d.name == districtName);
+                    if (!districtData) return;
 
-                const wardResponse = await fetch(`https://provinces.open-api.vn/api/d/${districtData.code}?depth=2`);
-                const data = await wardResponse.json();
-                data.wards.forEach(item => {
-                    let option = new Option(item.name, item.name);
-                    wardSelect.add(option);
-                });
+                    const wardResponse = await fetch(`https://provinces.open-api.vn/api/d/${districtData.code}?depth=2`);
+                    if (!wardResponse.ok) throw new Error("API wards load failed");
+                    const data = await wardResponse.json();
+                    data.wards.forEach(item => {
+                        let option = new Option(item.name, item.name);
+                        wardSelect.add(option);
+                    });
+                } catch (e) {
+                    console.error("Không thể tải danh sách xã phường từ API open-api.vn:", e);
+                }
             },
 
             async onProvinceChange() {
-                this.updateShippingFee();
-                await this.loadDistricts(this.customer.province);
+                try {
+                    this.updateShippingFee();
+                    await this.loadDistricts(this.customer.province);
+                } catch (e) {
+                    console.error(e);
+                }
             },
 
             async onDistrictChange() {
-                await this.loadWards(this.customer.district);
+                try {
+                    await this.loadWards(this.customer.district);
+                } catch (e) {
+                    console.error(e);
+                }
             },
 
             // Modal functions
@@ -747,11 +799,18 @@
                 if (!this.modalSelectedVariant) return;
 
                 const imageUrl = this.modalProductImage;
+                const stockQty = parseInt(this.modalSelectedVariant.stock_quantity) || 0;
 
                 // Check duplicate
                 const existIndex = this.orderItems.findIndex(item => item.variant_id == this.modalSelectedVariant.variant_id);
                 if (existIndex > -1) {
-                    this.orderItems[existIndex].quantity += parseInt(this.modalQty);
+                    const newQty = this.orderItems[existIndex].quantity + parseInt(this.modalQty);
+                    if (newQty > stockQty) {
+                        alert(`Sản phẩm đã có trong giỏ hàng. Tổng số lượng thêm vào (${newQty}) vượt quá tồn kho tối đa (${stockQty})!`);
+                        this.orderItems[existIndex].quantity = stockQty;
+                    } else {
+                        this.orderItems[existIndex].quantity = newQty;
+                    }
                 } else {
                     this.orderItems.push({
                         variant_id: this.modalSelectedVariant.variant_id,
@@ -759,7 +818,8 @@
                         name: this.modalSelectedProduct.name,
                         variant_name: this.modalSelectedVariantText,
                         price: parseFloat(this.modalSelectedVariant.price),
-                        quantity: parseInt(this.modalQty),
+                        quantity: Math.min(parseInt(this.modalQty), stockQty),
+                        stock_quantity: stockQty,
                         image: imageUrl
                     });
                 }
@@ -774,7 +834,12 @@
             },
 
             increaseQty(index) {
-                this.orderItems[index].quantity++;
+                const item = this.orderItems[index];
+                if (item.quantity < item.stock_quantity) {
+                    item.quantity++;
+                } else {
+                    alert(`Không thể tăng thêm. Số lượng đạt giới hạn tồn kho tối đa của hệ thống (${item.stock_quantity})!`);
+                }
             },
 
             decreaseQty(index) {
@@ -794,6 +859,14 @@
                 }
                 const v = this.vouchers.find(item => item.voucher_id == voucherId);
                 if (v) {
+                    if (this.calculatedSubtotal < parseFloat(v.min_order_value)) {
+                        alert(`Đơn hàng chưa đạt giá trị tối thiểu (${this.formatPrice(v.min_order_value)}) để áp dụng voucher này!`);
+                        // Reset select value
+                        const selectEl = document.querySelector('select[x-html="voucherOptionsHTML"]');
+                        if (selectEl) selectEl.value = "";
+                        this.voucher = { voucher_id: '', code: '', type: 'fixed', value: 0, min_order_value: 0, max_discount: null };
+                        return;
+                    }
                     this.voucher = v;
                 }
             },
@@ -801,6 +874,35 @@
             // Computed values
             get calculatedSubtotal() {
                 return this.orderItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+            },
+
+            get voucherOptionsHTML() {
+                let html = '<option value="">-- Áp dụng Voucher --</option>';
+                this.vouchers.forEach(v => {
+                    const discountText = v.type === 'percent' ? parseFloat(v.value) + '%' : this.formatPrice(v.value);
+                    const isDisabled = this.calculatedSubtotal < parseFloat(v.min_order_value) ? 'disabled' : '';
+                    const isSelected = this.voucher.voucher_id == v.voucher_id ? 'selected' : '';
+                    html += `<option value="${v.voucher_id}" ${isDisabled} ${isSelected}>${v.code} (Giảm ${discountText})</option>`;
+                });
+                return html;
+            },
+
+            get productOptionsHTML() {
+                let html = '<option value="">-- Chọn sản phẩm --</option>';
+                this.products.forEach(p => {
+                    html += `<option value="${p.product_id}">${p.name}</option>`;
+                });
+                return html;
+            },
+
+            get variantOptionsHTML() {
+                let html = '<option value="">-- Chọn biến thể --</option>';
+                this.modalVariants.forEach(v => {
+                    const text = this.formatVariantText(v);
+                    const price = this.formatPrice(v.price);
+                    html += `<option value="${v.variant_id}">${text} (Giá: ${price} - Kho: ${v.stock_quantity})</option>`;
+                });
+                return html;
             },
 
             get calculatedTotal() {

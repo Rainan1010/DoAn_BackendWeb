@@ -114,7 +114,7 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])
@@ -150,30 +150,35 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::delete('reviews/{id}', [ReviewController::class, 'destroy'])
         ->name('reviews.destroy');
 
-    Route::patch(
-        'permissions/{id}/toggle-status',
-        [App\Http\Controllers\Admin\PermissionController::class, 'toggleStatus']
-    )->name('permissions.toggle-status');
+    Route::middleware(['admin.only'])->group(function () {
+        Route::patch(
+            'permissions/{id}/toggle-status',
+            [App\Http\Controllers\Admin\PermissionController::class, 'toggleStatus']
+        )->name('permissions.toggle-status');
 
-    Route::resource('permissions', App\Http\Controllers\Admin\PermissionController::class);
+        Route::resource('permissions', App\Http\Controllers\Admin\PermissionController::class);
 
-    Route::get('backups', [App\Http\Controllers\Admin\BackupController::class, 'index'])
-        ->name('backups.index');
+        Route::get('backups', [App\Http\Controllers\Admin\BackupController::class, 'index'])
+            ->name('backups.index');
 
-    Route::post('backups', [App\Http\Controllers\Admin\BackupController::class, 'create'])
-        ->name('backups.create');
+        Route::post('backups', [App\Http\Controllers\Admin\BackupController::class, 'create'])
+            ->name('backups.create');
 
-    Route::post('backups/upload', [App\Http\Controllers\Admin\BackupController::class, 'uploadRestore'])
-        ->name('backups.upload');
+        Route::post('backups/upload', [App\Http\Controllers\Admin\BackupController::class, 'uploadRestore'])
+            ->name('backups.upload');
 
-    Route::get('backups/{id}/download', [App\Http\Controllers\Admin\BackupController::class, 'download'])
-        ->name('backups.download');
+        Route::get('backups/{id}/download', [App\Http\Controllers\Admin\BackupController::class, 'download'])
+            ->name('backups.download');
 
-    Route::post('backups/{id}/restore', [App\Http\Controllers\Admin\BackupController::class, 'restore'])
-        ->name('backups.restore');
+        Route::post('backups/{id}/restore', [App\Http\Controllers\Admin\BackupController::class, 'restore'])
+            ->name('backups.restore');
 
-    Route::delete('backups/{id}', [App\Http\Controllers\Admin\BackupController::class, 'destroy'])
-        ->name('backups.destroy');
+        Route::delete('backups/{id}', [App\Http\Controllers\Admin\BackupController::class, 'destroy'])
+            ->name('backups.destroy');
+
+        Route::get('/revenue-reports',[RevenueReportController::class, 'index'])
+            ->name('revenue_reports.index');
+    });
 
     Route::resource('attributes', AttributeController::class);
 
@@ -197,12 +202,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 
     Route::post('orders/{id}/confirm', [OrderStatisticController::class, 'confirm'])
         ->name('orders.confirm');
-
-    //Báo cáo doanh thu
-    // Route::get('/admin/revenue-reports', [RevenueReportController::class, 'index'])
-    //     ->name('admin.revenue_reports.index');
-    Route::get('/revenue-reports',[RevenueReportController::class, 'index'])
-        ->name('revenue_reports.index');
 });
 
 /*
@@ -246,9 +245,7 @@ Route::get('/cart', [CartController::class, 'index'])
 Route::post('/cart/add', [CartController::class, 'add'])
     ->name('cart.add');
 
-// xem chi tiet don hang
-Route::get('/orders/{id}', [OrderController::class, 'detail'])
-    ->name('orders.detail');
+
 
 Route::post('/cart/update', [CartController::class, 'update'])
     ->name('cart.update');
