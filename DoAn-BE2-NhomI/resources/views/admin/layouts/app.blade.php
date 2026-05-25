@@ -26,7 +26,7 @@
             </a>
          
             <a href="{{ route('admin.vouchers.index') }}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.vouchers.*') ? 'bg-[#0A2540] text-white' : 'text-gray-600 hover:bg-gray-50' }} rounded-lg transition-colors">
-                <i data-lucide="ticket" class="w-5 h-5"></i> Voucher
+                <i data-lucide="ticket" class="w-5 h-5"></i> Mã giảm giá
             </a>
         </nav>
         <div class="p-4 border-t border-gray-200">

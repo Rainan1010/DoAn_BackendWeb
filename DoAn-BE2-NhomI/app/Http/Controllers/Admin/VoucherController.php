@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Voucher;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class VoucherController extends Controller
 {
-    private const VOUCHER_NOT_FOUND_MESSAGE = 'Voucher này không còn tồn tại hoặc đã bị người khác xóa. Vui lòng tải lại danh sách.';
+    private const VOUCHER_NOT_FOUND_MESSAGE = 'Mã giảm giá này không còn tồn tại hoặc đã bị người khác xóa. Vui lòng tải lại danh sách.';
 
     private function findVoucher($id): ?Voucher
     {
@@ -24,21 +26,81 @@ class VoucherController extends Controller
 
     public function index()
     {
-        $vouchers = Voucher::all();
-        
-        // Calculate stats for the dashboard
+        $vouchers = Voucher::orderByDesc('voucher_id')->get();
+
+        $totalUsed = (int) $vouchers->sum('used_count');
+        $totalLimit = (int) $vouchers->sum('usage_limit');
+        $usedRate = $totalLimit > 0 ? round(($totalUsed / $totalLimit) * 100, 1) : 0;
+
+        $now = now();
+        $lastMonth = $now->copy()->subMonth();
+
+        $ordersThisMonth = DB::table('orders')
+            ->whereNotNull('voucher_id')
+            ->where('order_status', '!=', 'cancelled')
+            ->whereYear('created_at', $now->year)
+            ->whereMonth('created_at', $now->month)
+            ->count();
+
+        $ordersLastMonth = DB::table('orders')
+            ->whereNotNull('voucher_id')
+            ->where('order_status', '!=', 'cancelled')
+            ->whereYear('created_at', $lastMonth->year)
+            ->whereMonth('created_at', $lastMonth->month)
+            ->count();
+
+        if ($ordersLastMonth > 0) {
+            $monthGrowth = round((($ordersThisMonth - $ordersLastMonth) / $ordersLastMonth) * 100, 1);
+        } else {
+            $monthGrowth = $ordersThisMonth > 0 ? 100 : 0;
+        }
+
         $stats = [
-            'total' => Voucher::count(),
-            'active' => Voucher::where('end_at', '>=', now())->where('is_active', 1)->count(),
-            'used_rate' => Voucher::sum('used_count') > 0 ? round((Voucher::sum('used_count') / Voucher::sum('usage_limit')) * 100, 1) : 42.8,
+            'total' => $vouchers->count(),
+            'active' => $vouchers->filter(fn ($v) => $this->isVoucherActive($v))->count(),
+            'used_rate' => $usedRate,
+            'month_growth' => $monthGrowth,
+            'total_redeemed' => $totalUsed,
+            'orders_with_voucher' => DB::table('orders')
+                ->whereNotNull('voucher_id')
+                ->where('order_status', '!=', 'cancelled')
+                ->count(),
         ];
 
-        return view('admin.vouchers.index', compact('vouchers', 'stats'));
+        $recentRedeemers = DB::table('orders')
+            ->join('users', 'orders.user_id', '=', 'users.user_id')
+            ->whereNotNull('orders.voucher_id')
+            ->where('orders.order_status', '!=', 'cancelled')
+            ->select('users.avatar_url', 'users.full_name')
+            ->orderByDesc('orders.created_at')
+            ->limit(3)
+            ->get();
+
+        return view('admin.vouchers.index', compact('vouchers', 'stats', 'recentRedeemers'));
     }
 
     public function create()
     {
-        return view('admin.vouchers.create');
+        $nextVoucherId = (int) (Voucher::max('voucher_id') ?? 0) + 1;
+
+        return view('admin.vouchers.create', compact('nextVoucherId'));
+    }
+
+    private function isVoucherActive(Voucher $voucher): bool
+    {
+        if (!$voucher->is_active) {
+            return false;
+        }
+
+        if ($voucher->start_at && now()->lt(Carbon::parse($voucher->start_at))) {
+            return false;
+        }
+
+        if ($voucher->end_at && now()->gt(Carbon::parse($voucher->end_at))) {
+            return false;
+        }
+
+        return true;
     }
 
     public function store(Request $request)
@@ -70,7 +132,7 @@ class VoucherController extends Controller
 
         Voucher::create($request->all());
 
-        return redirect()->route('admin.vouchers.index')->with('success', 'Tạo voucher thành công!');
+        return redirect()->route('admin.vouchers.index')->with('success', 'Tạo mã giảm giá thành công!');
     }
 
     public function show($id)
@@ -80,18 +142,17 @@ class VoucherController extends Controller
             return $this->voucherNotFoundRedirect();
         }
         
-        // Fetch real statistics from orders table
-        $revenue = \DB::table('orders')
+        $revenue = (float) DB::table('orders')
             ->where('voucher_id', $id)
             ->where('order_status', '!=', 'cancelled')
             ->sum('total_amount');
-            
-        $avg_order = \DB::table('orders')
+
+        $avg_order = (float) (DB::table('orders')
             ->where('voucher_id', $id)
             ->where('order_status', '!=', 'cancelled')
-            ->avg('total_amount') ?? 0;
-            
-        $recent_orders = \DB::table('orders')
+            ->avg('total_amount') ?? 0);
+
+        $recent_orders = DB::table('orders')
             ->join('users', 'orders.user_id', '=', 'users.user_id')
             ->where('orders.voucher_id', $id)
             ->select('orders.*', 'users.full_name', 'users.email', 'users.avatar_url')
@@ -99,7 +160,68 @@ class VoucherController extends Controller
             ->limit(5)
             ->get();
 
-        return view('admin.vouchers.show', compact('voucher', 'revenue', 'avg_order', 'recent_orders'));
+        $orderStats = DB::table('orders')
+            ->where('voucher_id', $id)
+            ->selectRaw("COUNT(*) as total_orders, SUM(CASE WHEN order_status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_orders, COALESCE(SUM(discount_amount), 0) as total_discount")
+            ->first();
+
+        $totalOrders = (int) ($orderStats->total_orders ?? 0);
+        $cancelledOrders = (int) ($orderStats->cancelled_orders ?? 0);
+        $totalDiscount = (float) ($orderStats->total_discount ?? 0);
+
+        $usageRate = ($voucher->usage_limit ?? 0) > 0
+            ? round(($voucher->used_count / $voucher->usage_limit) * 100, 1)
+            : ($totalOrders > 0 ? 100 : 0);
+
+        $cancelRate = $totalOrders > 0
+            ? round(($cancelledOrders / $totalOrders) * 100, 1)
+            : 0;
+
+        $estimatedProfit = $revenue - $totalDiscount;
+
+        $revenuePreviousMonth = (float) DB::table('orders')
+            ->where('voucher_id', $id)
+            ->where('order_status', '!=', 'cancelled')
+            ->whereBetween('created_at', [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()])
+            ->sum('total_amount');
+
+        $revenueGrowth = $revenuePreviousMonth > 0
+            ? round((($revenue - $revenuePreviousMonth) / $revenuePreviousMonth) * 100, 1)
+            : ($revenue > 0 ? 100 : 0);
+
+        $weeklyRevenue = DB::table('orders')
+            ->where('voucher_id', $id)
+            ->where('order_status', '!=', 'cancelled')
+            ->where('created_at', '>=', now()->subDays(6)->startOfDay())
+            ->selectRaw('DATE(created_at) as day, COALESCE(SUM(total_amount), 0) as total')
+            ->groupBy('day')
+            ->orderBy('day')
+            ->pluck('total', 'day');
+
+        $chartDays = collect(range(6, 0))->map(function ($daysAgo) use ($weeklyRevenue) {
+            $day = now()->subDays($daysAgo)->format('Y-m-d');
+
+            return [
+                'label' => now()->subDays($daysAgo)->format('d/m'),
+                'total' => (float) ($weeklyRevenue[$day] ?? 0),
+            ];
+        });
+
+        $chartMax = max($chartDays->max('total'), 1);
+
+        return view('admin.vouchers.show', compact(
+            'voucher',
+            'revenue',
+            'avg_order',
+            'recent_orders',
+            'usageRate',
+            'cancelRate',
+            'estimatedProfit',
+            'revenueGrowth',
+            'chartDays',
+            'chartMax',
+            'totalDiscount'
+        ));
     }
 
     public function edit($id)
@@ -144,7 +266,7 @@ class VoucherController extends Controller
         ]);
 
         $voucher->update($request->all());
-        return redirect()->route('admin.vouchers.index')->with('success', 'Cập nhật voucher thành công!');
+        return redirect()->route('admin.vouchers.index')->with('success', 'Cập nhật mã giảm giá thành công!');
     }
 
     public function destroy($id)
@@ -154,7 +276,7 @@ class VoucherController extends Controller
             return $this->voucherNotFoundRedirect();
         }
         $voucher->delete();
-        return redirect()->route('admin.vouchers.index')->with('success', 'Xóa voucher thành công!');
+        return redirect()->route('admin.vouchers.index')->with('success', 'Xóa mã giảm giá thành công!');
     }
 
     public function toggleStatus($id)
@@ -167,6 +289,6 @@ class VoucherController extends Controller
         $voucher->save();
 
         $status = $voucher->is_active ? 'kích hoạt' : 'tạm dừng';
-        return back()->with('success', "Đã {$status} voucher thành công!");
+        return back()->with('success', "Đã {$status} mã giảm giá thành công!");
     }
 }

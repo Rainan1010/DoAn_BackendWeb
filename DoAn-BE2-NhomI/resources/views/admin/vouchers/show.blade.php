@@ -3,7 +3,7 @@
 @section('header_search')
 <div class="relative">
     <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
-    <input type="text" placeholder="Tìm kiếm voucher..." class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-[#0A2540]/10 text-sm">
+    <input type="text" placeholder="Tìm mã giảm giá..." class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-[#0A2540]/10 text-sm">
 </div>
 @endsection
 
@@ -13,11 +13,11 @@
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
             <nav class="flex text-xs font-medium text-gray-400 mb-2 gap-2">
-                <span>Voucher</span>
+                <a href="{{ route('admin.vouchers.index') }}" class="hover:text-[#0A2540]">Mã giảm giá</a>
                 <span>&rsaquo;</span>
-                <span class="text-gray-600">Xem chi tiết voucher</span>
+                <span class="text-gray-600">Xem chi tiết</span>
             </nav>
-            <h1 class="text-4xl font-black text-[#0A2540] tracking-tight uppercase">Voucher: {{ $voucher->code }}</h1>
+            <h1 class="text-4xl font-black text-[#0A2540] tracking-tight">Mã: {{ $voucher->code }}</h1>
         </div>
         <div class="flex items-center gap-3">
             <form action="{{ route('admin.vouchers.toggleStatus', $voucher->voucher_id) }}" method="POST">
@@ -45,13 +45,13 @@
                 <div class="space-y-6">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Mã Voucher</p>
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Mã code</p>
                             <div class="bg-gray-50 rounded-xl p-3 text-sm font-bold text-[#0A2540] uppercase tracking-wider">
                                 {{ $voucher->code }}
                             </div>
                         </div>
                         <div>
-                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Loại Voucher</p>
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Loại mã</p>
                             <div class="bg-gray-50 rounded-xl p-3 text-sm font-bold text-[#0A2540]">
                                 {{ $voucher->type == 'percent' ? 'Giảm phần trăm' : 'Giảm trực tiếp' }}
                             </div>
@@ -142,14 +142,15 @@
                             <h4 class="text-2xl font-black text-[#0A2540]">{{ number_format($revenue) }} đ</h4>
                         </div>
                     </div>
-                    <!-- Mini Chart Placeholder -->
                     <div class="flex items-end gap-1.5 h-16 pt-2">
-                        <div class="flex-1 bg-green-50 rounded-t-lg h-4"></div>
-                        <div class="flex-1 bg-green-50 rounded-t-lg h-8"></div>
-                        <div class="flex-1 bg-green-50 rounded-t-lg h-6"></div>
-                        <div class="flex-1 bg-green-50 rounded-t-lg h-10"></div>
-                        <div class="flex-1 bg-green-50 rounded-t-lg h-12"></div>
-                        <div class="flex-1 bg-green-600 rounded-t-lg h-16"></div>
+                        @foreach($chartDays as $day)
+                            @php
+                                $barHeight = $chartMax > 0 ? max(8, round(($day['total'] / $chartMax) * 64)) : 8;
+                            @endphp
+                            <div class="flex-1 flex flex-col items-center gap-1" title="{{ $day['label'] }}: {{ number_format($day['total']) }} đ">
+                                <div class="w-full bg-green-50 rounded-t-lg {{ $loop->last ? 'bg-green-600' : '' }}" style="height: {{ $barHeight }}px"></div>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
 
@@ -166,9 +167,10 @@
                     </div>
                     <div class="pt-4 border-t border-gray-50 flex items-center justify-between">
                         <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Dựa trên dữ liệu đơn hàng</span>
-                        <div class="flex items-center gap-1 text-[10px] font-black text-green-500 bg-green-50 px-2 py-1 rounded-full">
-                            <i data-lucide="trending-up" class="w-3 h-3"></i>
-                            +0%
+                        @php $revGrowthPositive = ($revenueGrowth ?? 0) >= 0; @endphp
+                        <div class="flex items-center gap-1 text-[10px] font-black {{ $revGrowthPositive ? 'text-green-500 bg-green-50' : 'text-red-500 bg-red-50' }} px-2 py-1 rounded-full">
+                            <i data-lucide="{{ $revGrowthPositive ? 'trending-up' : 'trending-down' }}" class="w-3 h-3"></i>
+                            {{ $revGrowthPositive ? '+' : '' }}{{ number_format($revenueGrowth ?? 0, 1) }}%
                         </div>
                     </div>
                 </div>
@@ -180,24 +182,25 @@
                     <div class="relative w-20 h-20">
                         <svg class="w-full h-full" viewBox="0 0 36 36">
                             <path class="text-gray-100" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                            <path class="text-[#0A2540]" stroke-width="3" stroke-dasharray="80, 100" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path class="text-[#0A2540]" stroke-width="3" stroke-dasharray="{{ min($usageRate, 100) }}, 100" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                         </svg>
-                        <div class="absolute inset-0 flex items-center justify-center text-xs font-black text-[#0A2540]">80%</div>
+                        <div class="absolute inset-0 flex items-center justify-center text-xs font-black text-[#0A2540]">{{ number_format($usageRate, 1) }}%</div>
                     </div>
                     <div>
-                        <h4 class="text-sm font-black text-[#0A2540]">Chỉ số chuyển đổi</h4>
-                        <p class="text-[10px] text-gray-400 font-medium leading-relaxed max-w-[200px]">Khách hàng áp dụng mã trên tổng số lượt xem voucher.</p>
+                        <h4 class="text-sm font-black text-[#0A2540]">Tỷ lệ sử dụng mã</h4>
+                        <p class="text-[10px] text-gray-400 font-medium leading-relaxed max-w-[200px]">Đã dùng {{ number_format($voucher->used_count) }} trên {{ number_format($voucher->usage_limit ?? 0) }} lượt cho phép.</p>
                     </div>
                 </div>
 
                 <div class="flex gap-12 items-center">
                     <div class="text-center">
                         <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Tỷ lệ hủy</p>
-                        <p class="text-lg font-black text-red-500">0%</p>
+                        <p class="text-lg font-black text-red-500">{{ number_format($cancelRate, 1) }}%</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">ROI ước tính</p>
-                        <p class="text-lg font-black text-[#0A2540]">--</p>
+                        <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Lợi nhuận ước tính</p>
+                        <p class="text-lg font-black text-[#0A2540]">{{ number_format($estimatedProfit) }} đ</p>
+                        <p class="text-[9px] text-gray-400 mt-0.5">Giảm {{ number_format($totalDiscount) }} đ</p>
                     </div>
                 </div>
             </div>
@@ -267,7 +270,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="py-10 text-center text-gray-400 font-medium">Chưa có giao dịch nào sử dụng voucher này.</td>
+                        <td colspan="6" class="py-10 text-center text-gray-400 font-medium">Chưa có giao dịch nào sử dụng mã này.</td>
                     </tr>
                     @endforelse
                 </tbody>

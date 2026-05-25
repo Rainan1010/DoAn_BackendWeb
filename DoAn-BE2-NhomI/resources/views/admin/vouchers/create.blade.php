@@ -3,20 +3,20 @@
 @section('header_search')
 <div class="relative">
     <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
-    <input type="text" placeholder="Tìm kiếm voucher..." class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-[#0A2540]/10 text-sm">
+    <input type="text" placeholder="Tìm mã giảm giá..." class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-[#0A2540]/10 text-sm">
 </div>
 @endsection
 
 @section('content')
 <div x-data="{ 
-    code: 'TECHSPRING20',
-    type: 'percent',
-    value: 15,
-    min_order: 500000,
-    max_discount: 100000,
-    start_at: '',
-    end_at: '2024-12-31',
-    is_active: true
+    code: {{ json_encode(old('code', '')) }},
+    type: {{ json_encode(old('type', 'percent')) }},
+    value: {{ json_encode(old('value', '')) }},
+    min_order: {{ json_encode(old('min_order_value', '')) }},
+    max_discount: {{ json_encode(old('max_discount', '')) }},
+    start_at: {{ json_encode(old('start_at', '')) }},
+    end_at: {{ json_encode(old('end_at', '')) }},
+    is_active: {{ old('is_active', true) ? 'true' : 'false' }}
 }" class="pb-10">
     
     <form action="{{ route('admin.vouchers.store') }}" method="POST">
@@ -28,16 +28,16 @@
                 <nav class="flex text-xs font-medium text-gray-400 mb-2 gap-2">
                     <span>Khuyến mãi</span>
                     <span>&rsaquo;</span>
-                    <span class="text-gray-600">Thêm Voucher Mới</span>
+                    <span class="text-gray-600">Thêm mã giảm giá mới</span>
                 </nav>
-                <h1 class="text-4xl font-black text-[#0A2540] tracking-tight">Thêm Voucher Mới</h1>
+                <h1 class="text-4xl font-black text-[#0A2540] tracking-tight">Thêm mã giảm giá mới</h1>
             </div>
             <div class="flex items-center gap-3">
                 <a href="{{ route('admin.vouchers.index') }}" class="px-8 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
                     Hủy bỏ
                 </a>
                 <button type="submit" class="px-8 py-3 bg-[#0A2540] text-white rounded-xl text-sm font-bold hover:bg-[#113255] transition-colors shadow-lg shadow-[#0A2540]/20">
-                    Lưu Voucher
+                    Lưu mã giảm giá
                 </button>
             </div>
         </div>
@@ -68,14 +68,14 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Mã hệ thống (Tự động)</label>
-                            <input type="text" value="VCH-2024-001" disabled class="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-bold text-gray-400 cursor-not-allowed">
+                            <input type="text" value="VCH-{{ str_pad($nextVoucherId, 3, '0', STR_PAD_LEFT) }}" disabled class="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-bold text-gray-400 cursor-not-allowed">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Mã voucher</label>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Mã code</label>
                             <input type="text" name="code" x-model="code" placeholder="Ví dụ: TECHSPRING20" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10 uppercase tracking-wider">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Loại Voucher</label>
+                            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Loại mã giảm giá</label>
                             <select name="type" x-model="type" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10">
                                 <option value="percent">Phần trăm (%)</option>
                                 <option value="fixed">Số tiền cố định (VNĐ)</option>
@@ -153,7 +153,7 @@
                             </div>
                             <div>
                                 <p class="text-sm font-bold text-[#0A2540]">Kích hoạt ngay</p>
-                                <p class="text-xs text-gray-500">Voucher sẽ có thể sử dụng ngay khi được lưu.</p>
+                                <p class="text-xs text-gray-500">Mã giảm giá có thể dùng ngay sau khi lưu.</p>
                             </div>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
@@ -196,7 +196,7 @@
                                         <span class="text-xs font-black tracking-widest uppercase" x-text="code"></span>
                                         <i data-lucide="copy" class="w-3 h-3 text-white/40"></i>
                                     </div>
-                                    <p class="text-[8px] text-white/30 uppercase font-bold tracking-widest mt-4">Hết hạn: <span x-text="end_at || '31/12/2024'"></span></p>
+                                    <p class="text-[8px] text-white/30 uppercase font-bold tracking-widest mt-4">Hết hạn: <span x-text="end_at ? end_at.replace('T', ' ') : 'Chưa chọn'"></span></p>
                                 </div>
                             </div>
                         </div>
