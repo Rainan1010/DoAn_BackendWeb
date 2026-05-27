@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="price-sync-url" content="{{ url('/api/prices/sync') }}" />
     <title>Admin - B-Tris</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -161,6 +162,7 @@
     <script>
         lucide.createIcons();
     </script>
+    <script src="{{ asset('js/price-realtime.js') }}" defer></script>
     @stack('scripts')
 </body>
 

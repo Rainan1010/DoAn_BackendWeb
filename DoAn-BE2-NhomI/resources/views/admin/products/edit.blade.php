@@ -87,6 +87,7 @@
                                 <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">GIÁ NIÊM YẾT (₫) <span class="text-red-400">*</span></label>
                                 <input type="number" name="base_price" x-model="price" value="{{ old('base_price', $product->base_price) }}" min="0"
                                     class="w-full px-4 py-3 bg-gray-50/80 border border-gray-200 rounded-lg text-sm font-bold text-[#0A2540] focus:outline-none focus:ring-2 focus:ring-[#0A2540]/20 focus:border-[#0A2540] focus:bg-white transition-all">
+                                <p class="mt-2 text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Lưu xong → giá tự động cập nhật realtime trên trang khách (mỗi 3 giây).</p>
                             </div>
                         </div>
 

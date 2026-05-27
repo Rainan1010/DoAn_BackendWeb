@@ -46,7 +46,7 @@
                         </h4>
 
                         <div class="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
-                            <p class="text-brand-blue font-bold text-base">{{ number_format($product->base_price, 0, ',', '.') }}₫</p>
+                            <p class="text-brand-blue font-bold text-base"><span data-realtime-price data-product-id="{{ $product->product_id }}">{{ number_format($product->base_price, 0, ',', '.') }}₫</span></p>
                             <form action="{{ route('cart.add') }}" method="POST">
                                 @csrf
                                 <input type="hidden" name="id" value="{{ $product->product_id }}">

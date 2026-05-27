@@ -912,11 +912,17 @@
 
 
 
+        <div class="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 leading-6">
+            <p class="font-black uppercase text-[11px] tracking-wider mb-1">Chính sách hoàn tiền</p>
+            <p>Đơn COD hoặc chưa thanh toán: không phát sinh hoàn tiền.</p>
+            <p>Đơn đã thanh toán online: hoàn về phương thức thanh toán ban đầu trong 3-7 ngày làm việc.</p>
+        </div>
+
         {{-- ACTION --}}
-        <div class="mt-8 flex gap-4">
+        <div class="mt-6 space-y-4">
 
             {{-- KHÔNG --}}
-            <button onclick="closeCancelModal()" class="flex-1 rounded-2xl
+            <button onclick="closeCancelModal()" class="w-full rounded-2xl
                                 border border-slate-200
                                 py-3 font-bold
                                 text-slate-600
@@ -929,9 +935,13 @@
 
 
             {{-- CÓ --}}
-            <form id="cancelForm" method="POST" class="flex-1">
+            <form id="cancelForm" method="POST" class="space-y-4">
 
                 @csrf
+
+                <textarea name="cancel_reason" rows="3" required minlength="5" maxlength="500"
+                    class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-100"
+                    placeholder="Nhập lý do huỷ đơn..."></textarea>
 
                 <button type="submit" class="w-full rounded-2xl
                                     bg-red-500 py-3
@@ -976,6 +986,10 @@
             .getElementById('cancelForm')
             .action =
             `/orders/cancel/${orderId}`;
+
+        document
+            .querySelector('#cancelForm textarea[name="cancel_reason"]')
+            .value = '';
     }
 
 

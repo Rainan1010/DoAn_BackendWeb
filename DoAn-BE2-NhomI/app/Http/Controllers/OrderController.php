@@ -164,15 +164,26 @@ class OrderController extends Controller
      * HỦY ĐƠN HÀNG
      * =====================================================
      */
-    public function cancel($id)
+    public function cancel(Request $request, $id)
     {
+        $request->validate([
+            'cancel_reason' => 'required|string|min:5|max:500',
+        ], [
+            'cancel_reason.required' => 'Vui lòng nhập lý do huỷ đơn.',
+            'cancel_reason.min' => 'Lý do huỷ đơn cần có ít nhất 5 ký tự.',
+            'cancel_reason.max' => 'Lý do huỷ đơn không được vượt quá 500 ký tự.',
+        ]);
+
         DB::beginTransaction();
         try {
             $order = Order::with('items')
                 ->where('user_id', Auth::id())
+                ->lockForUpdate()
                 ->findOrFail($id);
 
             if (!in_array($order->order_status, ['pending', 'confirmed', 'processing'])) {
+                DB::rollBack();
+
                 return back()->with(
                     'error',
                     'Không thể huỷ đơn hàng này'
@@ -193,15 +204,32 @@ class OrderController extends Controller
                     ->decrement('used_count');
             }
 
+            $shouldRefund = $order->payment_status === 'paid'
+                || Payment::where('order_id', $order->order_id)
+                    ->where('status', 'success')
+                    ->whereIn('gateway', ['momo', 'vnpay'])
+                    ->exists();
+
+            Payment::where('order_id', $order->order_id)
+                ->update([
+                    'status' => $shouldRefund ? 'refunded' : 'failed',
+                ]);
+
             $order->update([
                 'order_status' => 'cancelled',
+                'payment_status' => $shouldRefund ? 'refunded' : 'pending',
+                'cancel_reason' => $request->cancel_reason,
             ]);
 
             DB::commit();
 
+            $message = $shouldRefund
+                ? 'Huỷ đơn hàng thành công. Đơn đã thanh toán sẽ được hoàn tiền về phương thức thanh toán ban đầu trong 3-7 ngày làm việc.'
+                : 'Huỷ đơn hàng thành công. Đơn chưa thanh toán hoặc thanh toán COD nên không phát sinh hoàn tiền.';
+
             return back()->with(
                 'success',
-                'Huỷ đơn hàng thành công'
+                $message
             );
         } catch (\Exception $e) {
             DB::rollBack();

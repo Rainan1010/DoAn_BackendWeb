@@ -345,6 +345,8 @@ Route::middleware('auth')->group(function () {
 */
 
 Route::get('/api/compare-product/{id}', [App\Http\Controllers\CompareController::class, 'getCompareProduct']);
+Route::get('/api/prices/sync', [App\Http\Controllers\Api\ProductPriceController::class, 'sync'])
+    ->name('api.prices.sync');
 
 /*
 |--------------------------------------------------------------------------

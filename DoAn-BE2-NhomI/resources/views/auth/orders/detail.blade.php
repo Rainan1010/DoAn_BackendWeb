@@ -340,6 +340,11 @@
                         @else
                             <p class="text-sm font-medium text-slate-500 max-w-md">Đơn hàng này đã bị hủy trên hệ thống.</p>
                         @endif
+                        <p class="text-sm font-bold {{ $order->payment_status === 'refunded' ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-slate-600 bg-white/70 border-slate-200' }} max-w-xl leading-relaxed border px-6 py-3.5 rounded-2xl">
+                            {{ $order->payment_status === 'refunded'
+                                ? 'Trạng thái hoàn tiền: Đã ghi nhận hoàn tiền. Tiền sẽ về phương thức thanh toán ban đầu trong 3-7 ngày làm việc.'
+                                : 'Trạng thái hoàn tiền: Không phát sinh hoàn tiền vì đơn chưa thanh toán hoặc thanh toán COD.' }}
+                        </p>
                     </div>
                 </div>
             @else
@@ -564,6 +569,36 @@
                 </div>
 
             </div>
+
+            @if(in_array($order->order_status, ['pending', 'confirmed', 'processing']))
+                <div class="bg-white/80 backdrop-blur-2xl rounded-3xl border border-red-100 shadow-sm p-6 md:p-8 mb-6">
+                    <div class="flex items-start gap-4 mb-5">
+                        <div class="w-12 h-12 rounded-2xl bg-red-50 text-red-600 border border-red-100 flex items-center justify-center flex-shrink-0">
+                            <span class="material-symbols-outlined text-2xl">cancel</span>
+                        </div>
+                        <div>
+                            <p class="text-red-500 text-xs uppercase tracking-wider font-black mb-1">Huỷ đơn hàng</p>
+                            <h2 class="text-xl font-black text-slate-800">Chính sách hoàn tiền</h2>
+                            <p class="text-sm text-slate-500 mt-2 leading-6">
+                                Bạn có thể huỷ khi đơn còn ở trạng thái chờ xác nhận, đã xác nhận hoặc đang chuẩn bị.
+                                Đơn COD/chưa thanh toán không phát sinh hoàn tiền; đơn đã thanh toán online sẽ được hoàn về phương thức ban đầu trong 3-7 ngày làm việc.
+                            </p>
+                        </div>
+                    </div>
+
+                    <form action="{{ route('orders.cancel', $order->order_id) }}" method="POST" class="space-y-4">
+                        @csrf
+                        <textarea name="cancel_reason" rows="3" required minlength="5" maxlength="500"
+                            class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-100"
+                            placeholder="Nhập lý do huỷ đơn...">{{ old('cancel_reason') }}</textarea>
+                        <button type="submit"
+                            onclick="return confirm('Bạn chắc chắn muốn huỷ đơn hàng này?')"
+                            class="rounded-2xl bg-red-500 px-6 py-3 text-sm font-black uppercase tracking-wider text-white transition hover:bg-red-600">
+                            Xác nhận huỷ đơn
+                        </button>
+                    </form>
+                </div>
+            @endif
 
             {{-- PRODUCTS --}}
             <div class="bg-white/80 backdrop-blur-2xl rounded-3xl border border-white/50 shadow-sm p-6 md:p-8 mb-6 overflow-hidden">
