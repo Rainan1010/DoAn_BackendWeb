@@ -81,10 +81,8 @@ Route::middleware('guest')->group(function () {
     });
 });
 
-Route::post('/logout', function () {
-    Auth::logout();
-    return redirect('/');
-})->name('logout');
+Route::post('/logout', [CrudUserController::class, 'logout'])
+    ->name('logout');
 
 /*
 |--------------------------------------------------------------------------
@@ -182,6 +180,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
         Route::get('stock-logs', [StockLogController::class, 'index'])
             ->name('stock-logs.index');
+        
+        Route::get('/login-history', [CrudUserController::class, 'loginHistory'])
+            ->name('login.history');
     });
 
     Route::resource('attributes', AttributeController::class);

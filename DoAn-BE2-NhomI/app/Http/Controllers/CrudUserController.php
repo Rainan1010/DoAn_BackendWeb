@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\VerifyOTPMail;
-
+use App\Models\LoginHistory;
 class CrudUserController extends Controller
 {
     // =====================================================
@@ -40,7 +40,13 @@ class CrudUserController extends Controller
             $request->session()->regenerate();
 
             $user = Auth::user();
-
+            LoginHistory::create([
+                'user_id' => $user->user_id,
+                'email' => $user->email,
+                'login_time' => now(),
+                'ip_address' => $request->ip(),
+                'status' => 'success',
+            ]);
             // Kiểm tra tài khoản bị khóa
             if ($user->is_active == 0) {
                 Auth::logout();
@@ -95,6 +101,13 @@ class CrudUserController extends Controller
             return redirect('/')
                 ->with('success', 'Đăng nhập thành công!');
         }
+        LoginHistory::create([
+            'user_id' => null,
+            'email' => $request->email,
+            'login_time' => now(),
+            'ip_address' => $request->ip(),
+            'status' => 'failed',
+        ]);
 
         return back()
             ->with('error', 'Tài khoản hoặc mật khẩu không chính xác.')
@@ -340,5 +353,58 @@ class CrudUserController extends Controller
 
         return redirect('/login')
             ->with('success', 'Đổi mật khẩu thành công! Vui lòng đăng nhập lại.');
+    }
+    // =====================================================
+    // HIỂN THỊ LOGIN HISTORY
+    // =====================================================
+
+    public function loginHistory()
+    {
+        $query = LoginHistory::with('user');
+
+        // FILTER STATUS
+        if (request('status')) {
+            $query->where('status', request('status'));
+        }
+
+        $logs = $query
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return view(
+            'admin.login_history.index',
+            compact('logs')
+        );
+    }
+    public function logout(Request $request)
+    {
+        $user = Auth::user();
+
+        if ($user) {
+
+            $history = LoginHistory::where(
+                'user_id',
+                $user->user_id
+            )
+                ->whereNull('logout_time')
+                ->latest()
+                ->first();
+
+            if ($history) {
+
+                $history->update([
+                    'logout_time' => now(),
+                ]);
+            }
+        }
+
+        Auth::logout();
+
+        $request->session()->invalidate();
+
+        $request->session()->regenerateToken();
+
+        return redirect('/');
     }
 }
