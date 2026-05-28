@@ -35,7 +35,7 @@
             $productImage = $productImage ?: 'images/products/default.png';
         @endphp
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start" data-realtime-price-root data-product-id="{{ $product->product_id }}">
 
             {{-- ===== ẢNH SẢN PHẨM ===== --}}
             <div class="lg:col-span-6 sticky top-24 space-y-6">
@@ -73,8 +73,15 @@
                     </h1>
                     <div class="flex items-center gap-4">
                         {{-- Giá sẽ nhảy theo biến thể nhờ JS ở dưới --}}
-                        <p id="mainPrice" class="text-3xl text-red-600 font-black">
-                            {{ number_format($variants[0]->price ?? $product->base_price, 0, ',', '.') }}₫
+                        @php
+                            $firstVariantForPrice = $variants->first();
+                            $mainDisplayPrice = \App\Services\ProductPriceService::effectiveVariantPrice(
+                                $firstVariantForPrice,
+                                (float) $product->base_price
+                            );
+                        @endphp
+                        <p id="mainPrice" class="text-3xl text-red-600 font-black" data-realtime-price data-product-id="{{ $product->product_id }}">
+                            {{ number_format($mainDisplayPrice, 0, ',', '.') }}₫
                         </p>
                         <span class="bg-red-50 text-red-600 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Tiết kiệm 10%</span>
                     </div>
@@ -106,12 +113,16 @@
                         </p>
                         <div class="flex flex-wrap gap-3">
                             @foreach($uniqueVariants as $index => $v)
-                                @php $attr = json_decode($v->attribute_values, true); @endphp
+                                @php
+                                    $attr = json_decode($v->attribute_values, true);
+                                    $variantDisplayPrice = \App\Services\ProductPriceService::effectiveVariantPrice($v, (float) $product->base_price);
+                                @endphp
                                 <button type="button"
                                     class="variant-btn border-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all
                                     {{ $index == 0 ? 'bg-blue-900 text-white border-blue-900 shadow-md' : 'bg-white text-gray-500 border-gray-100 hover:border-blue-200' }}"
                                     data-value="{{ $attr['RAM'] ?? '' }} {{ $attr['ROM'] ?? '' }}"
-                                    data-price="{{ number_format($v->price, 0, ',', '.') }}₫"
+                                    data-price="{{ number_format($variantDisplayPrice, 0, ',', '.') }}₫"
+                                    data-price-value="{{ $variantDisplayPrice }}"
                                     data-variant-id="{{ $v->variant_id }}">
                                     {{ $attr['RAM'] ?? '' }} {{ $attr['ROM'] ?? '' }}
                                 </button>
@@ -201,7 +212,7 @@
                         <div class="h-24 border-b flex items-center justify-center bg-blue-900/5">A-Series Precision</div>
                         <div class="h-24 border-b flex items-center justify-center">Pro Camera System</div>
                         <div class="h-24 border-b flex items-center justify-center bg-blue-900/5">All-day Battery</div>
-                        <div class="h-24 flex items-center justify-center text-lg font-black text-red-600">{{ number_format($product->base_price, 0, ',', '.') }}₫</div>
+                        <div class="h-24 flex items-center justify-center text-lg font-black text-red-600"><span data-realtime-price data-product-id="{{ $product->product_id }}">{{ number_format($product->base_price, 0, ',', '.') }}₫</span></div>
                     </div>
                 </div>
                 <div class="flex flex-col" id="compare-column-2">
@@ -251,7 +262,7 @@
                                      alt="{{ $item->name }}">
                             </div>
                             <h4 class="text-sm font-bold text-gray-800 line-clamp-1 group-hover:text-blue-900 transition-colors"> {{ $item->name }} </h4>
-                            <p class="text-red-500 font-black text-sm mt-2"> {{ number_format($item->base_price, 0, ',', '.') }}₫ </p>
+                            <p class="text-red-500 font-black text-sm mt-2"><span data-realtime-price data-product-id="{{ $item->product_id }}">{{ number_format($item->base_price, 0, ',', '.') }}₫</span></p>
                         </a>
                     @endforeach
                 </div>
@@ -317,6 +328,22 @@
             @if(session('success'))
                 <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
                     {{ session('success') }}
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                    {{ session('error') }}
+                </div>
+            @endif
+
+            @if($errors->any())
+                <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                    <ul class="list-disc pl-5">
+                        @foreach($errors->all() as $err)
+                            <li>{{ $err }}</li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
 

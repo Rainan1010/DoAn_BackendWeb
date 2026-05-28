@@ -65,7 +65,7 @@
 
                             <div class="mb-4">
                                 <p class="text-orange-400 font-black text-lg">
-                                    {{ number_format($product->base_price, 0, ',', '.') }}₫
+                                    <span data-realtime-price data-product-id="{{ $product->product_id }}">{{ number_format($product->base_price, 0, ',', '.') }}₫</span>
                                 </p>
                             </div>
                         </a>
@@ -160,7 +160,7 @@
                     </h3>
 
                     <p class="text-xl font-light mb-6 text-slate-200">
-                        {{ number_format($promoProduct->base_price, 0, ',', '.') }}₫
+                        <span data-realtime-price data-product-id="{{ $promoProduct->product_id }}">{{ number_format($promoProduct->base_price, 0, ',', '.') }}₫</span>
                     </p>
 
                     <a href="{{ url('/product/' . $promoProduct->product_id) }}" class="w-full py-3 bg-white text-brand-blue text-center font-bold rounded-xl hover:bg-brand-blue hover:text-white transition-all uppercase text-xs">
@@ -212,7 +212,7 @@
                 {{-- Giá + thêm giỏ hàng --}}
                 <div class="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
                     <p class="text-brand-blue font-bold text-base">
-                        {{ number_format($product->base_price, 0, ',', '.') }}₫
+                        <span data-realtime-price data-product-id="{{ $product->product_id }}">{{ number_format($product->base_price, 0, ',', '.') }}₫</span>
                     </p>
 
                     <form action="{{ route('cart.add') }}" method="POST" onclick="event.stopPropagation();">

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta name="price-sync-url" content="{{ url('/api/prices/sync') }}" />
     <title>B-Tris Precision Tech | Thiết Bị Công Nghệ Cao Cấp</title>
 
     {{-- Scripts & Fonts --}}
@@ -301,6 +302,7 @@ use Illuminate\Support\Facades\DB;
 
     {{-- SCRIPTS --}}
     <script src="{{ asset('js/search.js') }}"></script>
+    <script src="{{ asset('js/price-realtime.js') }}" defer></script>
 
     <script>
         if (typeof lucide !== 'undefined') {
