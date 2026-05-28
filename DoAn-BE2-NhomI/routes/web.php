@@ -206,6 +206,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::post('orders/{id}/confirm', [OrderStatisticController::class, 'confirm'])
         ->name('orders.confirm');
+
+    Route::get('/revenue-reports', [RevenueReportController::class, 'index'])
+        ->name('revenue_reports.index');
 });
 
 /*
