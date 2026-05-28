@@ -14,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
             'otp.session' => \App\Http\Middleware\EnsureOtpSession::class,
+            'admin' => \App\Http\Middleware\IsAdmin::class,
+            'admin.only' => \App\Http\Middleware\EnsureUserIsAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -9,6 +9,20 @@ use App\Models\User;
 
 class PermissionController extends Controller
 {
+    private const USER_NOT_FOUND_MESSAGE = 'Nhân sự này không còn tồn tại hoặc đã bị người khác xóa. Vui lòng tải lại danh sách.';
+
+    private function findUser(string $id): ?User
+    {
+        return User::find($id);
+    }
+
+    private function userNotFoundRedirect()
+    {
+        return redirect()
+            ->route('admin.permissions.index')
+            ->with('error', self::USER_NOT_FOUND_MESSAGE);
+    }
+
     public function index()
     {
         $users = User::all();
@@ -23,7 +37,10 @@ class PermissionController extends Controller
 
     public function toggleStatus(string $id)
     {
-        $user = User::findOrFail($id);
+        $user = $this->findUser($id);
+        if (!$user) {
+            return $this->userNotFoundRedirect();
+        }
         $user->is_active = !$user->is_active;
         $user->save();
 
@@ -33,13 +50,19 @@ class PermissionController extends Controller
 
     public function show(string $id)
     {
-        $user = User::findOrFail($id);
+        $user = $this->findUser($id);
+        if (!$user) {
+            return $this->userNotFoundRedirect();
+        }
         return view('admin.permissions.show', compact('user'));
     }
 
     public function edit(string $id)
     {
-        $user = User::findOrFail($id);
+        $user = $this->findUser($id);
+        if (!$user) {
+            return $this->userNotFoundRedirect();
+        }
         return view('admin.permissions.edit', compact('user'));
     }
 
@@ -72,7 +95,10 @@ class PermissionController extends Controller
 
     public function update(Request $request, string $id)
     {
-        $user = User::findOrFail($id);
+        $user = $this->findUser($id);
+        if (!$user) {
+            return $this->userNotFoundRedirect();
+        }
         $user->update([
             'permissions' => $request->permissions,
             'role'        => $request->role ?? $user->role,
@@ -83,7 +109,10 @@ class PermissionController extends Controller
 
     public function destroy(string $id)
     {
-        $user = User::findOrFail($id);
+        $user = $this->findUser($id);
+        if (!$user) {
+            return $this->userNotFoundRedirect();
+        }
         $user->delete();
 
         return redirect()->route('admin.permissions.index')->with('success', 'Xóa nhân sự thành công!');

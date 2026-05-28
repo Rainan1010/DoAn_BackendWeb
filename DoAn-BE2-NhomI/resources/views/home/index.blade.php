@@ -25,7 +25,6 @@
                     <button onclick="scrollTrending(-1)" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
                         <span class="material-symbols-outlined">chevron_left</span>
                     </button>
-
                     <button onclick="scrollTrending(1)" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
                         <span class="material-symbols-outlined">chevron_right</span>
                     </button>
@@ -44,7 +43,7 @@
                                 <img
                                     alt="{{ $product->name }}"
                                     class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
-                                    src="{{ asset(str_replace('public/', '', $product->image_url)) }}" />
+                                    src="{{ asset(str_replace(['public/', '/storage/products/'], ['', '/products/'], $product->image_url)) }}" />
 
                                 <span class="absolute top-0 left-0 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-black w-7 h-7 rounded-full flex items-center justify-center shadow-lg">
                                     #{{ $index + 1 }}
@@ -66,7 +65,7 @@
 
                             <div class="mb-4">
                                 <p class="text-orange-400 font-black text-lg">
-                                    {{ number_format($product->base_price, 0, ',', '.') }}₫
+                                    <span data-realtime-price data-product-id="{{ $product->product_id }}">{{ number_format($product->base_price, 0, ',', '.') }}₫</span>
                                 </p>
                             </div>
                         </a>
@@ -161,7 +160,7 @@
                     </h3>
 
                     <p class="text-xl font-light mb-6 text-slate-200">
-                        {{ number_format($promoProduct->base_price, 0, ',', '.') }}₫
+                        <span data-realtime-price data-product-id="{{ $promoProduct->product_id }}">{{ number_format($promoProduct->base_price, 0, ',', '.') }}₫</span>
                     </p>
 
                     <a href="{{ url('/product/' . $promoProduct->product_id) }}" class="w-full py-3 bg-white text-brand-blue text-center font-bold rounded-xl hover:bg-brand-blue hover:text-white transition-all uppercase text-xs">
@@ -213,7 +212,7 @@
                 {{-- Giá + thêm giỏ hàng --}}
                 <div class="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
                     <p class="text-brand-blue font-bold text-base">
-                        {{ number_format($product->base_price, 0, ',', '.') }}₫
+                        <span data-realtime-price data-product-id="{{ $product->product_id }}">{{ number_format($product->base_price, 0, ',', '.') }}₫</span>
                     </p>
 
                     <form action="{{ route('cart.add') }}" method="POST" onclick="event.stopPropagation();">

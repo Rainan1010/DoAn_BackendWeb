@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class IsAdmin
+class EnsureUserIsAdmin
 {
     /**
      * Handle an incoming request.
@@ -15,9 +15,9 @@ class IsAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->check() && in_array(auth()->user()->role, ['admin', 'staff'])) {
+        if (auth()->check() && auth()->user()->role === 'admin') {
             return $next($request);
         }
-        return redirect('/')->with('error', 'Bạn không có quyền truy cập vào trang này.');
+        return redirect('/')->with('error', 'Bạn không có quyền thực hiện hành động này.');
     }
 }

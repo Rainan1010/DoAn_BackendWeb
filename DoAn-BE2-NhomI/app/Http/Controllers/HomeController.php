@@ -12,18 +12,24 @@ class HomeController extends Controller
     {
         // 1. Lấy sản phẩm cho BANNER TRÁI (Từ Master: Thỏa mãn HOT + Mới tạo trong 7 ngày)
         $promoProduct = DB::table('products')
-            ->join('product_images', 'products.product_id', '=', 'product_images.product_id')
-            ->where('product_images.is_primary', 1)
+            ->leftJoin('product_images', function($join) {
+                $join->on('products.product_id', '=', 'product_images.product_id')
+                     ->where('product_images.is_primary', 1);
+            })
+            ->where('products.is_active', 1)
             ->where('products.is_hot', 1)
             ->where('products.created_at', '>=', now()->subDays(7))
             ->select('products.*', 'product_images.image_url')
             ->orderBy('products.created_at', 'desc')
             ->first();
-
+ 
         // 2. Lấy TẤT CẢ sản phẩm và dùng PHÂN TRANG (Từ Master: 16 sản phẩm/trang)
         $newProducts = DB::table('products')
-            ->join('product_images', 'products.product_id', '=', 'product_images.product_id')
-            ->where('product_images.is_primary', 1)
+            ->leftJoin('product_images', function($join) {
+                $join->on('products.product_id', '=', 'product_images.product_id')
+                     ->where('product_images.is_primary', 1);
+            })
+            ->where('products.is_active', 1)
             ->select('products.*', 'product_images.image_url')
             ->orderBy('products.created_at', 'desc')
             ->paginate(16);
@@ -33,8 +39,10 @@ class HomeController extends Controller
 
         // Bước 1: Lấy các sản phẩm is_trending = 1
         $trendingProducts = DB::table('products')
-            ->join('product_images', 'products.product_id', '=', 'product_images.product_id')
-            ->where('product_images.is_primary', 1)
+            ->leftJoin('product_images', function($join) {
+                $join->on('products.product_id', '=', 'product_images.product_id')
+                     ->where('product_images.is_primary', 1);
+            })
             ->where('products.is_active', 1)
             ->where('products.is_trending', 1)
             ->select('products.*', 'product_images.image_url')
@@ -48,8 +56,10 @@ class HomeController extends Controller
             $existingIds = $trendingProducts->pluck('product_id')->toArray();
 
             $topViewProducts = DB::table('products')
-                ->join('product_images', 'products.product_id', '=', 'product_images.product_id')
-                ->where('product_images.is_primary', 1)
+                ->leftJoin('product_images', function($join) {
+                    $join->on('products.product_id', '=', 'product_images.product_id')
+                         ->where('product_images.is_primary', 1);
+                })
                 ->where('products.is_active', 1)
                 ->when(!empty($existingIds), fn($q) => $q->whereNotIn('products.product_id', $existingIds))
                 ->select('products.*', 'product_images.image_url')
@@ -71,10 +81,12 @@ class HomeController extends Controller
         // Tăng view_count mỗi khi có người truy cập trang chi tiết
         Product::where('product_id', $id)->increment('view_count');
 
-        $image = DB::table('product_images')
+        $images = DB::table('product_images')
             ->where('product_id', $id)
-            ->where('is_primary', 1)
-            ->first();
+            ->orderBy('sort_order', 'asc')
+            ->get();
+
+        $image = $images->where('is_primary', 1)->first() ?? $images->first();
 
         $product->image_url = $image->image_url ?? null;
 
@@ -106,6 +118,7 @@ class HomeController extends Controller
 
         return view('products.product_detail', compact(
             'product',
+            'images',
             'variants',
             'relatedProducts',
             'reviews'

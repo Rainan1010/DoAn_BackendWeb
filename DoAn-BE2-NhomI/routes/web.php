@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\AttributeController;
 use App\Http\Controllers\Admin\OrderStatisticController;
 use App\Http\Controllers\Admin\RevenueReportController;
+use App\Http\Controllers\Admin\StockLogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -58,7 +59,6 @@ Route::middleware('guest')->group(function () {
     Route::get('/register', [CrudUserController::class, 'showRegister'])->name('register');
     Route::post('/register', [CrudUserController::class, 'register']);
 
-    // Login Google & Github
     Route::get('auth/google', [SocialAuthController::class, 'redirectToGoogle'])
         ->name('google.login');
 
@@ -69,7 +69,6 @@ Route::middleware('guest')->group(function () {
 
     Route::get('auth/github/callback', [SocialAuthController::class, 'handleGithubCallback']);
 
-    // OTP
     Route::middleware('otp.session')->group(function () {
         Route::get('/verify-otp', [OTPController::class, 'showVerifyForm'])
             ->name('otp.view');
@@ -94,21 +93,18 @@ Route::post('/logout', function () {
 */
 
 Route::middleware('auth')->group(function () {
-    // Đổi mật khẩu
     Route::get('/password/change', [CrudUserController::class, 'showChangePassword'])
         ->name('password.change');
 
     Route::post('/password/change', [CrudUserController::class, 'changePassword'])
         ->name('password.update');
 
-    // Profile
     Route::get('/profile', [CrudUserController::class, 'profile'])
         ->name('profile');
 
     Route::post('/profile/update', [CrudUserController::class, 'updateProfile'])
         ->name('profile.update');
 
-    // Review
     Route::post('/product/{id}/review', [ProductController::class, 'storeReview'])
         ->name('product.review.store');
 });
@@ -119,70 +115,97 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
-    // Dashboard
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
-    // Quản lý Sản phẩm
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('dashboard.index');
+
     Route::resource('products', AdminProductController::class);
 
-    // Quản lý Danh mục
     Route::resource('categories', CategoryController::class);
 
-    // Quản lý Thương hiệu
-    Route::view('/brands/create', 'admin.brands.create')->name('brands.create');
+    Route::view('/brands/create', 'admin.brands.create')
+        ->name('brands.create');
+
     Route::patch('brands/{id}/toggle-status', [BrandController::class, 'toggleStatus'])
         ->name('brands.toggleStatus');
-    Route::resource('brands', BrandController::class)->except(['create']);
 
-    // Quản lý Voucher
+    Route::resource('brands', BrandController::class)
+        ->except(['create']);
+
     Route::patch('vouchers/{id}/toggle-status', [VoucherController::class, 'toggleStatus'])
         ->name('vouchers.toggleStatus');
+
     Route::resource('vouchers', VoucherController::class);
 
-    // Quản lý Đánh giá
-    Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
-    Route::get('reviews/{id}', [ReviewController::class, 'show'])->name('reviews.show');
-    Route::patch('reviews/{id}/status', [ReviewController::class, 'updateStatus'])->name('reviews.updateStatus');
-    Route::delete('reviews/{id}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
+    Route::get('reviews', [ReviewController::class, 'index'])
+        ->name('reviews.index');
 
-    // Quản lý Phân quyền
-    Route::patch('permissions/{id}/toggle-status', [App\Http\Controllers\Admin\PermissionController::class, 'toggleStatus'])
-        ->name('permissions.toggle-status');
-    Route::resource('permissions', App\Http\Controllers\Admin\PermissionController::class);
+    Route::get('reviews/{id}', [ReviewController::class, 'show'])
+        ->name('reviews.show');
 
-    // Backup / Restore
-    Route::get('backups', [App\Http\Controllers\Admin\BackupController::class, 'index'])
-        ->name('backups.index');
+    Route::patch('reviews/{id}/status', [ReviewController::class, 'updateStatus'])
+        ->name('reviews.updateStatus');
 
-    Route::post('backups', [App\Http\Controllers\Admin\BackupController::class, 'create'])
-        ->name('backups.create');
+    Route::delete('reviews/{id}', [ReviewController::class, 'destroy'])
+        ->name('reviews.destroy');
 
-    Route::post('backups/upload', [App\Http\Controllers\Admin\BackupController::class, 'uploadRestore'])
-        ->name('backups.upload');
+    Route::middleware(['admin.only'])->group(function () {
+        Route::patch(
+            'permissions/{id}/toggle-status',
+            [App\Http\Controllers\Admin\PermissionController::class, 'toggleStatus']
+        )->name('permissions.toggle-status');
 
-    Route::get('backups/{id}/download', [App\Http\Controllers\Admin\BackupController::class, 'download'])
-        ->name('backups.download');
+        Route::resource('permissions', App\Http\Controllers\Admin\PermissionController::class);
 
-    Route::post('backups/{id}/restore', [App\Http\Controllers\Admin\BackupController::class, 'restore'])
-        ->name('backups.restore');
+        Route::get('backups', [App\Http\Controllers\Admin\BackupController::class, 'index'])
+            ->name('backups.index');
 
-    Route::delete('backups/{id}', [App\Http\Controllers\Admin\BackupController::class, 'destroy'])
-        ->name('backups.destroy');
+        Route::post('backups', [App\Http\Controllers\Admin\BackupController::class, 'create'])
+            ->name('backups.create');
 
-    // Quản lý Thuộc tính
+        Route::post('backups/upload', [App\Http\Controllers\Admin\BackupController::class, 'uploadRestore'])
+            ->name('backups.upload');
+
+        Route::get('backups/{id}/download', [App\Http\Controllers\Admin\BackupController::class, 'download'])
+            ->name('backups.download');
+
+        Route::post('backups/{id}/restore', [App\Http\Controllers\Admin\BackupController::class, 'restore'])
+            ->name('backups.restore');
+
+        Route::delete('backups/{id}', [App\Http\Controllers\Admin\BackupController::class, 'destroy'])
+            ->name('backups.destroy');
+
+        Route::get('/revenue-reports', [RevenueReportController::class, 'index'])
+            ->name('revenue_reports.index');
+
+        Route::get('stock-logs', [StockLogController::class, 'index'])
+            ->name('stock-logs.index');
+    });
+
     Route::resource('attributes', AttributeController::class);
 
-    // Thống kê đơn hàng theo trạng thái
     Route::get('order-statistics', [OrderStatisticController::class, 'index'])
         ->name('order-statistics.index');
 
-    //Báo cáo doanh thu
-    // Route::get('/admin/revenue-reports', [RevenueReportController::class, 'index'])
-    //     ->name('admin.revenue_reports.index');
-    Route::get('/revenue-reports',[RevenueReportController::class, 'index'])
-        ->name('revenue_reports.index');
+    Route::get('orders/create', [OrderStatisticController::class, 'create'])
+        ->name('orders.create');
+
+    Route::post('orders/store', [OrderStatisticController::class, 'store'])
+        ->name('orders.store');
+
+    Route::get('orders/search-user', [OrderStatisticController::class, 'searchUser'])
+        ->name('orders.search-user');
+
+    Route::get('orders/{id}/edit', [OrderStatisticController::class, 'edit'])
+        ->name('orders.edit');
+
+    Route::patch('orders/{id}/update', [OrderStatisticController::class, 'update'])
+        ->name('orders.update');
+
+    Route::post('orders/{id}/confirm', [OrderStatisticController::class, 'confirm'])
+        ->name('orders.confirm');
 });
 
 /*
@@ -226,6 +249,8 @@ Route::get('/cart', [CartController::class, 'index'])
 Route::post('/cart/add', [CartController::class, 'add'])
     ->name('cart.add');
 
+
+
 Route::post('/cart/update', [CartController::class, 'update'])
     ->name('cart.update');
 
@@ -254,6 +279,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders', [OrderController::class, 'history'])
         ->name('orders.history');
 
+    // In hóa đơn PDF - phải đặt trước /orders/{id}
+    Route::get('/orders/{id}/invoice', [OrderController::class, 'invoicePdf'])
+        ->name('orders.invoice');
+
     Route::get('/orders/{id}', [OrderController::class, 'detail'])
         ->name('orders.detail');
 
@@ -263,7 +292,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/orders/reorder/{id}', [OrderController::class, 'reorder'])
         ->name('orders.reorder');
 });
-
 /*
 |--------------------------------------------------------------------------
 | CHECKOUT
@@ -321,11 +349,14 @@ Route::middleware('auth')->group(function () {
 */
 
 Route::get('/api/compare-product/{id}', [App\Http\Controllers\CompareController::class, 'getCompareProduct']);
+Route::get('/api/prices/sync', [App\Http\Controllers\Api\ProductPriceController::class, 'sync'])
+    ->name('api.prices.sync');
 
-// ======================================================
-// AJAX LẤY PHÍ SHIP THEO TỈNH / THÀNH
-// ======================================================
-Route::post(
-    '/get-shipping-fee',
-    [OrderController::class, 'getShippingFeeAjax']
-)->name('shipping.fee');
+/*
+|--------------------------------------------------------------------------
+| AJAX SHIPPING FEE
+|--------------------------------------------------------------------------
+*/
+
+Route::post('/get-shipping-fee', [OrderController::class, 'getShippingFeeAjax'])
+    ->name('shipping.fee');
