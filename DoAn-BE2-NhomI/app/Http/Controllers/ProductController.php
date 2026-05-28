@@ -100,17 +100,44 @@ class ProductController extends Controller
             abort(404);
         }
 
-        // Lấy danh sách sản phẩm thuộc danh mục này
+        // 1. Xác định danh mục cha chung và lấy các danh mục con trực thuộc danh mục cha đó
+        $parentCategoryId = $category->parent_id ?: $category->category_id;
+        
+        $subCategories = DB::table('categories')
+            ->where('parent_id', $parentCategoryId)
+            ->where('is_active', 1)
+            ->orderBy('sort_order', 'asc')
+            ->get();
+
+        // 2. Lấy danh sách ID danh mục cần truy vấn sản phẩm
+        // Nếu danh mục hiện tại là danh mục cha, lấy sản phẩm của cha và tất cả các con
+        if (empty($category->parent_id)) {
+            $categoryIds = $subCategories->pluck('category_id')->toArray();
+            $categoryIds[] = $category->category_id;
+        } else {
+            // Nếu là danh mục con, chỉ lấy sản phẩm của chính nó
+            $categoryIds = [$category->category_id];
+        }
+
+        // 3. Lấy danh sách sản phẩm thuộc các danh mục trên
         $products = DB::table('products')
             ->join('product_images', 'products.product_id', '=', 'product_images.product_id')
             ->where('product_images.is_primary', 1)
-            ->where('products.category_id', $category->category_id)
+            ->whereIn('products.category_id', $categoryIds)
             ->where('products.is_active', 1)
             ->select('products.*', 'product_images.image_url')
             ->orderBy('products.created_at', 'desc')
             ->paginate(12);
 
-        return view('products.category', compact('category', 'products'));
+        // 4. Lấy thông tin danh mục cha để làm nút quay lại "Tất cả" nếu đang ở danh mục con
+        $parentCategory = null;
+        if ($category->parent_id) {
+            $parentCategory = DB::table('categories')
+                ->where('category_id', $category->parent_id)
+                ->first();
+        }
+
+        return view('products.category', compact('category', 'products', 'subCategories', 'parentCategory'));
     }
 
     public function promotions()
