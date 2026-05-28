@@ -67,12 +67,15 @@
         <div class="space-y-8">
             
             <!-- Gallery -->
-            @php $images = $product->images->sortBy('sort_order')->values(); @endphp
+            @php 
+                $images = $product->images->sortBy('sort_order')->values(); 
+                $primaryImage = $images->firstWhere('is_primary', 1) ?? $images->first();
+            @endphp
             <div class="space-y-4">
                 <!-- Main Image -->
                 <div class="w-full h-[360px] bg-gray-900 rounded-2xl overflow-hidden shadow-lg border border-gray-100 flex items-center justify-center relative">
                     @if($images->isNotEmpty())
-                        <img src="{{ $images->first()->image_url }}" alt="{{ $product->name }}"
+                        <img id="adminMainProductImage" src="{{ $primaryImage->image_url }}" alt="{{ $product->name }}"
                              class="w-full h-full object-contain p-4"
                              onerror="this.src=''; this.closest('div').classList.add('bg-gray-100'); this.remove();">
                     @else
@@ -87,7 +90,8 @@
                 @if($images->count() > 1)
                 <div class="grid grid-cols-4 gap-4">
                     @foreach($images->take(4) as $i => $img)
-                    <div class="aspect-square {{ $i === 0 ? 'border-2 border-blue-500' : 'border-2 border-transparent' }} rounded-xl overflow-hidden cursor-pointer opacity-{{ $i === 0 ? '100' : '70' }} hover:opacity-100 transition-opacity bg-gray-50 flex items-center justify-center relative">
+                    <div onclick="changeAdminMainImage(this, '{{ $img->image_url }}')"
+                         class="admin-thumbnail-item aspect-square border-2 {{ $img->image_id === $primaryImage->image_id ? 'border-blue-500 opacity-100' : 'border-transparent opacity-70' }} rounded-xl overflow-hidden cursor-pointer hover:opacity-100 transition-all bg-gray-50 flex items-center justify-center relative">
                         @if($i === 3 && $images->count() > 4)
                             <img src="{{ $img->image_url }}" class="w-full h-full object-cover" alt="">
                             <div class="absolute inset-0 bg-black/60 flex items-center justify-center">
@@ -316,3 +320,24 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function changeAdminMainImage(el, url) {
+        const mainImg = document.getElementById('adminMainProductImage');
+        if (mainImg) {
+            mainImg.src = url;
+        }
+
+        // Bỏ active border của toàn bộ thumbnails
+        document.querySelectorAll('.admin-thumbnail-item').forEach(item => {
+            item.classList.remove('border-blue-500', 'opacity-100');
+            item.classList.add('border-transparent', 'opacity-70');
+        });
+
+        // Thêm active border cho thumbnail được click
+        el.classList.remove('border-transparent', 'opacity-70');
+        el.classList.add('border-blue-500', 'opacity-100');
+    }
+</script>
+@endpush

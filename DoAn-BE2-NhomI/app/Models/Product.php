@@ -29,6 +29,7 @@ class Product extends Model
         'description',
         'specs',
         'base_price',
+        'prices_updated_at',
         'is_active',
         'is_new',
         'is_hot',
@@ -43,6 +44,7 @@ class Product extends Model
         'is_hot' => 'boolean',
         'is_trending' => 'boolean',
         'created_at' => 'datetime',
+        'prices_updated_at' => 'datetime',
     ];
 
     // ================== QUAN HỆ ==================

@@ -48,6 +48,18 @@ class ProductController extends Controller
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
+        $hasPurchased = DB::table('orders')
+            ->join('order_items', 'orders.order_id', '=', 'order_items.order_id')
+            ->join('product_variants', 'order_items.variant_id', '=', 'product_variants.variant_id')
+            ->where('orders.user_id', \Illuminate\Support\Facades\Auth::id())
+            ->where('product_variants.product_id', $id)
+            ->where('orders.order_status', 'delivered')
+            ->exists();
+
+        if (!$hasPurchased) {
+            return back()->with('error', 'Bạn chỉ có thể đánh giá sản phẩm sau khi đã mua và nhận hàng thành công.');
+        }
+
         $review = new \App\Models\Review();
         $review->product_id = $id;
         $review->user_id = \Illuminate\Support\Facades\Auth::id();

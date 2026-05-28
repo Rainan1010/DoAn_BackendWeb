@@ -164,26 +164,80 @@ class OrderController extends Controller
      * HỦY ĐƠN HÀNG
      * =====================================================
      */
-    public function cancel($id)
+    public function cancel(Request $request, $id)
     {
-        $order = Order::where('user_id', Auth::id())
-            ->findOrFail($id);
-
-        if (!in_array($order->order_status, ['pending', 'confirmed', 'processing'])) {
-            return back()->with(
-                'error',
-                'Không thể huỷ đơn hàng này'
-            );
-        }
-
-        $order->update([
-            'order_status' => 'cancelled',
+        $request->validate([
+            'cancel_reason' => 'required|string|min:5|max:500',
+        ], [
+            'cancel_reason.required' => 'Vui lòng nhập lý do huỷ đơn.',
+            'cancel_reason.min' => 'Lý do huỷ đơn cần có ít nhất 5 ký tự.',
+            'cancel_reason.max' => 'Lý do huỷ đơn không được vượt quá 500 ký tự.',
         ]);
 
-        return back()->with(
-            'success',
-            'Huỷ đơn hàng thành công'
-        );
+        DB::beginTransaction();
+        try {
+            $order = Order::with('items')
+                ->where('user_id', Auth::id())
+                ->lockForUpdate()
+                ->findOrFail($id);
+
+            if (!in_array($order->order_status, ['pending', 'confirmed', 'processing'])) {
+                DB::rollBack();
+
+                return back()->with(
+                    'error',
+                    'Không thể huỷ đơn hàng này'
+                );
+            }
+
+            // Hoàn lại số lượng tồn kho
+            foreach ($order->items as $item) {
+                ProductVariant::where('variant_id', $item->variant_id)
+                    ->increment('stock_quantity', $item->quantity);
+            }
+
+            // Hoàn trả lượt dùng Voucher nếu có
+            if ($order->voucher_id) {
+                DB::table('vouchers')
+                    ->where('voucher_id', $order->voucher_id)
+                    ->where('used_count', '>', 0)
+                    ->decrement('used_count');
+            }
+
+            $shouldRefund = $order->payment_status === 'paid'
+                || Payment::where('order_id', $order->order_id)
+                    ->where('status', 'success')
+                    ->whereIn('gateway', ['momo', 'vnpay'])
+                    ->exists();
+
+            Payment::where('order_id', $order->order_id)
+                ->update([
+                    'status' => $shouldRefund ? 'refunded' : 'failed',
+                ]);
+
+            $order->update([
+                'order_status' => 'cancelled',
+                'payment_status' => $shouldRefund ? 'refunded' : 'pending',
+                'cancel_reason' => $request->cancel_reason,
+            ]);
+
+            DB::commit();
+
+            $message = $shouldRefund
+                ? 'Huỷ đơn hàng thành công. Đơn đã thanh toán sẽ được hoàn tiền về phương thức thanh toán ban đầu trong 3-7 ngày làm việc.'
+                : 'Huỷ đơn hàng thành công. Đơn chưa thanh toán hoặc thanh toán COD nên không phát sinh hoàn tiền.';
+
+            return back()->with(
+                'success',
+                $message
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with(
+                'error',
+                'Có lỗi xảy ra khi huỷ đơn hàng: ' . $e->getMessage()
+            );
+        }
     }
 
     /**
@@ -610,8 +664,14 @@ class OrderController extends Controller
                 'paid_at' => null,
             ]);
 
+            if ($voucherId) {
+                DB::table('vouchers')->where('voucher_id', $voucherId)->increment('used_count');
+            }
+
             foreach ($checkoutItems as $item) {
-                $variant = ProductVariant::find($item['variant_id']);
+                $variant = ProductVariant::where('variant_id', $item['variant_id'])
+                    ->lockForUpdate()
+                    ->first();
 
                 if (!$variant) {
                     throw new \Exception('Biến thể sản phẩm không tồn tại');
@@ -687,10 +747,6 @@ class OrderController extends Controller
                 ->update([
                     'status' => 'success',
                 ]);
-
-            if ($voucherId) {
-                DB::table('vouchers')->where('voucher_id', $voucherId)->increment('used_count');
-            }
 
             session()->forget([
                 'checkout_items',
@@ -854,10 +910,6 @@ class OrderController extends Controller
                 ->whereIn('cart_id', $cartIds)
                 ->whereIn('variant_id', $variantIds)
                 ->delete();
-
-            if ($order->voucher_id) {
-                DB::table('vouchers')->where('voucher_id', $order->voucher_id)->increment('used_count');
-            }
 
             session()->forget([
                 'pending_order_id',
@@ -1092,10 +1144,6 @@ class OrderController extends Controller
                     ->delete();
             }
 
-            if ($order->voucher_id) {
-                DB::table('vouchers')->where('voucher_id', $order->voucher_id)->increment('used_count');
-            }
-
             session()->forget([
                 'checkout_items',
                 'selected_cart_ids',
@@ -1175,7 +1223,7 @@ class OrderController extends Controller
         $discount = 0;
 
         if ($voucherId && $subtotal > 0) {
-            $voucher = DB::table('vouchers')->where('voucher_id', $voucherId)->first();
+            $voucher = DB::table('vouchers')->where('voucher_id', $voucherId)->lockForUpdate()->first();
             if ($voucher) {
                 $now = now();
                 $isValid = $voucher->is_active
