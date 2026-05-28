@@ -748,6 +748,9 @@ class OrderController extends Controller
                     'status' => 'success',
                 ]);
 
+            // Tự động gửi mail hóa đơn PDF
+            $this->sendInvoiceEmail($order->order_id);
+
             session()->forget([
                 'checkout_items',
                 'selected_cart_ids',
@@ -898,6 +901,9 @@ class OrderController extends Controller
                 ->update([
                     'status' => 'success',
                 ]);
+
+            // Tự động gửi mail hóa đơn PDF
+            $this->sendInvoiceEmail($order->order_id);
 
             $cartIds = Cart::where('user_id', $order->user_id)
                 ->pluck('cart_id');
@@ -1134,6 +1140,9 @@ class OrderController extends Controller
                     'status' => 'success',
                 ]);
 
+            // Tự động gửi mail hóa đơn PDF
+            $this->sendInvoiceEmail($order->order_id);
+
             foreach ($order->items as $item) {
                 DB::table('cart_items')
                     ->whereIn(
@@ -1298,6 +1307,52 @@ class OrderController extends Controller
                 $totalQuantity += (int) ($it['quantity'] ?? 1);
             }
             session()->put('cart_count', $totalQuantity);
+        }
+    }
+
+    /**
+     * Gửi email kèm hóa đơn PDF khi đặt hàng thành công
+     */
+    private function sendInvoiceEmail($orderId)
+    {
+        try {
+            $order = DB::table('orders')
+                ->leftJoin('users', 'orders.user_id', '=', 'users.user_id')
+                ->leftJoin('shipping_addresses', 'orders.shipping_address_id', '=', 'shipping_addresses.address_id')
+                ->select(
+                    'orders.*',
+                    'users.full_name as user_full_name',
+                    'users.email as user_email',
+                    'shipping_addresses.full_name as receiver_name',
+                    'shipping_addresses.phone',
+                    'shipping_addresses.province',
+                    'shipping_addresses.district',
+                    'shipping_addresses.ward',
+                    'shipping_addresses.street_address'
+                )
+                ->where('orders.order_id', $orderId)
+                ->first();
+
+            if (!$order || empty($order->user_email)) {
+                return;
+            }
+
+            $items = DB::table('order_items')
+                ->leftJoin('product_variants', 'order_items.variant_id', '=', 'product_variants.variant_id')
+                ->leftJoin('products', 'product_variants.product_id', '=', 'products.product_id')
+                ->select(
+                    'order_items.*',
+                    'products.name as product_name_db',
+                    'product_variants.sku',
+                    'product_variants.attribute_values'
+                )
+                ->where('order_items.order_id', $orderId)
+                ->get();
+
+            \Illuminate\Support\Facades\Mail::to($order->user_email)
+                ->send(new \App\Mail\OrderInvoiceMail($order, $items));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Gửi mail hóa đơn thất bại cho đơn hàng #' . $orderId . ': ' . $e->getMessage());
         }
     }
 }
