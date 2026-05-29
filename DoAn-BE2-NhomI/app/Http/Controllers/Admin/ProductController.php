@@ -8,10 +8,14 @@ use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use App\Models\Category;
 use App\Models\Brand;
+use App\Services\ProductPriceService;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+    public function __construct(private ProductPriceService $priceService)
+    {
+    }
     // ─────────────────────────────────────────────
     // INDEX – Danh sách sản phẩm (đã có dữ liệu thật)
     // ─────────────────────────────────────────────
@@ -192,6 +196,8 @@ class ProductController extends Controller
             }
         }
 
+        $this->priceService->bumpProduct($product->fresh('variants'));
+
         return redirect()->route('admin.products.index')
             ->with('success', "Đã thêm sản phẩm \"{$product->name}\" thành công!");
     }
@@ -362,8 +368,10 @@ class ProductController extends Controller
             }
         }
 
+        $this->priceService->bumpProduct($product->fresh('variants'));
+
         return redirect()->route('admin.products.show', $product->product_id)
-            ->with('success', "Đã cập nhật sản phẩm \"{$product->name}\" thành công!");
+            ->with('success', "Đã cập nhật sản phẩm \"{$product->name}\" thành công! Giá đã đồng bộ realtime cho khách đang xem.");
     }
 
     // ─────────────────────────────────────────────
