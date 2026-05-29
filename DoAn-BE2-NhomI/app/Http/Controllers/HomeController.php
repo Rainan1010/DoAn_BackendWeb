@@ -76,7 +76,11 @@ class HomeController extends Controller
 
     public function detail($id)
     {
-        $product = Product::findOrFail($id);
+        $product = Product::where('product_id', $id)->where('is_active', 1)->first();
+
+        if (!$product) {
+            return redirect()->route('home')->with('error', 'Sản phẩm không tồn tại hoặc đã ngừng kinh doanh.');
+        }
 
         // Tăng view_count mỗi khi có người truy cập trang chi tiết
         Product::where('product_id', $id)->increment('view_count');

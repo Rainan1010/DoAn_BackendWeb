@@ -24,10 +24,13 @@ class ProductController extends Controller
     public function show($id)
     {
         // 1. Lấy thông tin sản phẩm
-        $product = DB::table('products')->where('product_id', $id)->first();
+        $product = DB::table('products')
+            ->where('product_id', $id)
+            ->where('is_active', 1)
+            ->first();
 
         if (!$product) {
-            abort(404);
+            return redirect()->route('home')->with('error', 'Sản phẩm không tồn tại hoặc đã ngừng kinh doanh.');
         }
 
         // 2. LẤY DANH SÁCH ẢNH (Đây là phần bị thiếu dẫn đến lỗi)
