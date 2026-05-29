@@ -28,19 +28,42 @@ class ProductController extends Controller
             ->where('product_id', $id)
             ->where('is_active', 1)
             ->first();
-
         if (!$product) {
             return redirect()->route('home')->with('error', 'Sản phẩm không tồn tại hoặc đã ngừng kinh doanh.');
         }
 
-        // 2. LẤY DANH SÁCH ẢNH (Đây là phần bị thiếu dẫn đến lỗi)
-        $images = DB::table('product_images')->where('product_id', $id)->get();
+        $images = DB::table('product_images')
+            ->where('product_id', $id)
+            ->get();
 
-        // 3. Lấy các biến thể
-        $variants = DB::table('product_variants')->where('product_id', $id)->get();
+        $variants = DB::table('product_variants')
+            ->where('product_id', $id)
+            ->get();
 
-        // 4. Truyền đầy đủ cả 3 biến sang View
-        return view('products.product_detail', compact('product', 'images', 'variants'));
+        $relatedProducts = DB::table('products')
+            ->leftJoin('product_images', function ($join) {
+                $join->on('products.product_id', '=', 'product_images.product_id')
+                    ->where('product_images.is_primary', 1);
+            })
+            ->where('products.category_id', $product->category_id)
+            ->where('products.product_id', '!=', $id)
+            ->where('products.is_active', 1)
+            ->select(
+                'products.*',
+                'product_images.image_url'
+            )
+            ->limit(10)
+            ->get();
+
+        return view(
+            'products.product_detail',
+            compact(
+                'product',
+                'images',
+                'variants',
+                'relatedProducts'
+            )
+        );
     }
 
     public function storeReview(Request $request, $id)
@@ -83,7 +106,7 @@ class ProductController extends Controller
                 $reviewImage->review_id = $review->review_id;
                 // Lưu đường dẫn theo đúng format dự án (có thể có public/ hoặc không)
                 // View đang dùng str_replace('public/', '', ...) nên lưu thế nào cũng được
-                $reviewImage->image_url = 'images/reviews/' . $filename; 
+                $reviewImage->image_url = 'images/reviews/' . $filename;
                 $reviewImage->sort_order = $sortOrder++;
                 $reviewImage->save();
             }
@@ -105,7 +128,7 @@ class ProductController extends Controller
 
         // 1. Xác định danh mục cha chung và lấy các danh mục con trực thuộc danh mục cha đó
         $parentCategoryId = $category->parent_id ?: $category->category_id;
-        
+
         $subCategories = DB::table('categories')
             ->where('parent_id', $parentCategoryId)
             ->where('is_active', 1)
