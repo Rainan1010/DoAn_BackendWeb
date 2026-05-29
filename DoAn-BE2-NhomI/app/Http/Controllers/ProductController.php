@@ -21,6 +21,8 @@ class ProductController extends Controller
         // Trả về dữ liệu dạng JSON cho file search.js xử lý
         return response()->json($products);
     }
+
+    // chi tiết sản phẩm
     public function show($id)
     {
         $product = DB::table('products')
@@ -65,9 +67,6 @@ class ProductController extends Controller
         );
     }
 
-
-
-    
     public function storeReview(Request $request, $id)
     {
         $request->validate([
