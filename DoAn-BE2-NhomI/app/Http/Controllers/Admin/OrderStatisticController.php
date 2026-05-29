@@ -393,7 +393,7 @@ class OrderStatisticController extends Controller
         DB::beginTransaction();
 
         try {
-            $order = \App\Models\Order::with('items')->findOrFail($id);
+            $order = \App\Models\Order::with('items')->lockForUpdate()->findOrFail($id);
             $oldStatus = $order->order_status;
             $newStatus = $request->order_status;
 
@@ -497,7 +497,7 @@ class OrderStatisticController extends Controller
     {
         DB::beginTransaction();
         try {
-            $order = \App\Models\Order::findOrFail($id);
+            $order = \App\Models\Order::lockForUpdate()->findOrFail($id);
             if ($order->order_status !== 'pending') {
                 return redirect()
                     ->route('admin.order-statistics.index')
