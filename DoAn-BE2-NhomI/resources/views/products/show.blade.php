@@ -22,16 +22,18 @@
                 
                 {{-- Ảnh chính --}}
                 @php $primaryImg = $images->where('is_primary', 1)->first() ?? $images->first(); @endphp
-                <img alt="{{ $product->name }}" 
+                <img id="mainProductImage" alt="{{ $product->name }}" 
                      class="w-full h-full object-contain mix-blend-multiply transition-all duration-500 transform hover:scale-105" 
-                     src="{{ asset(str_replace('public/', '', $primaryImg->image_url ?? 'images/products/default.png')) }}"/>
+                     src="{{ asset(str_replace(['public/', '/storage/products/'], ['', '/products/'], $primaryImg->image_url ?? 'images/products/default.png')) }}"/>
             </div>
 
             <div class="grid grid-cols-4 gap-4">
                 @foreach($images as $img)
-                <div class="aspect-square bg-surface-container-lowest rounded-lg border {{ $img->is_primary ? 'border-2 border-primary' : 'border-outline-variant/30' }} overflow-hidden cursor-pointer hover:border-primary transition-all p-2 flex items-center justify-center group">
+                @php $imgUrl = asset(str_replace(['public/', '/storage/products/'], ['', '/products/'], $img->image_url)); @endphp
+                <div onclick="changeMainImage(this, '{{ $imgUrl }}')"
+                     class="thumbnail-item aspect-square bg-surface-container-lowest rounded-lg border {{ $img->is_primary ? 'border-2 border-primary' : 'border-outline-variant/30' }} overflow-hidden cursor-pointer hover:border-primary transition-all p-2 flex items-center justify-center group">
                     <img alt="Thumbnail" class="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform" 
-                         src="{{ asset(str_replace('public/', '', $img->image_url)) }}"/>
+                         src="{{ $imgUrl }}"/>
                 </div>
                 @endforeach
             </div>
@@ -132,3 +134,24 @@
     </div>
 </main>
 @endsection
+
+@push('scripts')
+<script>
+    function changeMainImage(el, url) {
+        const mainImg = document.getElementById('mainProductImage');
+        if (mainImg) {
+            mainImg.src = url;
+        }
+
+        // Bỏ active border của toàn bộ thumbnails
+        document.querySelectorAll('.thumbnail-item').forEach(item => {
+            item.classList.remove('border-2', 'border-primary');
+            item.classList.add('border-outline-variant/30');
+        });
+
+        // Thêm active border cho thumbnail được click
+        el.classList.remove('border-outline-variant/30');
+        el.classList.add('border-2', 'border-primary');
+    }
+</script>
+@endpush

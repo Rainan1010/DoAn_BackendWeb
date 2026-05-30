@@ -99,9 +99,17 @@
                     <a href="{{ route('product.detail', $review->product_id) }}" target="_blank" class="flex items-center gap-3 hover:bg-gray-100 p-1.5 -m-1.5 rounded-xl transition-colors group">
                         @php
                             $img = $review->product?->images?->firstWhere('is_primary',1) ?? $review->product?->images?->first();
+                            $imgUrl = '';
+                            if ($img) {
+                                $imgUrl = $img->image_url;
+                                if (!str_starts_with($imgUrl, 'http')) {
+                                    $imgUrl = str_replace(['public/', '/storage/products/'], ['', '/products/'], $imgUrl);
+                                    $imgUrl = asset(ltrim($imgUrl, '/'));
+                                }
+                            }
                         @endphp
                         @if($img)
-                            <img src="{{ asset($img->image_url) }}" class="w-10 h-10 rounded-lg object-cover border border-gray-100">
+                            <img src="{{ $imgUrl }}" class="w-10 h-10 rounded-lg object-cover border border-gray-100">
                         @else
                             <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center"><i data-lucide="image" class="w-4 h-4 text-gray-300"></i></div>
                         @endif
@@ -382,7 +390,12 @@ function openReviewModal(id) {
             const imagesSection = document.getElementById('modal-images-section');
             const imagesEl = document.getElementById('modal-images');
             if (data.images && data.images.length > 0) {
-                const srcs = data.images.map(img => img.image_url.startsWith('http') ? img.image_url : '/' + img.image_url);
+                const srcs = data.images.map(img => {
+                    let url = img.image_url;
+                    if (url.startsWith('http')) return url;
+                    url = url.replace('public/', '');
+                    return url.startsWith('/') ? url : '/' + url;
+                });
                 imagesEl.innerHTML = srcs.map((src, idx) =>
                     `<img src="${src}" onclick="openLightbox(${idx})" data-idx="${idx}" class="w-24 h-24 rounded-xl object-cover border border-gray-200 hover:scale-105 transition-transform cursor-pointer" title="Nhấn để phóng to">`
                 ).join('');
@@ -396,7 +409,14 @@ function openReviewModal(id) {
             const product = data.product;
             const prodImg = product?.images?.find(i => i.is_primary) ?? product?.images?.[0];
             if (prodImg) {
-                document.getElementById('modal-product-img').src = '/' + prodImg.image_url;
+                let imgUrl = prodImg.image_url;
+                if (!imgUrl.startsWith('http')) {
+                    imgUrl = imgUrl.replace('public/', '');
+                    if (!imgUrl.startsWith('/')) {
+                        imgUrl = '/' + imgUrl;
+                    }
+                }
+                document.getElementById('modal-product-img').src = imgUrl;
                 document.getElementById('modal-product-img').classList.remove('hidden');
                 document.getElementById('modal-product-no-img').classList.add('hidden');
             } else {

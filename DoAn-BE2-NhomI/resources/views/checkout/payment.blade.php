@@ -297,10 +297,10 @@
                                 <div class="flex items-center gap-5">
 
                                     <div class="w-[60px] h-[60px]
-                    rounded-2xl
-                    bg-[#ae2070]/10
-                    flex items-center justify-center
-                    text-3xl">
+                        rounded-2xl
+                        bg-[#ae2070]/10
+                        flex items-center justify-center
+                        text-3xl">
 
                                         💗
 
@@ -407,7 +407,8 @@
                                     {{-- IMAGE --}}
                                     <div class="w-[90px] h-[90px] rounded-3xl overflow-hidden border bg-gray-50 flex-shrink-0">
 
-<img src="{{ asset($item['image'] ?? 'images/default-product.png') }}"
+                                        <img src="{{ asset($item['image'] ?? 'images/default-product.png') }}"
+                                            class="w-full h-full object-cover">
                                     </div>
 
                                     {{-- INFO --}}
@@ -474,7 +475,19 @@
                             </span>
 
                         </div>
+                        <div class="flex items-center justify-between gap-3">
 
+                            <span class="text-gray-500 text-lg">
+                                VAT (10%)
+                            </span>
+
+                            <span class="font-black text-[#001e40] text-[18px] text-right break-words">
+
+                                {{ number_format($vat) }}đ
+
+                            </span>
+
+                        </div>
                         <div class="flex items-center justify-between gap-3">
 
                             <span class="text-gray-500 text-lg">
@@ -584,33 +597,10 @@
                     'active'
                 );
             }
-
-        }
-        function changePayment() {
-
-            let momo = document.querySelector(
-                'input[value="momo"]'
-            );
-
-            let momoCard = document.getElementById(
-                'momo_card'
-            );
-
-            momoCard.classList.remove(
-                'border-[#ae2070]',
-                'bg-[#ae2070]/5'
-            );
-
-            if (momo.checked) {
-
-                momoCard.classList.add(
-                    'border-[#ae2070]',
-                    'bg-[#ae2070]/5'
-                );
-            }
         }
 
         window.onload = changePayment;
+
     </script>
 
 @endsection

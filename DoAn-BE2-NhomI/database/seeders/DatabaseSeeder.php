@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             
             // 2. Chạy DataSampleSeeder để đổ dữ liệu Sản phẩm, Review, Ảnh...
             DataSampleSeeder::class,
+            DefaultProductVariantSeeder::class,
         ]);
     }
 }
