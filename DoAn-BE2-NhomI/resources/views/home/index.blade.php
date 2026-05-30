@@ -139,6 +139,135 @@
         </a>
     </div>
 
+    {{-- ==================== 3. Bộ lọc ==================== --}}
+    <form method="GET" class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <div class="flex flex-wrap items-center gap-3">
+
+            <div class="flex items-center gap-2 mr-3">
+                <span class="material-symbols-outlined text-brand-blue">
+                filter_alt
+                </span>
+
+                <span class="font-semibold text-slate-800">
+                    Bộ lọc
+                </span>
+            </div>
+
+            {{-- Danh mục --}}
+            <select name="category_id" class="h-11 min-w-[180px] rounded-xl border border-slate-300 px-4 text-sm">
+
+                <option value="">Danh mục</option>
+
+                 @foreach($categories as $category)
+                        <option value="{{ $category->category_id }}"
+                            {{ request('category_id') == $category->category_id ? 'selected' : '' }}>
+                            {{ $category->name }}
+                    </option>
+                @endforeach
+
+            </select>
+
+            {{-- Thương hiệu --}}
+            <select name="brand_id"
+                class="h-11 min-w-[180px] rounded-xl border border-slate-300 px-4 text-sm">
+
+                <option value="">Thương hiệu</option>
+
+                @foreach($brands as $brand)
+                    <option value="{{ $brand->brand_id }}"
+                        {{ request('brand_id') == $brand->brand_id ? 'selected' : '' }}>
+                        {{ $brand->name }}
+                    </option>
+                @endforeach
+
+            </select>
+
+            {{-- Giá --}}
+            <label class="cursor-pointer">
+                <input type="radio"
+                    name="price_range"
+                    value="under_10"
+                    class="hidden peer"
+                    {{ request('price_range') == 'under_10' ? 'checked' : '' }}>
+
+                <span
+                    class="px-4 py-2 rounded-full border border-slate-300 bg-slate-50
+                    peer-checked:bg-brand-blue
+                    peer-checked:text-white
+                    peer-checked:border-brand-blue
+                    hover:border-brand-blue transition">
+                    Dưới 10tr
+                </span>
+            </label>
+
+            <label class="cursor-pointer">
+                <input type="radio"
+                    name="price_range"
+                    value="10_20"
+                    class="hidden peer"
+                    {{ request('price_range') == '10_20' ? 'checked' : '' }}>
+
+                <span
+                    class="px-4 py-2 rounded-full border border-slate-300 bg-slate-50
+                    peer-checked:bg-brand-blue
+                    peer-checked:text-white
+                    peer-checked:border-brand-blue
+                    hover:border-brand-blue transition">
+                    10-20tr
+                </span>
+            </label>
+
+            <label class="cursor-pointer">
+                <input type="radio"
+                    name="price_range"
+                    value="20_30"
+                    class="hidden peer"
+                    {{ request('price_range') == '20_30' ? 'checked' : '' }}>
+
+                <span
+                    class="px-4 py-2 rounded-full border border-slate-300 bg-slate-50
+                    peer-checked:bg-brand-blue
+                    peer-checked:text-white
+                    peer-checked:border-brand-blue
+                    hover:border-brand-blue transition">
+                    20-30tr
+                </span>
+            </label>
+
+            <label class="cursor-pointer">
+                <input type="radio"
+                    name="price_range"
+                    value="over_30"
+                    class="hidden peer"
+                    {{ request('price_range') == 'over_30' ? 'checked' : '' }}>
+
+                <span
+                    class="px-4 py-2 rounded-full border border-slate-300 bg-slate-50
+                    peer-checked:bg-brand-blue
+                    peer-checked:text-white
+                    peer-checked:border-brand-blue
+                    hover:border-brand-blue transition">
+                    Trên 30tr
+                </span>
+            </label>
+
+            {{-- Nút lọc --}}
+            <button type="submit"
+                class="h-11 px-6 rounded-xl bg-brand-blue text-white font-medium hover:opacity-90 transition">
+                Áp dụng
+            </button>
+
+            {{-- Xóa bộ lọc --}}
+            @if(request()->hasAny(['category_id','brand_id','price_range']))
+                <a href="{{ route('home') }}"
+                    class="h-11 px-5 rounded-xl border border-slate-300 flex items-center hover:bg-slate-100 transition">
+                    Xóa dữ liệu bộ lọc
+                </a>
+            @endif
+
+        </div>
+
+    </form>
     {{-- Main Content --}}
     <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
         {{-- Cột Banner Trái --}}
