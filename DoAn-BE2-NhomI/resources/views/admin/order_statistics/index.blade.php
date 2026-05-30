@@ -35,8 +35,7 @@ $statusOptions = [
 'pending' => 'Chờ xác nhận',
 'confirmed' => 'Đã xác nhận',
 'processing' => 'Đang xử lý',
-'shipping' => 'Đang giao',
-'completed' => 'Hoàn thành',
+'shipped' => 'Đang giao',
 'delivered' => 'Đã giao',
 'cancelled' => 'Đã hủy',
 ];
@@ -56,6 +55,11 @@ $statusMap = [
 'text' => 'Đang xử lý',
 'class' => 'bg-blue-100 text-blue-700',
 'dot' => 'bg-blue-500',
+],
+'shipped' => [
+'text' => 'Đang giao',
+'class' => 'bg-indigo-100 text-indigo-700',
+'dot' => 'bg-indigo-500',
 ],
 'shipping' => [
 'text' => 'Đang giao',
@@ -124,11 +128,19 @@ $paymentMethodMap = [
             </h1>
         </div>
 
-        <button type="button"
-            class="flex items-center gap-2 px-6 py-3 bg-gradient-to-tr from-[#001e40] to-[#003366] text-white rounded-lg text-sm font-bold shadow-lg shadow-[#001e40]/20 hover:shadow-xl transition-all active:scale-95">
-            <i data-lucide="download" class="w-5 h-5"></i>
-            XUẤT FILE EXCEL
-        </button>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('admin.orders.create') }}"
+                class="flex items-center gap-2 px-6 py-3 bg-[#001e40] hover:bg-[#002c5c] text-white rounded-lg text-sm font-bold shadow-lg shadow-[#001e40]/20 hover:shadow-xl transition-all active:scale-95">
+                <i data-lucide="plus" class="w-5 h-5"></i>
+                THÊM ĐƠN HÀNG MỚI
+            </a>
+
+            <button type="button"
+                class="flex items-center gap-2 px-6 py-3 bg-gradient-to-tr from-[#001e40] to-[#003366] text-white rounded-lg text-sm font-bold shadow-lg shadow-[#001e40]/20 hover:shadow-xl transition-all active:scale-95">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                XUẤT FILE EXCEL
+            </button>
+        </div>
     </div>
 
     {{-- Stats Grid --}}
@@ -202,41 +214,69 @@ $paymentMethodMap = [
     <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200">
 
         {{-- Filters --}}
-        <div class="p-6 border-b border-gray-100 flex flex-wrap items-center justify-between gap-4 bg-[#f2f4f6]/70">
-            <div class="flex items-center gap-4">
-                <form action="{{ route('admin.order-statistics.index') }}" method="GET"
-                    class="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200 text-sm">
+        <div class="p-6 border-b border-gray-100 bg-[#f2f4f6]/70">
+            <form action="{{ route('admin.order-statistics.index') }}" method="GET" id="filterForm"
+                class="flex flex-wrap items-center justify-between gap-4 w-full">
 
-                    <span class="text-gray-500 font-medium">Trạng thái:</span>
+                <div class="flex flex-wrap items-center gap-4">
+                    {{-- Trạng thái --}}
+                    <div class="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200 text-sm">
+                        <span class="text-gray-500 font-medium">Trạng thái:</span>
+                        <select name="status"
+                            onchange="this.form.submit()"
+                            class="border-none bg-transparent p-0 focus:ring-0 text-[#001e40] font-bold text-sm">
+                            @foreach($statusOptions as $value => $label)
+                            <option value="{{ $value }}" {{ request('status', '') === $value ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                    <select name="status"
-                        onchange="this.form.submit()"
-                        class="border-none bg-transparent p-0 focus:ring-0 text-[#001e40] font-bold text-sm">
-                        @foreach($statusOptions as $value => $label)
-                        <option value="{{ $value }}" {{ request('status', '') === $value ? 'selected' : '' }}>
-                            {{ $label }}
-                        </option>
-                        @endforeach
-                    </select>
+                    <div class="h-4 w-px bg-gray-200 hidden md:block"></div>
 
-                    @if(request('search'))
-                    <input type="hidden" name="search" value="{{ request('search') }}">
-                    @endif
-                </form>
+                    {{-- Ngày --}}
+                    <div class="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200 text-sm" x-data="{ dateFilter: '{{ request('date_filter', 'all') }}' }">
+                        <span class="text-gray-500 font-medium">Ngày:</span>
+                        <select name="date_filter"
+                            x-model="dateFilter"
+                            @change="if(dateFilter !== 'custom') $el.form.submit()"
+                            class="border-none bg-transparent p-0 focus:ring-0 text-[#001e40] font-bold text-sm">
+                            <option value="all" {{ request('date_filter', 'all') === 'all' ? 'selected' : '' }}>Tất cả</option>
+                            <option value="today" {{ request('date_filter') === 'today' ? 'selected' : '' }}>Hôm nay</option>
+                            <option value="yesterday" {{ request('date_filter') === 'yesterday' ? 'selected' : '' }}>Hôm qua</option>
+                            <option value="7days" {{ request('date_filter') === '7days' ? 'selected' : '' }}>7 ngày qua</option>
+                            <option value="30days" {{ request('date_filter') === '30days' ? 'selected' : '' }}>30 ngày qua</option>
+                            <option value="custom" {{ request('date_filter') === 'custom' ? 'selected' : '' }}>Chọn ngày cụ thể...</option>
+                        </select>
 
-                <div class="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200 text-sm">
-                    <span class="text-gray-500 font-medium">Ngày:</span>
-                    <span class="text-[#001e40] font-bold">Hôm nay</span>
-                    <i data-lucide="calendar" class="w-4 h-4 text-gray-500"></i>
+                        <input type="date" name="custom_date"
+                            x-show="dateFilter === 'custom'"
+                            value="{{ request('custom_date') }}"
+                            onchange="this.form.submit()"
+                            class="border border-gray-200 rounded px-2 py-0.5 text-xs text-[#001e40] focus:outline-none focus:ring-1 focus:ring-[#001e40]">
+
+                        <i data-lucide="calendar" class="w-4 h-4 text-gray-500" x-show="dateFilter !== 'custom'"></i>
+                    </div>
                 </div>
-            </div>
 
-            <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-gray-500 uppercase tracking-tight">Hiển thị:</span>
-                <button class="w-8 h-8 flex items-center justify-center rounded bg-[#001e40] text-white text-xs font-bold">10</button>
-                <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-xs font-bold hover:bg-gray-50 transition-colors">25</button>
-                <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-xs font-bold hover:bg-gray-50 transition-colors">50</button>
-            </div>
+                {{-- Hiển thị per_page --}}
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-gray-500 uppercase tracking-tight">Hiển thị:</span>
+                    <input type="hidden" id="per_page_input" name="per_page" value="{{ request('per_page', 10) }}">
+                    @foreach([10, 25, 50] as $size)
+                        <button type="button"
+                            onclick="document.getElementById('per_page_input').value = {{ $size }}; document.getElementById('filterForm').submit();"
+                            class="w-8 h-8 flex items-center justify-center rounded text-xs font-bold transition-colors {{ request('per_page', 10) == $size ? 'bg-[#001e40] text-white' : 'border border-gray-200 text-[#001e40] hover:bg-gray-50 bg-white' }}">
+                            {{ $size }}
+                        </button>
+                    @endforeach
+                </div>
+
+                @if(request('search'))
+                <input type="hidden" name="search" value="{{ request('search') }}">
+                @endif
+            </form>
         </div>
 
         {{-- Table --}}
@@ -335,17 +375,26 @@ $paymentMethodMap = [
 
                         <td class="px-6 py-4">
                             <div class="flex items-center justify-center gap-2">
-                                <button class="p-1.5 text-[#003366] hover:bg-[#003366]/10 rounded transition-colors" title="Xem đơn">
+                                <a href="{{ route('orders.invoice', $order->order_id) }}" target="_blank" class="p-1.5 text-[#003366] hover:bg-[#003366]/10 rounded transition-colors block" title="Xem đơn">
                                     <i data-lucide="eye" class="w-5 h-5"></i>
-                                </button>
+                                </a>
 
-                                <button class="p-1.5 text-[#003366] hover:bg-[#003366]/10 rounded transition-colors" title="Sửa đơn">
+                                <a href="{{ route('admin.orders.edit', $order->order_id) }}" class="p-1.5 text-[#003366] hover:bg-[#003366]/10 rounded transition-colors block" title="Sửa đơn">
                                     <i data-lucide="edit" class="w-5 h-5"></i>
-                                </button>
+                                </a>
 
-                                <button class="p-1.5 text-[#003366] hover:bg-[#003366]/10 rounded transition-colors" title="Xác nhận">
-                                    <i data-lucide="check-circle" class="w-5 h-5"></i>
-                                </button>
+                                @if($order->order_status === 'pending')
+                                    <form action="{{ route('admin.orders.confirm', $order->order_id) }}" method="POST" class="inline m-0">
+                                        @csrf
+                                        <button type="submit" class="p-1.5 text-[#003366] hover:bg-green-50 hover:text-green-600 rounded transition-colors block" title="Xác nhận đơn hàng" onclick="return confirm('Bạn có chắc chắn muốn duyệt nhanh đơn hàng này?')">
+                                            <i data-lucide="check-circle" class="w-5 h-5"></i>
+                                        </button>
+                                    </form>
+                                @else
+                                    <button class="p-1.5 text-gray-300 cursor-not-allowed rounded" title="Đã duyệt / Không thể xác nhận" disabled>
+                                        <i data-lucide="check-circle" class="w-5 h-5"></i>
+                                    </button>
+                                @endif
                             </div>
                         </td>
                     </tr>

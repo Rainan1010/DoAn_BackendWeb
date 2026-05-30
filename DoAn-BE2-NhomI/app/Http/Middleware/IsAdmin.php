@@ -15,6 +15,9 @@ class IsAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        return $next($request);
+        if (auth()->check() && in_array(auth()->user()->role, ['admin', 'staff'])) {
+            return $next($request);
+        }
+        return redirect('/')->with('error', 'Bạn không có quyền truy cập vào trang này.');
     }
 }

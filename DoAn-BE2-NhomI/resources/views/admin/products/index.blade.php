@@ -189,7 +189,7 @@
                     </td>
                     <td class="p-5 align-top">
                         <span class="text-sm font-black text-[#0A2540] pt-1 block">
-                            {{ number_format($product->base_price, 0, ',', '.') }} <span class="text-xs">₫</span>
+                            <span data-realtime-price data-product-id="{{ $product->product_id }}">{{ number_format($product->base_price, 0, ',', '.') }}₫</span>
                         </span>
                     </td>
                     <td class="p-5 align-top">

@@ -29,7 +29,7 @@
     </div>
     @endif
 
-    <form action="{{ route('admin.products.update', $product->product_id) }}" method="POST">
+    <form action="{{ route('admin.products.update', $product->product_id) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
@@ -87,6 +87,7 @@
                                 <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">GIÁ NIÊM YẾT (₫) <span class="text-red-400">*</span></label>
                                 <input type="number" name="base_price" x-model="price" value="{{ old('base_price', $product->base_price) }}" min="0"
                                     class="w-full px-4 py-3 bg-gray-50/80 border border-gray-200 rounded-lg text-sm font-bold text-[#0A2540] focus:outline-none focus:ring-2 focus:ring-[#0A2540]/20 focus:border-[#0A2540] focus:bg-white transition-all">
+                                <p class="mt-2 text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Lưu xong → giá tự động cập nhật realtime trên trang khách (mỗi 3 giây).</p>
                             </div>
                         </div>
 
@@ -132,15 +133,16 @@
                     </div>
                 </div>
 
-                <!-- Ảnh hiện có -->
+                <!-- Ảnh hiện có & Upload -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                     <div class="p-6 border-b border-gray-50 flex items-center gap-3">
                         <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-600">
                             <i data-lucide="image" class="w-4 h-4"></i>
                         </div>
-                        <h2 class="text-[13px] font-black text-[#0A2540] uppercase tracking-widest">Hình ảnh hiện có ({{ $product->images->count() }} ảnh)</h2>
+                        <h2 class="text-[13px] font-black text-[#0A2540] uppercase tracking-widest">Hình ảnh Sản phẩm</h2>
                     </div>
                     <div class="p-6">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">ẢNH TRONG HỆ THỐNG</p>
                         @if($product->images->isNotEmpty())
                         <div class="flex flex-wrap gap-4 mb-6">
                             @foreach($product->images->sortBy('sort_order') as $img)
@@ -148,38 +150,80 @@
                                 <img src="{{ $img->image_url }}" alt="" class="w-full h-full object-contain p-1"
                                      onerror="this.style.display='none'">
                                 @if($img->is_primary)
-                                    <div class="absolute top-1 left-1 px-1.5 py-0.5 bg-blue-600 text-white text-[8px] font-black rounded">CHÍNH</div>
+                                    <div class="absolute top-1 left-1 px-1.5 py-0.5 bg-blue-600 text-white text-[8px] font-black rounded shadow">CHÍNH</div>
                                 @endif
+                                <!-- Chọn làm ảnh chính -->
+                                <label class="absolute bottom-1 left-1 bg-white/90 px-1.5 py-1 rounded shadow cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 border border-blue-100">
+                                    <input type="radio" name="primary_image_id" value="{{ $img->image_id }}" {{ $img->is_primary ? 'checked' : '' }} class="w-3 h-3 text-blue-600 border-gray-300 focus:ring-blue-500">
+                                    <span class="text-[8px] font-black text-blue-600 uppercase">Chính</span>
+                                </label>
+                                <!-- Tùy chọn xóa ảnh -->
+                                <label class="absolute bottom-1 right-1 bg-white/90 px-1.5 py-1 rounded shadow cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 border border-red-100">
+                                    <input type="checkbox" name="delete_images[]" value="{{ $img->image_id }}" class="w-3 h-3 text-red-500 rounded border-gray-300">
+                                    <span class="text-[9px] font-bold text-red-500 uppercase">Xóa</span>
+                                </label>
                             </div>
                             @endforeach
                         </div>
                         @else
-                        <p class="text-sm text-gray-400 mb-4">(Chưa có ảnh nào)</p>
+                        <!-- Render ảnh Mockup nếu database chưa có ảnh nào -->
+                        <div class="flex flex-wrap gap-4 mb-6">
+                            <div class="w-28 h-28 rounded-xl overflow-hidden border-2 border-gray-200 relative bg-gray-50 flex items-center justify-center">
+                                <img src="https://placehold.co/400x400/F4F5F7/0A2540?text=Mockup+Image" alt="Mockup" class="w-full h-full object-cover">
+                                <div class="absolute top-1 left-1 px-1.5 py-0.5 bg-gray-400 text-white text-[8px] font-black rounded shadow">MOCKUP</div>
+                            </div>
+                        </div>
                         @endif
 
-                        <!-- Thêm ảnh mới -->
-                        <div x-data="{ newImages: [{url:''}] }">
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">THÊM ẢNH MỚI (URL)</p>
-                            <template x-for="(img, index) in newImages" :key="index">
-                                <div class="flex items-center gap-2 mb-2">
-                                    <input type="text" :name="'images['+index+'][url]'" x-model="img.url"
-                                        x-on:input="if(index === 0 && img.is_primary) imageUrl = img.url"
-                                        placeholder="https://example.com/image.jpg"
-                                        class="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-[#0A2540] focus:outline-none focus:border-[#0A2540] transition-all">
-                                    <label class="flex items-center gap-1.5 cursor-pointer shrink-0">
-                                        <input type="checkbox" :name="'images['+index+'][is_primary]'" value="1" x-model="img.is_primary" x-on:change="if(img.is_primary) imageUrl = img.url" class="w-4 h-4">
-                                        <span class="text-[10px] font-black text-gray-400 uppercase">Chính</span>
-                                    </label>
-                                    <button type="button" x-on:click="newImages.splice(index,1)" x-show="newImages.length > 1"
-                                        class="p-1.5 text-gray-300 hover:text-red-500 transition-colors">
-                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                    </button>
-                                </div>
-                            </template>
-                            <button type="button" x-on:click="newImages.push({url:''})"
-                                class="mt-2 text-xs font-bold text-[#0A2540] hover:text-blue-600 transition-colors flex items-center gap-1">
-                                + Thêm URL ảnh
-                            </button>
+                        <!-- Form Tải ảnh mới từ máy -->
+                        <div x-data="{
+                            uploadPreviews: [],
+                            selectedFiles: [],
+                            handleFile(e) {
+                                const files = Array.from(e.target.files);
+                                let hasInvalidFile = false;
+                                files.forEach(file => {
+                                    if (!file.type.startsWith('image/')) {
+                                        hasInvalidFile = true;
+                                        return;
+                                    }
+                                    this.selectedFiles.push(file);
+                                    this.uploadPreviews.push(URL.createObjectURL(file));
+                                });
+                                if (hasInvalidFile) {
+                                    alert('Vui lòng chỉ chọn các file hình ảnh (jpeg, png, jpg, gif, webp...). Các file không hợp lệ đã bị bỏ qua.');
+                                }
+                                this.updateInput();
+                            },
+                            removeFile(idx) {
+                                this.selectedFiles.splice(idx, 1);
+                                this.uploadPreviews.splice(idx, 1);
+                                this.updateInput();
+                            },
+                            updateInput() {
+                                const dt = new DataTransfer();
+                                this.selectedFiles.forEach(file => dt.items.add(file));
+                                this.$refs.fileInput.files = dt.files;
+                            }
+                        }">
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 mt-4 pt-4 border-t border-gray-100">TẢI LÊN TỪ THIẾT BỊ</p>
+                            <div class="flex flex-wrap items-center gap-4">
+                                <label class="cursor-pointer px-4 py-2 border-2 border-dashed border-gray-300 rounded-xl hover:border-[#0A2540] hover:bg-gray-50 transition-colors flex flex-col items-center justify-center text-gray-400 gap-1.5 h-28 w-28 group">
+                                    <i data-lucide="upload-cloud" class="w-6 h-6 group-hover:text-[#0A2540] transition-colors"></i>
+                                    <span class="text-[9px] font-bold uppercase mt-1 text-center group-hover:text-[#0A2540] transition-colors">Chọn ảnh<br>từ máy</span>
+                                    <input type="file" name="upload_images[]" x-ref="fileInput" multiple accept="image/*" class="hidden" @change="handleFile">
+                                </label>
+                                <!-- Render Preview các ảnh được chọn -->
+                                <template x-for="(url, idx) in uploadPreviews" :key="idx">
+                                    <div class="w-28 h-28 rounded-xl border-2 border-green-200 relative bg-green-50/50 flex items-center justify-center group mt-2 mr-2">
+                                        <img :src="url" class="w-full h-full object-contain p-1 rounded-xl">
+                                        <div class="absolute top-1 left-1 px-1.5 py-0.5 bg-green-500 text-white text-[8px] font-black rounded shadow">MỚI</div>
+                                        <button type="button" @click.stop.prevent="removeFile(idx)" class="absolute -top-2.5 -right-2.5 w-6 h-6 bg-white hover:bg-red-50 text-gray-600 hover:text-red-500 rounded-full shadow border border-gray-200 flex items-center justify-center transition-colors z-10 cursor-pointer">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
                         </div>
                     </div>
                 </div>
