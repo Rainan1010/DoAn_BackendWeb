@@ -21,6 +21,8 @@ class ProductController extends Controller
         // Trả về dữ liệu dạng JSON cho file search.js xử lý
         return response()->json($products);
     }
+
+    // chi tiết sản phẩm
     public function show($id)
     {
         // 1. Lấy thông tin sản phẩm
