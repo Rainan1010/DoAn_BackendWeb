@@ -257,7 +257,7 @@
                                 </div>
                                 <input
                                     class="w-full text-sm md:text-base bg-transparent border-b-2 border-outline-variant/30 focus:border-primary focus:ring-0 transition-all pl-8 py-3 text-on-surface placeholder:text-outline-variant/50 outline-none font-medium"
-                                    name="email" id="email" placeholder="admin@b-tris.com" type="text"
+                                    name="email" maxlength="100" id="email" placeholder="admin@b-tris.com" type="text"
                                     value="{{ old('email') }}" />
                             </div>
                         </div>
@@ -272,7 +272,8 @@
                                 </div>
                                 <input
                                     class="w-full text-sm md:text-base bg-transparent border-b-2 border-outline-variant/30 focus:border-primary focus:ring-0 transition-all pl-8 py-3 text-on-surface placeholder:text-outline-variant/50 outline-none font-medium"
-                                    name="password" id="password" placeholder="••••••••" type="password" />
+                                    name="password" id="password" minlength="6" maxlength="50" placeholder="••••••••"
+                                    type="password" />
                                 <span onclick="togglePassword()" id="eyeIcon"
                                     class="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-outline cursor-pointer hover:text-primary transition-colors text-xl">
                                     visibility
