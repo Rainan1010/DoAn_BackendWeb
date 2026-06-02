@@ -681,6 +681,11 @@ class OrderController extends Controller
                     throw new \Exception('Sản phẩm ' . $item['name'] . ' không đủ tồn kho');
                 }
 
+                // Capture old stock and compute new stock for logging
+                $oldStock = (int) $variant->stock_quantity;
+                $qty = (int) $item['quantity'];
+                $newStock = $oldStock - $qty;
+
                 OrderItem::create([
                     'order_id' => $order->order_id,
                     'variant_id' => $variant->variant_id,
@@ -693,7 +698,20 @@ class OrderController extends Controller
                     'subtotal' => $item['price'] * $item['quantity'],
                 ]);
 
-                $variant->decrement('stock_quantity', $item['quantity']);
+                // Decrement stock and insert inventory log for export
+                $variant->decrement('stock_quantity', $qty);
+
+                DB::table('inventory_logs')->insert([
+                    'variant_id' => $variant->variant_id,
+                    'order_id' => $order->order_id,
+                    'user_id' => Auth::id(),
+                    'action_type' => 'export',
+                    'quantity_change' => -$qty,
+                    'stock_after' => $newStock,
+                    'note' => 'Xuất kho khi đặt hàng: ' . ($order->order_code ?? $order->order_id),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
             }
 
             Payment::create([
