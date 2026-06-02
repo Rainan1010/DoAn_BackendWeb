@@ -12,14 +12,25 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->rememberToken();
-            $table->timestamps();
+        $table->id('user_id'); // Khớp với cách gọi trong Seeder
+        $table->string('full_name');
+        $table->string('email')->unique();
+        $table->string('password_hash')->nullable();
+        
+        // --- CÁC CỘT CẦN BỔ SUNG ĐỂ KHỚP VỚI SEEDER ---
+        $table->string('phone', 20)->nullable();
+        $table->string('avatar_url', 500)->nullable();
+        $table->enum('role', ['user', 'staff', 'admin'])->default('user');
+        $table->boolean('is_active')->default(true);
+        $table->boolean('is_verified')->default(false);
+        // ----------------------------------------------
+
+        $table->timestamp('email_verified_at')->nullable();
+        $table->rememberToken();
+        $table->timestamps();
         });
+        // Giữ nguyên các bảng password_reset_tokens và sessions bên dưới...
+
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
