@@ -464,6 +464,12 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/api/compare-product/{id}', [App\Http\Controllers\CompareController::class, 'getCompareProduct']);
 
+// Compare routes (session-based)
+Route::post('/compare/add', [App\Http\Controllers\CompareController::class, 'add'])->name('compare.add');
+Route::post('/compare/remove', [App\Http\Controllers\CompareController::class, 'remove'])->name('compare.remove');
+Route::post('/compare/clear', [App\Http\Controllers\CompareController::class, 'clear'])->name('compare.clear');
+Route::get('/compare', [App\Http\Controllers\CompareController::class, 'index'])->name('compare.index');
+
 Route::get('/api/prices/sync', [App\Http\Controllers\Api\ProductPriceController::class, 'sync'])
     ->name('api.prices.sync');
 
