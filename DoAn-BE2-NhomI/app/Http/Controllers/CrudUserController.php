@@ -92,6 +92,9 @@ class CrudUserController extends Controller
             // Chuyển giỏ hàng session sang database sau khi đăng nhập thành công
             $this->mergeSessionCartToDatabase();
 
+            // Load database cart into session immediately so user has cart in session after login
+            (new \App\Http\Controllers\CartController())->syncCartSession();
+
             // Chuyển hướng theo vai trò
             if ($user->role === 'admin') {
                 return redirect('/admin/categories')
@@ -381,8 +384,8 @@ class CrudUserController extends Controller
     {
         $user = Auth::user();
 
+        // Capture login history logout_time if available
         if ($user) {
-
             $history = LoginHistory::where(
                 'user_id',
                 $user->user_id
@@ -392,18 +395,85 @@ class CrudUserController extends Controller
                 ->first();
 
             if ($history) {
-
                 $history->update([
                     'logout_time' => now(),
                 ]);
             }
         }
 
+        // Preserve cart/session data before invalidating session
+        $cart = session()->get('cart', []);
+        $cartCount = session()->get('cart_count', 0);
+        $selectedCartIds = session()->get('selected_cart_ids', []);
+        $appliedVoucher = session()->get('applied_voucher', null);
+
+        // If session cart empty but user has DB cart, load it to restore for guest session
+        if (empty($cart) && $user) {
+            $userCart = DB::table('carts')->where('user_id', $user->user_id)->first();
+
+            if ($userCart) {
+                $items = DB::table('cart_items')
+                    ->join('product_variants', 'cart_items.variant_id', '=', 'product_variants.variant_id')
+                    ->join('products', 'product_variants.product_id', '=', 'products.product_id')
+                    ->leftJoin('product_images', function ($join) {
+                        $join->on('products.product_id', '=', 'product_images.product_id')
+                            ->where('product_images.is_primary', 1);
+                    })
+                    ->where('cart_items.cart_id', $userCart->cart_id)
+                    ->select(
+                        'cart_items.item_id',
+                        'cart_items.variant_id',
+                        'cart_items.quantity',
+                        'cart_items.price',
+                        'product_variants.product_id',
+                        'product_variants.attribute_values',
+                        'product_variants.stock_quantity',
+                        'products.name',
+                        'product_images.image_url'
+                    )
+                    ->get();
+
+                $cart = [];
+                $cartCount = 0;
+                $selectedCartIds = [];
+
+                foreach ($items as $item) {
+                    $cartKey = $item->product_id . '_variant_' . $item->variant_id;
+
+                    $cart[$cartKey] = [
+                        'product_id' => $item->product_id,
+                        'variant_id' => $item->variant_id,
+                        'name' => $item->name,
+                        'variant_name' => is_string($item->attribute_values) ? (is_array(json_decode($item->attribute_values, true)) ? implode(' - ', json_decode($item->attribute_values, true)) : $item->attribute_values) : $item->attribute_values,
+                        'quantity' => (int) $item->quantity,
+                        'price' => (float) $item->price,
+                        'stock_quantity' => (int) $item->stock_quantity,
+                        'image' => $item->image_url ?? 'images/default-product.png',
+                    ];
+
+                    $cartCount += (int) $item->quantity;
+                    $selectedCartIds[] = $cartKey;
+                }
+            }
+        }
+
+        // Perform logout and invalidate session
         Auth::logout();
 
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
+
+        // Restore cart as guest session so user sees their cart after logout
+        if (!empty($cart)) {
+            session()->put('cart', $cart);
+            session()->put('cart_count', $cartCount);
+            session()->put('selected_cart_ids', $selectedCartIds);
+
+            if (!empty($appliedVoucher)) {
+                session()->put('applied_voucher', $appliedVoucher);
+            }
+        }
 
         return redirect('/');
     }

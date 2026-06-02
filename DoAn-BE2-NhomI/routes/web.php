@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
 
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CrudUserController;
@@ -22,7 +21,7 @@ use App\Http\Controllers\Admin\AttributeController;
 use App\Http\Controllers\Admin\OrderStatisticController;
 use App\Http\Controllers\Admin\RevenueReportController;
 use App\Http\Controllers\Admin\InventoryLogController;
-use App\Http\Controllers\Admin\StockLogController;
+
 /*
 |--------------------------------------------------------------------------
 | PUBLIC ROUTES
@@ -53,10 +52,14 @@ Route::get('/promotions', [ProductController::class, 'promotions'])
 */
 
 Route::middleware('guest')->group(function () {
-    Route::get('/login', [CrudUserController::class, 'showLogin'])->name('login');
+    Route::get('/login', [CrudUserController::class, 'showLogin'])
+        ->name('login');
+
     Route::post('/login', [CrudUserController::class, 'login']);
 
-    Route::get('/register', [CrudUserController::class, 'showRegister'])->name('register');
+    Route::get('/register', [CrudUserController::class, 'showRegister'])
+        ->name('register');
+
     Route::post('/register', [CrudUserController::class, 'register']);
 
     Route::get('auth/google', [SocialAuthController::class, 'redirectToGoogle'])
@@ -80,6 +83,12 @@ Route::middleware('guest')->group(function () {
             ->name('otp.resend');
     });
 });
+
+/*
+|--------------------------------------------------------------------------
+| LOGOUT
+|--------------------------------------------------------------------------
+*/
 
 Route::post('/logout', [CrudUserController::class, 'logout'])
     ->name('logout');
@@ -180,49 +189,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('reviews/{id}', [ReviewController::class, 'destroy'])
         ->name('reviews.destroy');
 
-
-    Route::middleware(['admin.only'])->group(function () {
-        Route::patch(
-            'permissions/{id}/toggle-status',
-            [App\Http\Controllers\Admin\PermissionController::class, 'toggleStatus']
-        )->name('permissions.toggle-status');
-
-        Route::resource('permissions', App\Http\Controllers\Admin\PermissionController::class);
-
-        Route::get('backups', [App\Http\Controllers\Admin\BackupController::class, 'index'])
-            ->name('backups.index');
-
-        Route::post('backups', [App\Http\Controllers\Admin\BackupController::class, 'create'])
-            ->name('backups.create');
-
-        Route::post('backups/upload', [App\Http\Controllers\Admin\BackupController::class, 'uploadRestore'])
-            ->name('backups.upload');
-
-        Route::get('backups/{id}/download', [App\Http\Controllers\Admin\BackupController::class, 'download'])
-            ->name('backups.download');
-
-        Route::post('backups/{id}/restore', [App\Http\Controllers\Admin\BackupController::class, 'restore'])
-            ->name('backups.restore');
-
-        Route::delete('backups/{id}', [App\Http\Controllers\Admin\BackupController::class, 'destroy'])
-            ->name('backups.destroy');
-
-        Route::get('/revenue-reports', [RevenueReportController::class, 'index'])
-            ->name('revenue_reports.index');
-
-        Route::get('stock-logs', [StockLogController::class, 'index'])
-            ->name('stock-logs.index');
-        
-        Route::get('/login-history', [CrudUserController::class, 'loginHistory'])
-            ->name('login.history');
-    });
-
     /*
     |--------------------------------------------------------------------------
     | ATTRIBUTES
     |--------------------------------------------------------------------------
     */
-
 
     Route::resource('attributes', AttributeController::class);
 
@@ -305,6 +276,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
         Route::get('/revenue-reports', [RevenueReportController::class, 'index'])
             ->name('revenue_reports.index');
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOGIN HISTORY
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/login-history', [CrudUserController::class, 'loginHistory'])
+            ->name('login.history');
 
         /*
         |--------------------------------------------------------------------------
@@ -410,7 +390,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders', [OrderController::class, 'history'])
         ->name('orders.history');
 
-    // In hóa đơn PDF - phải đặt trước /orders/{id}
+    /*
+     * In hóa đơn PDF - phải đặt trước /orders/{id}
+     */
     Route::get('/orders/{id}/invoice', [OrderController::class, 'invoicePdf'])
         ->name('orders.invoice');
 
