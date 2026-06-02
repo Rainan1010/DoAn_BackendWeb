@@ -397,15 +397,54 @@
                             <textarea name="comment" rows="3" class="w-full border-gray-300 rounded-md shadow-sm p-2 border" placeholder="Mời bạn chia sẻ cảm nhận về sản phẩm..." required></textarea>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Thêm hình ảnh (Tuỳ chọn)</label>
-                            <input type="file" name="images[]" multiple accept="image/*" onchange="validateReviewImages(this)" class="w-full text-sm text-gray-500
-                              file:mr-4 file:py-2 file:px-4
-                              file:rounded-md file:border-0
-                              file:text-sm file:font-semibold
-                              file:bg-blue-50 file:text-blue-700
-                              hover:file:bg-blue-100 cursor-pointer
-                            "/>
+                        <div x-data="{
+                            uploadPreviews: [],
+                            selectedFiles: [],
+                            handleFile(e) {
+                                const files = Array.from(e.target.files);
+                                let hasInvalidFile = false;
+                                files.forEach(file => {
+                                    if (!file.type.startsWith('image/')) {
+                                        hasInvalidFile = true;
+                                        return;
+                                    }
+                                    this.selectedFiles.push(file);
+                                    this.uploadPreviews.push(URL.createObjectURL(file));
+                                });
+                                if (hasInvalidFile) {
+                                    alert('Vui lòng chỉ chọn các file hình ảnh (jpeg, png, jpg, gif, webp...). Các file không hợp lệ đã bị bỏ qua.');
+                                }
+                                this.updateInput();
+                            },
+                            removeFile(idx) {
+                                this.selectedFiles.splice(idx, 1);
+                                this.uploadPreviews.splice(idx, 1);
+                                this.updateInput();
+                            },
+                            updateInput() {
+                                const dt = new DataTransfer();
+                                this.selectedFiles.forEach(file => dt.items.add(file));
+                                this.$refs.fileInput.files = dt.files;
+                            }
+                        }">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Thêm hình ảnh (Tuỳ chọn)</label>
+                            <div class="flex flex-wrap items-center gap-4">
+                                <label class="cursor-pointer px-4 py-2 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-900 hover:bg-gray-50 transition-colors flex flex-col items-center justify-center text-gray-400 gap-1.5 h-24 w-24 group">
+                                    <span class="material-symbols-outlined text-2xl group-hover:text-blue-900 transition-colors">cloud_upload</span>
+                                    <span class="text-[9px] font-bold uppercase mt-1 text-center group-hover:text-blue-900 transition-colors">Chọn ảnh</span>
+                                    <input type="file" name="images[]" x-ref="fileInput" multiple accept="image/*" class="hidden" @change="handleFile">
+                                </label>
+                                <!-- Render Preview các ảnh được chọn -->
+                                <template x-for="(url, idx) in uploadPreviews" :key="idx">
+                                    <div class="w-24 h-24 rounded-xl border-2 border-green-200 relative bg-green-50/50 flex items-center justify-center group mr-2">
+                                        <img :src="url" class="w-full h-full object-contain p-1 rounded-xl">
+                                        <div class="absolute top-1 left-1 px-1.5 py-0.5 bg-green-500 text-white text-[8px] font-black rounded shadow">MỚI</div>
+                                        <button type="button" @click.stop.prevent="removeFile(idx)" class="absolute -top-2.5 -right-2.5 w-6 h-6 bg-white hover:bg-red-50 text-gray-600 hover:text-red-500 rounded-full shadow border border-gray-200 flex items-center justify-center transition-colors z-10 cursor-pointer">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
                         </div>
 
                         <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition-colors">Gửi đánh giá</button>
@@ -572,20 +611,6 @@
         el.classList.add('border-blue-900', 'shadow-md');
     }
 
-    window.validateReviewImages = function(input) {
-        const files = Array.from(input.files);
-        let hasInvalidFile = false;
-        
-        files.forEach(file => {
-            if (!file.type.startsWith('image/')) {
-                hasInvalidFile = true;
-            }
-        });
-        
-        if (hasInvalidFile) {
-            alert('Vui lòng chỉ chọn các file hình ảnh (jpeg, png, jpg, gif, webp...). Các file không hợp lệ đã bị loại bỏ.');
-            input.value = ''; // Reset input
-        }
-    }
+
 </script>
 @endpush
