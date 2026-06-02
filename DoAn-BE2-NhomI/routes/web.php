@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
 
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CrudUserController;
@@ -20,6 +19,8 @@ use App\Http\Controllers\Admin\VoucherController;
 use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\AttributeController;
 use App\Http\Controllers\Admin\OrderStatisticController;
+use App\Http\Controllers\Admin\RevenueReportController;
+use App\Http\Controllers\Admin\InventoryLogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,10 +52,14 @@ Route::get('/promotions', [ProductController::class, 'promotions'])
 */
 
 Route::middleware('guest')->group(function () {
-    Route::get('/login', [CrudUserController::class, 'showLogin'])->name('login');
+    Route::get('/login', [CrudUserController::class, 'showLogin'])
+        ->name('login');
+
     Route::post('/login', [CrudUserController::class, 'login']);
 
-    Route::get('/register', [CrudUserController::class, 'showRegister'])->name('register');
+    Route::get('/register', [CrudUserController::class, 'showRegister'])
+        ->name('register');
+
     Route::post('/register', [CrudUserController::class, 'register']);
 
     Route::get('auth/google', [SocialAuthController::class, 'redirectToGoogle'])
@@ -79,10 +84,14 @@ Route::middleware('guest')->group(function () {
     });
 });
 
-Route::post('/logout', function () {
-    Auth::logout();
-    return redirect('/');
-})->name('logout');
+/*
+|--------------------------------------------------------------------------
+| LOGOUT
+|--------------------------------------------------------------------------
+*/
+
+Route::post('/logout', [CrudUserController::class, 'logout'])
+    ->name('logout');
 
 /*
 |--------------------------------------------------------------------------
@@ -113,15 +122,34 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
+    Route::get('/', [DashboardController::class, 'index'])
+        ->name('dashboard');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard.index');
 
+    /*
+    |--------------------------------------------------------------------------
+    | PRODUCTS
+    |--------------------------------------------------------------------------
+    */
+
     Route::resource('products', AdminProductController::class);
 
+    /*
+    |--------------------------------------------------------------------------
+    | CATEGORIES
+    |--------------------------------------------------------------------------
+    */
+
     Route::resource('categories', CategoryController::class);
+
+    /*
+    |--------------------------------------------------------------------------
+    | BRANDS
+    |--------------------------------------------------------------------------
+    */
 
     Route::view('/brands/create', 'admin.brands.create')
         ->name('brands.create');
@@ -132,10 +160,22 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::resource('brands', BrandController::class)
         ->except(['create']);
 
+    /*
+    |--------------------------------------------------------------------------
+    | VOUCHERS
+    |--------------------------------------------------------------------------
+    */
+
     Route::patch('vouchers/{id}/toggle-status', [VoucherController::class, 'toggleStatus'])
         ->name('vouchers.toggleStatus');
 
     Route::resource('vouchers', VoucherController::class);
+
+    /*
+    |--------------------------------------------------------------------------
+    | REVIEWS
+    |--------------------------------------------------------------------------
+    */
 
     Route::get('reviews', [ReviewController::class, 'index'])
         ->name('reviews.index');
@@ -149,35 +189,136 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::delete('reviews/{id}', [ReviewController::class, 'destroy'])
         ->name('reviews.destroy');
 
-    Route::patch(
-        'permissions/{id}/toggle-status',
-        [App\Http\Controllers\Admin\PermissionController::class, 'toggleStatus']
-    )->name('permissions.toggle-status');
-
-    Route::resource('permissions', App\Http\Controllers\Admin\PermissionController::class);
-
-    Route::get('backups', [App\Http\Controllers\Admin\BackupController::class, 'index'])
-        ->name('backups.index');
-
-    Route::post('backups', [App\Http\Controllers\Admin\BackupController::class, 'create'])
-        ->name('backups.create');
-
-    Route::post('backups/upload', [App\Http\Controllers\Admin\BackupController::class, 'uploadRestore'])
-        ->name('backups.upload');
-
-    Route::get('backups/{id}/download', [App\Http\Controllers\Admin\BackupController::class, 'download'])
-        ->name('backups.download');
-
-    Route::post('backups/{id}/restore', [App\Http\Controllers\Admin\BackupController::class, 'restore'])
-        ->name('backups.restore');
-
-    Route::delete('backups/{id}', [App\Http\Controllers\Admin\BackupController::class, 'destroy'])
-        ->name('backups.destroy');
+    /*
+    |--------------------------------------------------------------------------
+    | ATTRIBUTES
+    |--------------------------------------------------------------------------
+    */
 
     Route::resource('attributes', AttributeController::class);
 
+    /*
+    |--------------------------------------------------------------------------
+    | ORDER MANAGEMENT
+    |--------------------------------------------------------------------------
+    */
+
     Route::get('order-statistics', [OrderStatisticController::class, 'index'])
         ->name('order-statistics.index');
+
+    Route::get('orders/create', [OrderStatisticController::class, 'create'])
+        ->name('orders.create');
+
+    Route::post('orders/store', [OrderStatisticController::class, 'store'])
+        ->name('orders.store');
+
+    Route::get('orders/search-user', [OrderStatisticController::class, 'searchUser'])
+        ->name('orders.search-user');
+
+    Route::get('orders/{id}/edit', [OrderStatisticController::class, 'edit'])
+        ->name('orders.edit');
+
+    Route::patch('orders/{id}/update', [OrderStatisticController::class, 'update'])
+        ->name('orders.update');
+
+    Route::post('orders/{id}/confirm', [OrderStatisticController::class, 'confirm'])
+        ->name('orders.confirm');
+
+    /*
+    |--------------------------------------------------------------------------
+    | ADMIN ONLY ROUTES
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware(['admin.only'])->group(function () {
+        /*
+        |--------------------------------------------------------------------------
+        | PERMISSIONS
+        |--------------------------------------------------------------------------
+        */
+
+        Route::patch(
+            'permissions/{id}/toggle-status',
+            [App\Http\Controllers\Admin\PermissionController::class, 'toggleStatus']
+        )->name('permissions.toggle-status');
+
+        Route::resource('permissions', App\Http\Controllers\Admin\PermissionController::class);
+
+        /*
+        |--------------------------------------------------------------------------
+        | BACKUPS
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('backups', [App\Http\Controllers\Admin\BackupController::class, 'index'])
+            ->name('backups.index');
+
+        Route::post('backups', [App\Http\Controllers\Admin\BackupController::class, 'create'])
+            ->name('backups.create');
+
+        Route::post('backups/upload', [App\Http\Controllers\Admin\BackupController::class, 'uploadRestore'])
+            ->name('backups.upload');
+
+        Route::get('backups/{id}/download', [App\Http\Controllers\Admin\BackupController::class, 'download'])
+            ->name('backups.download');
+
+        Route::post('backups/{id}/restore', [App\Http\Controllers\Admin\BackupController::class, 'restore'])
+            ->name('backups.restore');
+
+        Route::delete('backups/{id}', [App\Http\Controllers\Admin\BackupController::class, 'destroy'])
+            ->name('backups.destroy');
+
+        /*
+        |--------------------------------------------------------------------------
+        | REVENUE REPORTS
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/revenue-reports', [RevenueReportController::class, 'index'])
+            ->name('revenue_reports.index');
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOGIN HISTORY
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/login-history', [CrudUserController::class, 'loginHistory'])
+            ->name('login.history');
+
+        /*
+        |--------------------------------------------------------------------------
+        | INVENTORY LOGS / NHẬP KHO MỚI
+        |--------------------------------------------------------------------------
+        | Dùng bảng chính: inventory_logs
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('inventory-logs', [InventoryLogController::class, 'index'])
+            ->name('inventory-logs.index');
+
+        Route::get('inventory-logs/create', [InventoryLogController::class, 'create'])
+            ->name('inventory-logs.create');
+
+        Route::post('inventory-logs/store', [InventoryLogController::class, 'store'])
+            ->name('inventory-logs.store');
+
+        /*
+        |--------------------------------------------------------------------------
+        | REDIRECT ROUTE CŨ STOCK-LOGS
+        |--------------------------------------------------------------------------
+        | Giữ route cũ để tránh lỗi link cũ, nhưng không dùng StockLogController nữa.
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('stock-logs', function () {
+            return redirect()->route('admin.inventory-logs.index');
+        })->name('stock-logs.index');
+
+        Route::get('stock-logs/create', function () {
+            return redirect()->route('admin.inventory-logs.create');
+        })->name('stock-logs.create');
+    });
 });
 
 /*
@@ -249,7 +390,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders', [OrderController::class, 'history'])
         ->name('orders.history');
 
-    // In hóa đơn PDF - phải đặt trước /orders/{id}
+    /*
+     * In hóa đơn PDF - phải đặt trước /orders/{id}
+     */
     Route::get('/orders/{id}/invoice', [OrderController::class, 'invoicePdf'])
         ->name('orders.invoice');
 
@@ -262,6 +405,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/orders/reorder/{id}', [OrderController::class, 'reorder'])
         ->name('orders.reorder');
 });
+
 /*
 |--------------------------------------------------------------------------
 | CHECKOUT
@@ -319,6 +463,9 @@ Route::middleware('auth')->group(function () {
 */
 
 Route::get('/api/compare-product/{id}', [App\Http\Controllers\CompareController::class, 'getCompareProduct']);
+
+Route::get('/api/prices/sync', [App\Http\Controllers\Api\ProductPriceController::class, 'sync'])
+    ->name('api.prices.sync');
 
 /*
 |--------------------------------------------------------------------------

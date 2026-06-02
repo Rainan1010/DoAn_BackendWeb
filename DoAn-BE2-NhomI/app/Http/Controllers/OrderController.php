@@ -164,26 +164,80 @@ class OrderController extends Controller
      * HỦY ĐƠN HÀNG
      * =====================================================
      */
-    public function cancel($id)
+    public function cancel(Request $request, $id)
     {
-        $order = Order::where('user_id', Auth::id())
-            ->findOrFail($id);
-
-        if (!in_array($order->order_status, ['pending', 'confirmed', 'processing'])) {
-            return back()->with(
-                'error',
-                'Không thể huỷ đơn hàng này'
-            );
-        }
-
-        $order->update([
-            'order_status' => 'cancelled',
+        $request->validate([
+            'cancel_reason' => 'required|string|min:5|max:500',
+        ], [
+            'cancel_reason.required' => 'Vui lòng nhập lý do huỷ đơn.',
+            'cancel_reason.min' => 'Lý do huỷ đơn cần có ít nhất 5 ký tự.',
+            'cancel_reason.max' => 'Lý do huỷ đơn không được vượt quá 500 ký tự.',
         ]);
 
-        return back()->with(
-            'success',
-            'Huỷ đơn hàng thành công'
-        );
+        DB::beginTransaction();
+        try {
+            $order = Order::with('items')
+                ->where('user_id', Auth::id())
+                ->lockForUpdate()
+                ->findOrFail($id);
+
+            if (!in_array($order->order_status, ['pending', 'confirmed', 'processing'])) {
+                DB::rollBack();
+
+                return back()->with(
+                    'error',
+                    'Không thể huỷ đơn hàng này'
+                );
+            }
+
+            // Hoàn lại số lượng tồn kho
+            foreach ($order->items as $item) {
+                ProductVariant::where('variant_id', $item->variant_id)
+                    ->increment('stock_quantity', $item->quantity);
+            }
+
+            // Hoàn trả lượt dùng Voucher nếu có
+            if ($order->voucher_id) {
+                DB::table('vouchers')
+                    ->where('voucher_id', $order->voucher_id)
+                    ->where('used_count', '>', 0)
+                    ->decrement('used_count');
+            }
+
+            $shouldRefund = $order->payment_status === 'paid'
+                || Payment::where('order_id', $order->order_id)
+                    ->where('status', 'success')
+                    ->whereIn('gateway', ['momo', 'vnpay'])
+                    ->exists();
+
+            Payment::where('order_id', $order->order_id)
+                ->update([
+                    'status' => $shouldRefund ? 'refunded' : 'failed',
+                ]);
+
+            $order->update([
+                'order_status' => 'cancelled',
+                'payment_status' => $shouldRefund ? 'refunded' : 'pending',
+                'cancel_reason' => $request->cancel_reason,
+            ]);
+
+            DB::commit();
+
+            $message = $shouldRefund
+                ? 'Huỷ đơn hàng thành công. Đơn đã thanh toán sẽ được hoàn tiền về phương thức thanh toán ban đầu trong 3-7 ngày làm việc.'
+                : 'Huỷ đơn hàng thành công. Đơn chưa thanh toán hoặc thanh toán COD nên không phát sinh hoàn tiền.';
+
+            return back()->with(
+                'success',
+                $message
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with(
+                'error',
+                'Có lỗi xảy ra khi huỷ đơn hàng: ' . $e->getMessage()
+            );
+        }
     }
 
     /**
@@ -367,10 +421,15 @@ class OrderController extends Controller
         }
 
         $shippingFee = $this->getShippingFeeByProvince($province);
-        $discount = 0;
 
-        $total = $subtotal + $shippingFee - $discount;
+        $discount = $this->getDiscountAmount($subtotal);
 
+        $vat = $subtotal * 0.1;
+
+        $total = $subtotal + $shippingFee + $vat - $discount;
+        if ($total < 0) {
+            $total = 0;
+        }
         return view(
             'checkout.index',
             compact(
@@ -380,6 +439,7 @@ class OrderController extends Controller
                 'shippingFee',
                 'discount',
                 'total',
+                'vat',
                 'oldInfo'
             )
         );
@@ -484,10 +544,13 @@ class OrderController extends Controller
         );
 
         $shippingFee = $this->getShippingFeeByProvince($province);
-        $discount = 0;
+        $discount = $this->getDiscountAmount($subtotal);
         $vat = $subtotal * 0.1;
 
         $total = $subtotal + $shippingFee + $vat - $discount;
+        if ($total < 0) {
+            $total = 0;
+        }
 
         $addresses = ShippingAddress::where('user_id', Auth::id())->get();
 
@@ -544,10 +607,14 @@ class OrderController extends Controller
 
             $shippingFee = $this->getShippingFeeByProvince($info['province']);
 
-            $discount = 0;
+            $voucherId = null;
+            $discount = $this->getDiscountAmount($subtotal, $voucherId);
             $vat = $subtotal * 0.1;
 
             $total = $subtotal + $shippingFee + $vat - $discount;
+            if ($total < 0) {
+                $total = 0;
+            }
 
             $shippingAddressId = null;
 
@@ -584,7 +651,7 @@ class OrderController extends Controller
             $order = Order::create([
                 'user_id' => Auth::id(),
                 'shipping_address_id' => $shippingAddressId,
-                'voucher_id' => null,
+                'voucher_id' => $voucherId,
                 'order_code' => 'ORD-' . time(),
                 'subtotal' => $subtotal,
                 'shipping_fee' => $shippingFee,
@@ -597,8 +664,14 @@ class OrderController extends Controller
                 'paid_at' => null,
             ]);
 
+            if ($voucherId) {
+                DB::table('vouchers')->where('voucher_id', $voucherId)->increment('used_count');
+            }
+
             foreach ($checkoutItems as $item) {
-                $variant = ProductVariant::find($item['variant_id']);
+                $variant = ProductVariant::where('variant_id', $item['variant_id'])
+                    ->lockForUpdate()
+                    ->first();
 
                 if (!$variant) {
                     throw new \Exception('Biến thể sản phẩm không tồn tại');
@@ -675,12 +748,18 @@ class OrderController extends Controller
                     'status' => 'success',
                 ]);
 
+            // Tự động gửi mail hóa đơn PDF
+            $this->sendInvoiceEmail($order->order_id);
+
             session()->forget([
                 'checkout_items',
                 'selected_cart_ids',
                 'checkout_information',
                 'is_reorder',
+                'applied_voucher',
             ]);
+
+            $this->syncCartSessionAfterCheckout();
 
             DB::commit();
 
@@ -720,141 +799,87 @@ class OrderController extends Controller
      * =====================================================
      */
     public function momoPayment($amount = null)
-    {
-        $endpoint = env('MOMO_ENDPOINT');
-        $partnerCode = env('MOMO_PARTNER_CODE');
-        $accessKey = env('MOMO_ACCESS_KEY');
-        $secretKey = env('MOMO_SECRET_KEY');
-        $redirectUrl = env('MOMO_REDIRECT_URL');
-        $ipnUrl = env('MOMO_IPN_URL');
+{
+    $checkoutItems = session()->get('checkout_items', []);
 
-        $amount = $amount ?? request('amount') ?? session('checkout_total') ?? 0;
+    $subtotal = 0;
 
-        $orderInfo = "Thanh toan don hang";
-        $amount = (string) $amount;
-        $orderId = time() . "";
-        $requestId = time() . "";
-        $extraData = base64_encode("");
-        $requestType = "captureWallet";
-
-        $rawHash =
-            "accessKey=" . $accessKey .
-            "&amount=" . $amount .
-            "&extraData=" . $extraData .
-            "&ipnUrl=" . $ipnUrl .
-            "&orderId=" . $orderId .
-            "&orderInfo=" . $orderInfo .
-            "&partnerCode=" . $partnerCode .
-            "&redirectUrl=" . $redirectUrl .
-            "&requestId=" . $requestId .
-            "&requestType=" . $requestType;
-
-        $signature = hash_hmac("sha256", $rawHash, $secretKey);
-
-        $data = [
-            "partnerCode" => $partnerCode,
-            "partnerName" => "Test",
-            "storeId" => "MomoTestStore",
-            "requestId" => $requestId,
-            "amount" => $amount,
-            "orderId" => $orderId,
-            "orderInfo" => $orderInfo,
-            "redirectUrl" => $redirectUrl,
-            "ipnUrl" => $ipnUrl,
-            "lang" => "vi",
-            "extraData" => $extraData,
-            "requestType" => $requestType,
-            "autoCapture" => true,
-            "signature" => $signature,
-        ];
-
-        $result = $this->execPostRequest($endpoint, json_encode($data));
-        $jsonResult = json_decode($result, true);
-
-        if (isset($jsonResult['payUrl'])) {
-            return redirect($jsonResult['payUrl']);
-        }
-
-        dd($jsonResult);
+    foreach ($checkoutItems as $item) {
+        $subtotal += $item['price'] * $item['quantity'];
     }
+
+    $shippingFee = session('shipping_fee', 30000);
+    $discount = session('discount_amount', 0);
+    $vat = $subtotal * 0.1;
+
+    $total = $subtotal + $shippingFee + $vat - $discount;
+
+    $orderCode = 'MOMO-' . time();
+
+    $phone = 'PSP2615014800000215';
+
+    $qr = "https://img.vietqr.io/image/momo-{$phone}-compact2.png"
+        . "?amount=" . (int)$total
+        . "&addInfo=" . urlencode($orderCode);
+
+    return view(
+        'checkout.momo',
+        compact(
+            'qr',
+            'orderCode',
+            'checkoutItems',
+            'subtotal',
+            'shippingFee',
+            'discount',
+            'vat',
+            'total'
+        )
+    );
+}
 
     /**
      * =====================================================
      * MOMO RETURN
      * =====================================================
      */
-    public function momoReturn(Request $request)
-    {
-        $order = Order::with('items')
-            ->latest('order_id')
-            ->where('user_id', Auth::id())
-            ->first();
+   public function momoReturn(Request $request)
+{
+    $order = Order::latest('order_id')
+        ->where('user_id', Auth::id())
+        ->first();
 
-        if (!$order) {
-            return redirect('/')->with(
-                'error',
-                'Không tìm thấy đơn hàng'
-            );
-        }
+    if (!$order) {
+        return redirect('/')
+            ->with('error', 'Không tìm thấy đơn hàng');
+    }
 
-        if ($request->resultCode == 0 || empty($request->resultCode)) {
-            $order->update([
-                'payment_status' => 'paid',
-                'order_status' => 'processing',
-                'paid_at' => now(),
-            ]);
-
-            Payment::where('order_id', $order->order_id)
-                ->update([
-                    'status' => 'success',
-                ]);
-
-            $cartIds = Cart::where('user_id', $order->user_id)
-                ->pluck('cart_id');
-
-            $variantIds = $order->items
-                ->pluck('variant_id')
-                ->toArray();
-
-            DB::table('cart_items')
-                ->whereIn('cart_id', $cartIds)
-                ->whereIn('variant_id', $variantIds)
-                ->delete();
-
-            session()->forget([
-                'pending_order_id',
-                'selected_cart_ids',
-                'checkout_information',
-                'checkout_items',
-                'is_reorder',
-            ]);
-
-            return redirect()
-                ->route('orders.history')
-                ->with('success_order', [
-                    'code' => $order->order_code,
-                    'total' => $order->total_amount,
-                ]);
-        }
+    if (($request->resultCode ?? 0) == 0) {
 
         $order->update([
-            'payment_status' => 'pending',
-            'order_status' => 'pending',
+            'payment_status' => 'paid',
+            'order_status' => 'processing',
+            'paid_at' => now(),
         ]);
 
         Payment::where('order_id', $order->order_id)
             ->update([
-                'status' => 'pending',
+                'status' => 'success',
             ]);
+
+        $this->sendInvoiceEmail($order->order_id);
 
         return redirect()
             ->route('orders.history')
-            ->with(
-                'warning',
-                'Đơn hàng đã được tạo nhưng chưa thanh toán.'
-            );
+            ->with('success_order', [
+                'code' => $order->order_code,
+                'total' => $order->total_amount,
+            ]);
     }
 
+    return redirect()
+        ->route('checkout.payment')
+        ->with('error', 'Thanh toán thất bại');
+}
     private function execPostRequest($url, $data)
     {
         $ch = curl_init($url);
@@ -936,6 +961,69 @@ class OrderController extends Controller
             . "&addInfo=" . $content
             . "&accountName=" . urlencode($accountName);
 
+        $checkoutItems = session()->get(
+            'checkout_items',
+            []
+        );
+
+        $subtotal = 0;
+
+        foreach ($checkoutItems as $item) {
+
+            $subtotal +=
+                $item['price']
+                * $item['quantity'];
+        }
+
+        $shippingFee = session(
+            'shipping_fee',
+            30000
+        );
+
+        $discount = session(
+            'discount_amount',
+            0
+        );
+        $vat = $subtotal * 0.1;
+
+        $total =
+            $subtotal
+            + $shippingFee
+            + $vat
+            - $discount;
+        /*
+        |--------------------------------------------------------------------------
+        | RETURN VIEW
+        |--------------------------------------------------------------------------
+        */
+        return view(
+
+            'checkout.vnpay',
+
+            compact(
+
+                'amount',
+
+                'orderCode',
+
+                'qr',
+
+                'request',
+
+                'checkoutItems',
+
+                'subtotal',
+
+                'shippingFee',
+
+                'discount',
+
+                'vat',
+
+                'total'
+            )
+        );
+
         return view(
             'checkout.vnpay',
             compact(
@@ -945,6 +1033,7 @@ class OrderController extends Controller
                 'request'
             )
         );
+
     }
 
     /**
@@ -977,6 +1066,9 @@ class OrderController extends Controller
                     'status' => 'success',
                 ]);
 
+            // Tự động gửi mail hóa đơn PDF
+            $this->sendInvoiceEmail($order->order_id);
+
             foreach ($order->items as $item) {
                 DB::table('cart_items')
                     ->whereIn(
@@ -993,7 +1085,10 @@ class OrderController extends Controller
                 'checkout_information',
                 'is_reorder',
                 'pending_order_id',
+                'applied_voucher',
             ]);
+
+            $this->syncCartSessionAfterCheckout();
 
             return redirect()
                 ->route('orders.history')
@@ -1055,5 +1150,135 @@ class OrderController extends Controller
         $shipping = ShippingFee::where('province', $province)->first();
 
         return $shipping ? $shipping->fee : 30000;
+    }
+
+    private function getDiscountAmount($subtotal, &$voucherIdOut = null)
+    {
+        $voucherId = session('applied_voucher');
+        $discount = 0;
+
+        if ($voucherId && $subtotal > 0) {
+            $voucher = DB::table('vouchers')->where('voucher_id', $voucherId)->lockForUpdate()->first();
+            if ($voucher) {
+                $now = now();
+                $isValid = $voucher->is_active
+                    && (!$voucher->end_at || $now->lte($voucher->end_at))
+                    && ($voucher->usage_limit === null || $voucher->used_count < $voucher->usage_limit)
+                    && ($voucher->min_order_value === null || $subtotal >= $voucher->min_order_value);
+
+                if ($isValid) {
+                    if ($voucher->type === 'percent') {
+                        $discount = $subtotal * ($voucher->value / 100);
+                        if ($voucher->max_discount) {
+                            $discount = min($discount, $voucher->max_discount);
+                        }
+                    } else {
+                        $discount = min(max(0, $voucher->value), $subtotal);
+                    }
+                    $voucherIdOut = $voucher->voucher_id;
+                } else {
+                    session()->forget('applied_voucher');
+                }
+            }
+        }
+
+        return $discount;
+    }
+
+    private function syncCartSessionAfterCheckout()
+    {
+        if (Auth::check()) {
+            $cart = [];
+            $userCart = Cart::with(['items.variant.product'])
+                ->where('user_id', Auth::id())
+                ->first();
+
+            if ($userCart) {
+                foreach ($userCart->items as $item) {
+                    $variant = $item->variant;
+                    if (!$variant || !$variant->product) {
+                        continue;
+                    }
+                    $product = $variant->product;
+                    $image = DB::table('product_images')
+                        ->where('product_id', $product->product_id)
+                        ->where('is_primary', 1)
+                        ->value('image_url');
+                    
+                    $cartKey = $product->product_id . '_variant_' . $variant->variant_id;
+                    
+                    $variantName = null;
+                    if (is_array($variant->attribute_values)) {
+                        $variantName = implode(' - ', $variant->attribute_values);
+                    } elseif (is_string($variant->attribute_values)) {
+                        $decoded = json_decode($variant->attribute_values, true);
+                        $variantName = is_array($decoded) ? implode(' - ', $decoded) : $variant->attribute_values;
+                    }
+
+                    $cart[$cartKey] = [
+                        'product_id' => $product->product_id,
+                        'variant_id' => $variant->variant_id,
+                        'name' => $product->name,
+                        'variant_name' => $variantName,
+                        'quantity' => (int) $item->quantity,
+                        'price' => (float) $item->price,
+                        'image' => $image ?? 'images/default-product.png',
+                    ];
+                }
+            }
+            session()->put('cart', $cart);
+
+            $totalQuantity = 0;
+            foreach ($cart as $it) {
+                $totalQuantity += (int) ($it['quantity'] ?? 1);
+            }
+            session()->put('cart_count', $totalQuantity);
+        }
+    }
+
+    /**
+     * Gửi email kèm hóa đơn PDF khi đặt hàng thành công
+     */
+    private function sendInvoiceEmail($orderId)
+    {
+        try {
+            $order = DB::table('orders')
+                ->leftJoin('users', 'orders.user_id', '=', 'users.user_id')
+                ->leftJoin('shipping_addresses', 'orders.shipping_address_id', '=', 'shipping_addresses.address_id')
+                ->select(
+                    'orders.*',
+                    'users.full_name as user_full_name',
+                    'users.email as user_email',
+                    'shipping_addresses.full_name as receiver_name',
+                    'shipping_addresses.phone',
+                    'shipping_addresses.province',
+                    'shipping_addresses.district',
+                    'shipping_addresses.ward',
+                    'shipping_addresses.street_address'
+                )
+                ->where('orders.order_id', $orderId)
+                ->first();
+
+            if (!$order || empty($order->user_email)) {
+                return;
+            }
+
+            $items = DB::table('order_items')
+                ->leftJoin('product_variants', 'order_items.variant_id', '=', 'product_variants.variant_id')
+                ->leftJoin('products', 'product_variants.product_id', '=', 'products.product_id')
+                ->select(
+                    'order_items.*',
+                    'products.name as product_name_db',
+                    'product_variants.sku',
+                    'product_variants.attribute_values'
+                )
+                ->where('order_items.order_id', $orderId)
+                ->get();
+
+            \Illuminate\Support\Facades\Mail::to($order->user_email)
+                ->send(new \App\Mail\OrderInvoiceMail($order, $items));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Gửi mail hóa đơn thất bại cho đơn hàng #' . $orderId . ': ' . $e->getMessage());
+        }
     }
 }

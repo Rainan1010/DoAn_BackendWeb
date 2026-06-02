@@ -98,7 +98,7 @@
 
                                         <p class="mt-2 text-sm text-on-surface-variant">
                                             Đơn giá:
-                                            <span class="font-bold text-primary">
+                                            <span class="font-bold text-primary" data-realtime-price data-product-id="{{ $details['product_id'] ?? '' }}" @if(!empty($details['variant_id'])) data-variant-id="{{ $details['variant_id'] }}" @endif>
                                                 {{ number_format($details['price'] ?? 0, 0, ',', '.') }}₫
                                             </span>
                                         </p>

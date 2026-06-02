@@ -291,16 +291,17 @@
 
                             {{-- MOMO --}}
                             <label
-                                class="payment-card rounded-[28px] p-6 flex justify-between items-center cursor-pointer border-2 border-transparent transition-all duration-300"
-                                id="momo_card">
+    class="payment-card rounded-[28px] p-6 flex justify-between items-center border-2 border-transparent transition-all duration-300
+    {{ $total > 50000000 ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer' }}"
+    id="momo_card">
 
                                 <div class="flex items-center gap-5">
 
                                     <div class="w-[60px] h-[60px]
-                    rounded-2xl
-                    bg-[#ae2070]/10
-                    flex items-center justify-center
-                    text-3xl">
+                            rounded-2xl
+                            bg-[#ae2070]/10
+                            flex items-center justify-center
+                            text-3xl">
 
                                         💗
 
@@ -315,13 +316,25 @@
                                         <p class="text-sm text-gray-500 mt-1">
                                             Ví điện tử MoMo Sandbox
                                         </p>
+                                        @if($total > 50000000)
 
+<p class="text-red-500 font-semibold text-sm mt-2">
+    ⚠️ MoMo chỉ hỗ trợ thanh toán tối đa 50.000.000đ.
+    Vui lòng chọn VNPAY.
+</p>
+
+@endif
                                     </div>
 
                                 </div>
 
-                                <input type="radio" name="payment_method" value="momo" class="w-5 h-5 accent-[#ae2070]"
-                                    onchange="changePayment()">
+                               <input type="radio"
+       name="payment_method"
+       value="momo"
+       class="w-5 h-5 accent-[#ae2070]"
+       onchange="changePayment()"
+       {{ $total > 50000000 ? 'disabled' : '' }}>
+                               
 
                             </label>
 
@@ -407,10 +420,8 @@
                                     {{-- IMAGE --}}
                                     <div class="w-[90px] h-[90px] rounded-3xl overflow-hidden border bg-gray-50 flex-shrink-0">
 
-<img
-    src="{{ asset($item['image'] ?? 'images/default-product.png') }}"
-    class="w-full h-full object-cover"
->
+                                        <img src="{{ asset($item['image'] ?? 'images/default-product.png') }}"
+                                            class="w-full h-full object-cover">
                                     </div>
 
                                     {{-- INFO --}}
@@ -477,7 +488,19 @@
                             </span>
 
                         </div>
+                        <div class="flex items-center justify-between gap-3">
 
+                            <span class="text-gray-500 text-lg">
+                                VAT (10%)
+                            </span>
+
+                            <span class="font-black text-[#001e40] text-[18px] text-right break-words">
+
+                                {{ number_format($vat) }}đ
+
+                            </span>
+
+                        </div>
                         <div class="flex items-center justify-between gap-3">
 
                             <span class="text-gray-500 text-lg">
@@ -531,66 +554,98 @@
 
     <script>
 
-    function changePayment() {
+        function changePayment() {
+          
+            let cod =
+                document.querySelector(
+                    'input[value="cod"]'
+                );
 
-        let cod =
-            document.querySelector(
-                'input[value="cod"]'
-            );
+            let momo =
+                document.querySelector(
+                    'input[value="momo"]'
+                );
 
-        let momo =
-            document.querySelector(
-                'input[value="momo"]'
-            );
+            let vnpay =
+                document.querySelector(
+                    'input[value="vnpay"]'
+                );
 
-        let vnpay =
-            document.querySelector(
-                'input[value="vnpay"]'
-            );
+            let codCard =
+                document.getElementById(
+                    'cod_card'
+                );
 
-        let codCard =
-            document.getElementById(
-                'cod_card'
-            );
+            let momoCard =
+                document.getElementById(
+                    'momo_card'
+                );
 
-        let momoCard =
-            document.getElementById(
-                'momo_card'
-            );
+            let vnpayCard =
+                document.getElementById(
+                    'vnpay_card'
+                );
 
-        let vnpayCard =
-            document.getElementById(
-                'vnpay_card'
-            );
+            codCard.classList.remove('active');
+            momoCard.classList.remove('active');
+            vnpayCard.classList.remove('active');
 
-        codCard.classList.remove('active');
-        momoCard.classList.remove('active');
-        vnpayCard.classList.remove('active');
+            if (cod.checked) {
 
-        if (cod.checked) {
+                codCard.classList.add(
+                    'active'
+                );
+            }
 
-            codCard.classList.add(
-                'active'
-            );
+            if (momo.checked) {
+
+                momoCard.classList.add(
+                    'active'
+                );
+
+                if (orderTotal > 50000000) {
+
+                    momoWarning.classList.remove(
+                        'hidden'
+                    );
+
+                } else {
+
+                    momoWarning.classList.add(
+                        'hidden'
+                    );
+                }
+            }
+            if (vnpay.checked) {
+
+                vnpayCard.classList.add(
+                    'active'
+                );
+            }
         }
+        document.querySelector('form')
+            .addEventListener('submit', function (e) {
 
-        if (momo.checked) {
+                let momo =
+                    document.querySelector(
+                        'input[value="momo"]'
+                    );
 
-            momoCard.classList.add(
-                'active'
-            );
-        }
+                if (
+                    momo.checked &&
+                    orderTotal > 50000000
+                ) {
 
-        if (vnpay.checked) {
+                    e.preventDefault();
 
-            vnpayCard.classList.add(
-                'active'
-            );
-        }
-    }
+                    alert(
+                        'MoMo chỉ hỗ trợ thanh toán tối đa 50.000.000đ. Vui lòng chọn VNPAY.'
+                    );
+                }
 
-    window.onload = changePayment;
-
-</script>
+            });
+        window.onload = changePayment;
+        const orderTotal = {{ $total }};
+    </script>
 
 @endsection

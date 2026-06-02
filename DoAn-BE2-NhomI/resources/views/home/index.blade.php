@@ -25,7 +25,6 @@
                     <button onclick="scrollTrending(-1)" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
                         <span class="material-symbols-outlined">chevron_left</span>
                     </button>
-
                     <button onclick="scrollTrending(1)" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
                         <span class="material-symbols-outlined">chevron_right</span>
                     </button>
@@ -44,7 +43,7 @@
                                 <img
                                     alt="{{ $product->name }}"
                                     class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
-                                    src="{{ asset(str_replace('public/', '', $product->image_url)) }}" />
+                                    src="{{ asset(str_replace(['public/', '/storage/products/'], ['', '/products/'], $product->image_url)) }}" />
 
                                 <span class="absolute top-0 left-0 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-black w-7 h-7 rounded-full flex items-center justify-center shadow-lg">
                                     #{{ $index + 1 }}
@@ -66,7 +65,7 @@
 
                             <div class="mb-4">
                                 <p class="text-orange-400 font-black text-lg">
-                                    {{ number_format($product->base_price, 0, ',', '.') }}₫
+                                    <span data-realtime-price data-product-id="{{ $product->product_id }}">{{ number_format($product->base_price, 0, ',', '.') }}₫</span>
                                 </p>
                             </div>
                         </a>
@@ -140,6 +139,135 @@
         </a>
     </div>
 
+    {{-- ==================== 3. Bộ lọc ==================== --}}
+    <form method="GET" class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <div class="flex flex-wrap items-center gap-3">
+
+            <div class="flex items-center gap-2 mr-3">
+                <span class="material-symbols-outlined text-brand-blue">
+                filter_alt
+                </span>
+
+                <span class="font-semibold text-slate-800">
+                    Bộ lọc
+                </span>
+            </div>
+
+            {{-- Danh mục --}}
+            <select name="category_id" class="h-11 min-w-[180px] rounded-xl border border-slate-300 px-4 text-sm">
+
+                <option value="">Danh mục</option>
+
+                 @foreach($categories as $category)
+                        <option value="{{ $category->category_id }}"
+                            {{ request('category_id') == $category->category_id ? 'selected' : '' }}>
+                            {{ $category->name }}
+                    </option>
+                @endforeach
+
+            </select>
+
+            {{-- Thương hiệu --}}
+            <select name="brand_id"
+                class="h-11 min-w-[180px] rounded-xl border border-slate-300 px-4 text-sm">
+
+                <option value="">Thương hiệu</option>
+
+                @foreach($brands as $brand)
+                    <option value="{{ $brand->brand_id }}"
+                        {{ request('brand_id') == $brand->brand_id ? 'selected' : '' }}>
+                        {{ $brand->name }}
+                    </option>
+                @endforeach
+
+            </select>
+
+            {{-- Giá --}}
+            <label class="cursor-pointer">
+                <input type="radio"
+                    name="price_range"
+                    value="under_10"
+                    class="hidden peer"
+                    {{ request('price_range') == 'under_10' ? 'checked' : '' }}>
+
+                <span
+                    class="px-4 py-2 rounded-full border border-slate-300 bg-slate-50
+                    peer-checked:bg-brand-blue
+                    peer-checked:text-white
+                    peer-checked:border-brand-blue
+                    hover:border-brand-blue transition">
+                    Dưới 10tr
+                </span>
+            </label>
+
+            <label class="cursor-pointer">
+                <input type="radio"
+                    name="price_range"
+                    value="10_20"
+                    class="hidden peer"
+                    {{ request('price_range') == '10_20' ? 'checked' : '' }}>
+
+                <span
+                    class="px-4 py-2 rounded-full border border-slate-300 bg-slate-50
+                    peer-checked:bg-brand-blue
+                    peer-checked:text-white
+                    peer-checked:border-brand-blue
+                    hover:border-brand-blue transition">
+                    10-20tr
+                </span>
+            </label>
+
+            <label class="cursor-pointer">
+                <input type="radio"
+                    name="price_range"
+                    value="20_30"
+                    class="hidden peer"
+                    {{ request('price_range') == '20_30' ? 'checked' : '' }}>
+
+                <span
+                    class="px-4 py-2 rounded-full border border-slate-300 bg-slate-50
+                    peer-checked:bg-brand-blue
+                    peer-checked:text-white
+                    peer-checked:border-brand-blue
+                    hover:border-brand-blue transition">
+                    20-30tr
+                </span>
+            </label>
+
+            <label class="cursor-pointer">
+                <input type="radio"
+                    name="price_range"
+                    value="over_30"
+                    class="hidden peer"
+                    {{ request('price_range') == 'over_30' ? 'checked' : '' }}>
+
+                <span
+                    class="px-4 py-2 rounded-full border border-slate-300 bg-slate-50
+                    peer-checked:bg-brand-blue
+                    peer-checked:text-white
+                    peer-checked:border-brand-blue
+                    hover:border-brand-blue transition">
+                    Trên 30tr
+                </span>
+            </label>
+
+            {{-- Nút lọc --}}
+            <button type="submit"
+                class="h-11 px-6 rounded-xl bg-brand-blue text-white font-medium hover:opacity-90 transition">
+                Áp dụng
+            </button>
+
+            {{-- Xóa bộ lọc --}}
+            @if(request()->hasAny(['category_id','brand_id','price_range']))
+                <a href="{{ route('home') }}"
+                    class="h-11 px-5 rounded-xl border border-slate-300 flex items-center hover:bg-slate-100 transition">
+                    Xóa dữ liệu bộ lọc
+                </a>
+            @endif
+
+        </div>
+
+    </form>
     {{-- Main Content --}}
     <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
         {{-- Cột Banner Trái --}}
@@ -161,7 +289,7 @@
                     </h3>
 
                     <p class="text-xl font-light mb-6 text-slate-200">
-                        {{ number_format($promoProduct->base_price, 0, ',', '.') }}₫
+                        <span data-realtime-price data-product-id="{{ $promoProduct->product_id }}">{{ number_format($promoProduct->base_price, 0, ',', '.') }}₫</span>
                     </p>
 
                     <a href="{{ url('/product/' . $promoProduct->product_id) }}" class="w-full py-3 bg-white text-brand-blue text-center font-bold rounded-xl hover:bg-brand-blue hover:text-white transition-all uppercase text-xs">
@@ -213,7 +341,7 @@
                 {{-- Giá + thêm giỏ hàng --}}
                 <div class="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
                     <p class="text-brand-blue font-bold text-base">
-                        {{ number_format($product->base_price, 0, ',', '.') }}₫
+                        <span data-realtime-price data-product-id="{{ $product->product_id }}">{{ number_format($product->base_price, 0, ',', '.') }}₫</span>
                     </p>
 
                     <form action="{{ route('cart.add') }}" method="POST" onclick="event.stopPropagation();">
