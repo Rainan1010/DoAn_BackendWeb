@@ -4,41 +4,14 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\Cart;
-use App\Models\CartItem;
-use App\Models\ProductVariant;
 
 class CartController extends Controller
 {
-    private function getUserCart()
-    {
-        return Cart::firstOrCreate(
-            ['user_id' => auth()->id()],
-            [
-                'session_id' => null,
-                'updated_at' => now(),
-            ]
-        );
-    }
-
-    private function formatVariantName($attributeValues)
-    {
-        if (is_array($attributeValues)) {
-            return implode(' - ', $attributeValues);
-        }
-
-        if (is_string($attributeValues)) {
-            $decoded = json_decode($attributeValues, true);
-
-            if (is_array($decoded)) {
-                return implode(' - ', $decoded);
-            }
-
-            return $attributeValues;
-        }
-
-        return null;
-    }
+    /*
+    |--------------------------------------------------------------------------
+    | HELPER METHODS
+    |--------------------------------------------------------------------------
+    */
 
     private function makeCartKey($productId, $variantId = null)
     {
@@ -56,11 +29,68 @@ class CartController extends Controller
         return null;
     }
 
+    private function formatVariantName($attributeValues)
+    {
+        if (empty($attributeValues)) {
+            return null;
+        }
+
+        if (is_array($attributeValues)) {
+            return implode(' - ', $attributeValues);
+        }
+
+        if (is_string($attributeValues)) {
+            $decoded = json_decode($attributeValues, true);
+
+            if (is_array($decoded)) {
+                return implode(' - ', $decoded);
+            }
+
+            return $attributeValues;
+        }
+
+        return null;
+    }
+
+    private function getUserCart()
+    {
+        $cart = DB::table('carts')
+            ->where('user_id', auth()->id())
+            ->first();
+
+        if ($cart) {
+            DB::table('carts')
+                ->where('cart_id', $cart->cart_id)
+                ->update([
+                    'session_id' => session()->getId(),
+                    'updated_at' => now(),
+                ]);
+
+            return DB::table('carts')
+                ->where('cart_id', $cart->cart_id)
+                ->first();
+        }
+
+        $cartId = DB::table('carts')->insertGetId([
+            'user_id' => auth()->id(),
+            'session_id' => session()->getId(),
+            'updated_at' => now(),
+        ]);
+
+        return DB::table('carts')
+            ->where('cart_id', $cartId)
+            ->first();
+    }
+
     private function getDatabaseCartAsSessionFormat()
     {
         $cart = [];
 
-        $userCart = Cart::with(['items.variant.product'])
+        if (!auth()->check()) {
+            return $cart;
+        }
+
+        $userCart = DB::table('carts')
             ->where('user_id', auth()->id())
             ->first();
 
@@ -68,30 +98,39 @@ class CartController extends Controller
             return $cart;
         }
 
-        foreach ($userCart->items as $item) {
-            $variant = $item->variant;
+        $items = DB::table('cart_items')
+            ->join('product_variants', 'cart_items.variant_id', '=', 'product_variants.variant_id')
+            ->join('products', 'product_variants.product_id', '=', 'products.product_id')
+            ->leftJoin('product_images', function ($join) {
+                $join->on('products.product_id', '=', 'product_images.product_id')
+                    ->where('product_images.is_primary', 1);
+            })
+            ->where('cart_items.cart_id', $userCart->cart_id)
+            ->select(
+                'cart_items.item_id',
+                'cart_items.variant_id',
+                'cart_items.quantity',
+                'cart_items.price',
+                'product_variants.product_id',
+                'product_variants.attribute_values',
+                'product_variants.stock_quantity',
+                'products.name',
+                'product_images.image_url'
+            )
+            ->get();
 
-            if (!$variant || !$variant->product) {
-                continue;
-            }
-
-            $product = $variant->product;
-
-            $image = DB::table('product_images')
-                ->where('product_id', $product->product_id)
-                ->where('is_primary', 1)
-                ->value('image_url');
-
-            $cartKey = $this->makeCartKey($product->product_id, $variant->variant_id);
+        foreach ($items as $item) {
+            $cartKey = $this->makeCartKey($item->product_id, $item->variant_id);
 
             $cart[$cartKey] = [
-                'product_id' => $product->product_id,
-                'variant_id' => $variant->variant_id,
-                'name' => $product->name,
-                'variant_name' => $this->formatVariantName($variant->attribute_values),
+                'product_id' => $item->product_id,
+                'variant_id' => $item->variant_id,
+                'name' => $item->name,
+                'variant_name' => $this->formatVariantName($item->attribute_values),
                 'quantity' => (int) $item->quantity,
                 'price' => (float) $item->price,
-                'image' => $image ?? 'images/default-product.png',
+                'stock_quantity' => (int) $item->stock_quantity,
+                'image' => $item->image_url ?? 'images/default-product.png',
             ];
         }
 
@@ -111,10 +150,11 @@ class CartController extends Controller
         return $totalQuantity;
     }
 
-    private function syncCartSession()
+    public function syncCartSession()
     {
         if (auth()->check()) {
             $cart = $this->getDatabaseCartAsSessionFormat();
+
             session()->put('cart', $cart);
             $this->updateCartCountFromCartArray($cart);
 
@@ -127,14 +167,36 @@ class CartController extends Controller
         return $cart;
     }
 
-    private function getCartForCurrentUser()
+    private function getProductImage($productId)
     {
-        return $this->syncCartSession();
+        return DB::table('product_images')
+            ->where('product_id', $productId)
+            ->where('is_primary', 1)
+            ->value('image_url') ?? 'images/default-product.png';
     }
+
+    private function getDefaultVariant($productId, $variantId = null)
+    {
+        $query = DB::table('product_variants')
+            ->where('product_id', $productId)
+            ->where('is_active', 1);
+
+        if ($variantId) {
+            $query->where('variant_id', $variantId);
+        }
+
+        return $query->orderBy('variant_id', 'asc')->first();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | CART PAGE
+    |--------------------------------------------------------------------------
+    */
 
     public function index()
     {
-        $cart = $this->getCartForCurrentUser();
+        $cart = $this->syncCartSession();
 
         $selectedCartIds = session()->get('selected_cart_ids', []);
 
@@ -142,13 +204,19 @@ class CartController extends Controller
             return isset($cart[$id]);
         }));
 
+        // Nếu có sản phẩm nhưng chưa chọn sản phẩm nào thì tự chọn tất cả.
+        // Tránh lỗi đăng nhập lại có hàng nhưng subtotal = 0.
+        if (empty($selectedCartIds) && !empty($cart)) {
+            $selectedCartIds = array_keys($cart);
+        }
+
         session()->put('selected_cart_ids', $selectedCartIds);
 
         $subtotal = 0;
 
         foreach ($selectedCartIds as $id) {
             if (isset($cart[$id])) {
-                $subtotal += $cart[$id]['price'] * $cart[$id]['quantity'];
+                $subtotal += (float) $cart[$id]['price'] * (int) $cart[$id]['quantity'];
             }
         }
 
@@ -161,24 +229,27 @@ class CartController extends Controller
         $voucherId = session('applied_voucher');
 
         if ($voucherId && $subtotal > 0) {
-            $voucher = DB::table('vouchers')->where('voucher_id', $voucherId)->first();
+            $voucher = DB::table('vouchers')
+                ->where('voucher_id', $voucherId)
+                ->first();
+
             $now = now();
 
             $isValid = $voucher
-                && $voucher->is_active
+                && (int) $voucher->is_active === 1
                 && (!$voucher->end_at || $now->lte($voucher->end_at))
-                && (!($voucher->usage_limit !== null) || $voucher->used_count < $voucher->usage_limit)
+                && ($voucher->usage_limit === null || $voucher->used_count < $voucher->usage_limit)
                 && (!is_numeric($voucher->min_order_value) || $subtotal >= $voucher->min_order_value);
 
             if ($isValid) {
                 if ($voucher->type === 'percent') {
-                    $discount = $subtotal * ($voucher->value / 100);
+                    $discount = $subtotal * ((float) $voucher->value / 100);
 
                     if ($voucher->max_discount) {
-                        $discount = min($discount, $voucher->max_discount);
+                        $discount = min($discount, (float) $voucher->max_discount);
                     }
                 } else {
-                    $discount = min(max(0, $voucher->value), $subtotal);
+                    $discount = min(max(0, (float) $voucher->value), $subtotal);
                 }
 
                 $appliedVoucher = $voucher;
@@ -201,11 +272,17 @@ class CartController extends Controller
         ));
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | ADD TO CART
+    |--------------------------------------------------------------------------
+    */
+
     public function add(Request $request)
     {
         $request->validate([
-            'id' => 'required',
-            'quantity' => 'required|integer|min:1',
+            'id' => 'required|integer',
+            'quantity' => 'nullable|integer|min:1',
             'variant_id' => 'nullable|integer',
         ]);
 
@@ -214,56 +291,56 @@ class CartController extends Controller
             ->first();
 
         if (!$product) {
-            return redirect()->back()->with('error', 'Sản phẩm không tồn tại!');
+            return redirect()
+                ->back()
+                ->with('error', 'Sản phẩm không tồn tại!');
         }
 
-        $quantity = (int) $request->quantity;
+        $quantity = (int) $request->input('quantity', 1);
 
-        $variant = null;
+        $variant = $this->getDefaultVariant($product->product_id, $request->variant_id);
 
-        if ($request->filled('variant_id')) {
-            $variant = ProductVariant::where('variant_id', $request->variant_id)
-                ->where('product_id', $request->id)
-                ->where('is_active', 1)
-                ->first();
-        } else {
-            $variant = ProductVariant::where('product_id', $request->id)
-                ->where('is_active', 1)
-                ->orderBy('variant_id', 'asc')
-                ->first();
+        if (!$variant) {
+            return redirect()
+                ->back()
+                ->with('error', 'Sản phẩm này chưa có dữ liệu tồn kho nên chưa thể thêm vào giỏ hàng!');
         }
 
-        $image = DB::table('product_images')
-            ->where('product_id', $request->id)
-            ->where('is_primary', 1)
-            ->value('image_url');
+        $cartKey = $this->makeCartKey($product->product_id, $variant->variant_id);
+        $price = $variant->sale_price ?? $variant->price ?? $product->base_price;
+        $image = $this->getProductImage($product->product_id);
 
         /*
         |--------------------------------------------------------------------------
-        | USER ĐÃ ĐĂNG NHẬP: LƯU DATABASE + ĐỒNG BỘ SESSION
+        | USER ĐÃ ĐĂNG NHẬP: LƯU DATABASE
         |--------------------------------------------------------------------------
         */
         if (auth()->check()) {
-            if (!$variant) {
-                return redirect()
-                    ->back()
-                    ->with('error', 'Sản phẩm này chưa có biến thể nên chưa thể lưu vào giỏ hàng!');
-            }
-
-            $price = $variant->sale_price ?? $variant->price ?? $product->base_price;
-
             $userCart = $this->getUserCart();
 
-            $cartItem = CartItem::where('cart_id', $userCart->cart_id)
+            $existingItem = DB::table('cart_items')
+                ->where('cart_id', $userCart->cart_id)
                 ->where('variant_id', $variant->variant_id)
                 ->first();
 
-            if ($cartItem) {
-                $cartItem->quantity += $quantity;
-                $cartItem->price = $price;
-                $cartItem->save();
+            $currentQuantity = $existingItem ? (int) $existingItem->quantity : 0;
+            $newQuantity = $currentQuantity + $quantity;
+
+            if ($newQuantity > (int) $variant->stock_quantity) {
+                return redirect()
+                    ->back()
+                    ->with('error', 'Số lượng sản phẩm trong giỏ vượt quá tồn kho hiện có!');
+            }
+
+            if ($existingItem) {
+                DB::table('cart_items')
+                    ->where('item_id', $existingItem->item_id)
+                    ->update([
+                        'quantity' => $newQuantity,
+                        'price' => $price,
+                    ]);
             } else {
-                CartItem::create([
+                DB::table('cart_items')->insert([
                     'cart_id' => $userCart->cart_id,
                     'variant_id' => $variant->variant_id,
                     'quantity' => $quantity,
@@ -271,26 +348,18 @@ class CartController extends Controller
                 ]);
             }
 
-            $userCart->update([
-                'updated_at' => now(),
-            ]);
-
-            $cartKey = $this->makeCartKey($product->product_id, $variant->variant_id);
+            $cart = $this->syncCartSession();
 
             $selectedCartIds = session()->get('selected_cart_ids', []);
 
             if (!in_array($cartKey, $selectedCartIds)) {
                 $selectedCartIds[] = $cartKey;
+                session()->put('selected_cart_ids', $selectedCartIds);
             }
-
-            session()->put('selected_cart_ids', $selectedCartIds);
-
-            // Quan trọng: đồng bộ database cart sang session để navbar trang chủ đọc được
-            $this->syncCartSession();
 
             return redirect()
                 ->route('cart.index')
-                ->with('success', 'Đã thêm vào giỏ hàng!');
+                ->with('success', 'Đã thêm sản phẩm vào giỏ hàng!');
         }
 
         /*
@@ -300,85 +369,56 @@ class CartController extends Controller
         */
         $cart = session()->get('cart', []);
 
-        $cartKey = $this->makeCartKey($request->id, $variant->variant_id ?? null);
+        $currentQuantity = isset($cart[$cartKey])
+            ? (int) $cart[$cartKey]['quantity']
+            : 0;
 
-        $price = $variant
-            ? ($variant->sale_price ?? $variant->price)
-            : $product->base_price;
+        $newQuantity = $currentQuantity + $quantity;
+
+        if ($newQuantity > (int) $variant->stock_quantity) {
+            return redirect()
+                ->back()
+                ->with('error', 'Số lượng sản phẩm trong giỏ vượt quá tồn kho hiện có!');
+        }
 
         if (isset($cart[$cartKey])) {
-            $cart[$cartKey]['quantity'] += $quantity;
+            $cart[$cartKey]['quantity'] = $newQuantity;
+            $cart[$cartKey]['price'] = $price;
+            $cart[$cartKey]['stock_quantity'] = (int) $variant->stock_quantity;
         } else {
             $cart[$cartKey] = [
                 'product_id' => $product->product_id,
-                'variant_id' => $variant->variant_id ?? null,
+                'variant_id' => $variant->variant_id,
                 'name' => $product->name,
+                'variant_name' => $this->formatVariantName($variant->attribute_values),
                 'quantity' => $quantity,
-                'price' => $price,
-                'image' => $image ?? 'images/default-product.png',
+                'price' => (float) $price,
+                'stock_quantity' => (int) $variant->stock_quantity,
+                'image' => $image,
             ];
-
-            if ($variant) {
-                $cart[$cartKey]['variant_name'] = $this->formatVariantName($variant->attribute_values);
-            }
         }
 
         session()->put('cart', $cart);
-        $this->updateCartCountFromCartArray($cart);
 
         $selectedCartIds = session()->get('selected_cart_ids', []);
 
         if (!in_array($cartKey, $selectedCartIds)) {
             $selectedCartIds[] = $cartKey;
+            session()->put('selected_cart_ids', $selectedCartIds);
         }
 
-        session()->put('selected_cart_ids', $selectedCartIds);
+        $this->updateCartCountFromCartArray($cart);
 
         return redirect()
             ->route('cart.index')
-            ->with('success', 'Đã thêm vào giỏ hàng!');
+            ->with('success', 'Đã thêm sản phẩm vào giỏ hàng!');
     }
 
-    public function toggleSelect(Request $request)
-    {
-        $request->validate([
-            'id' => 'required',
-        ]);
-
-        $cart = $this->getCartForCurrentUser();
-        $selectedCartIds = session()->get('selected_cart_ids', []);
-
-        if (!isset($cart[$request->id])) {
-            return redirect()
-                ->route('cart.index')
-                ->with('error', 'Sản phẩm không tồn tại trong giỏ hàng!');
-        }
-
-        if (in_array($request->id, $selectedCartIds)) {
-            $selectedCartIds = array_values(array_filter($selectedCartIds, function ($id) use ($request) {
-                return $id != $request->id;
-            }));
-        } else {
-            $selectedCartIds[] = $request->id;
-        }
-
-        session()->put('selected_cart_ids', $selectedCartIds);
-
-        return redirect()->route('cart.index');
-    }
-
-    public function select(Request $request)
-    {
-        $cart = $this->getCartForCurrentUser();
-
-        if ($request->input('action') === 'clear') {
-            session()->put('selected_cart_ids', []);
-        } else {
-            session()->put('selected_cart_ids', array_keys($cart));
-        }
-
-        return redirect()->route('cart.index');
-    }
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE QUANTITY
+    |--------------------------------------------------------------------------
+    */
 
     public function update(Request $request)
     {
@@ -387,66 +427,64 @@ class CartController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
 
+        $cartKey = $request->id;
+        $quantity = (int) $request->quantity;
+        $variantId = $this->getVariantIdFromCartKey($cartKey);
+
+        if (!$variantId) {
+            return redirect()
+                ->route('cart.index')
+                ->with('error', 'Dữ liệu giỏ hàng không hợp lệ!');
+        }
+
+        $variant = DB::table('product_variants')
+            ->where('variant_id', $variantId)
+            ->first();
+
+        if (!$variant) {
+            return redirect()
+                ->route('cart.index')
+                ->with('error', 'Sản phẩm trong giỏ không tồn tại!');
+        }
+
+        if ($quantity > (int) $variant->stock_quantity) {
+            return redirect()
+                ->route('cart.index')
+                ->with('error', 'Số lượng cập nhật vượt quá tồn kho hiện có!');
+        }
+
         if (auth()->check()) {
-            $variantId = $this->getVariantIdFromCartKey($request->id);
+            $userCart = $this->getUserCart();
 
-            if (!$variantId) {
-                return redirect()
-                    ->route('cart.index')
-                    ->with('error', 'Không xác định được biến thể sản phẩm!');
-            }
-
-            $userCart = Cart::where('user_id', auth()->id())->first();
-
-            if (!$userCart) {
-                return redirect()
-                    ->route('cart.index')
-                    ->with('error', 'Giỏ hàng không tồn tại!');
-            }
-
-            $cartItem = CartItem::where('cart_id', $userCart->cart_id)
+            DB::table('cart_items')
+                ->where('cart_id', $userCart->cart_id)
                 ->where('variant_id', $variantId)
-                ->first();
+                ->update([
+                    'quantity' => $quantity,
+                ]);
 
-            if (!$cartItem) {
-                return redirect()
-                    ->route('cart.index')
-                    ->with('error', 'Sản phẩm không tồn tại trong giỏ hàng!');
-            }
-
-            $cartItem->update([
-                'quantity' => (int) $request->quantity,
-            ]);
-
-            $userCart->update([
-                'updated_at' => now(),
-            ]);
-
-            // Đồng bộ lại session để navbar trang chủ cũng hiện đúng số
             $this->syncCartSession();
+        } else {
+            $cart = session()->get('cart', []);
 
-            return redirect()
-                ->route('cart.index')
-                ->with('success', 'Giỏ hàng đã được cập nhật!');
+            if (isset($cart[$cartKey])) {
+                $cart[$cartKey]['quantity'] = $quantity;
+                $cart[$cartKey]['stock_quantity'] = (int) $variant->stock_quantity;
+                session()->put('cart', $cart);
+                $this->updateCartCountFromCartArray($cart);
+            }
         }
-
-        $cart = session()->get('cart', []);
-
-        if (!isset($cart[$request->id])) {
-            return redirect()
-                ->route('cart.index')
-                ->with('error', 'Sản phẩm không tồn tại trong giỏ hàng!');
-        }
-
-        $cart[$request->id]['quantity'] = (int) $request->quantity;
-
-        session()->put('cart', $cart);
-        $this->updateCartCountFromCartArray($cart);
 
         return redirect()
             ->route('cart.index')
-            ->with('success', 'Giỏ hàng đã được cập nhật!');
+            ->with('success', 'Đã cập nhật số lượng sản phẩm!');
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | REMOVE ITEM
+    |--------------------------------------------------------------------------
+    */
 
     public function remove(Request $request)
     {
@@ -454,116 +492,178 @@ class CartController extends Controller
             'id' => 'required',
         ]);
 
-        if (auth()->check()) {
-            $variantId = $this->getVariantIdFromCartKey($request->id);
+        $cartKey = $request->id;
+        $variantId = $this->getVariantIdFromCartKey($cartKey);
 
-            if ($variantId) {
-                $userCart = Cart::where('user_id', auth()->id())->first();
+        if (auth()->check() && $variantId) {
+            $userCart = $this->getUserCart();
 
-                if ($userCart) {
-                    CartItem::where('cart_id', $userCart->cart_id)
-                        ->where('variant_id', $variantId)
-                        ->delete();
+            DB::table('cart_items')
+                ->where('cart_id', $userCart->cart_id)
+                ->where('variant_id', $variantId)
+                ->delete();
 
-                    $userCart->update([
-                        'updated_at' => now(),
-                    ]);
-                }
-            }
-
-            // Đồng bộ lại session sau khi xóa
-            $this->syncCartSession();
+            $cart = $this->syncCartSession();
         } else {
             $cart = session()->get('cart', []);
 
-            if (isset($cart[$request->id])) {
-                unset($cart[$request->id]);
-                session()->put('cart', $cart);
-                $this->updateCartCountFromCartArray($cart);
+            if (isset($cart[$cartKey])) {
+                unset($cart[$cartKey]);
             }
+
+            session()->put('cart', $cart);
+            $this->updateCartCountFromCartArray($cart);
         }
 
         $selectedCartIds = session()->get('selected_cart_ids', []);
-
-        $selectedCartIds = array_values(array_filter($selectedCartIds, function ($id) use ($request) {
-            return $id != $request->id;
+        $selectedCartIds = array_values(array_filter($selectedCartIds, function ($id) use ($cartKey) {
+            return $id !== $cartKey;
         }));
 
         session()->put('selected_cart_ids', $selectedCartIds);
 
+        if (empty($cart)) {
+            session()->forget('applied_voucher');
+        }
+
         return redirect()
             ->route('cart.index')
-            ->with('success', 'Sản phẩm đã được xoá khỏi giỏ hàng!');
+            ->with('success', 'Đã xóa sản phẩm khỏi giỏ hàng!');
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | SELECT CART ITEMS
+    |--------------------------------------------------------------------------
+    */
+
+    public function select(Request $request)
+    {
+        $cart = $this->syncCartSession();
+
+        $selectedCartIds = $request->input('selected_cart_ids', []);
+
+        $selectedCartIds = array_values(array_filter($selectedCartIds, function ($id) use ($cart) {
+            return isset($cart[$id]);
+        }));
+
+        session()->put('selected_cart_ids', $selectedCartIds);
+
+        return redirect()->route('cart.index');
+    }
+
+    public function toggleSelect(Request $request)
+    {
+        $cart = $this->syncCartSession();
+
+        $cartKey = $request->input('id');
+
+        if (!$cartKey || !isset($cart[$cartKey])) {
+            return redirect()
+                ->route('cart.index')
+                ->with('error', 'Sản phẩm trong giỏ không tồn tại!');
+        }
+
+        $selectedCartIds = session()->get('selected_cart_ids', []);
+
+        if (in_array($cartKey, $selectedCartIds)) {
+            $selectedCartIds = array_values(array_filter($selectedCartIds, function ($id) use ($cartKey) {
+                return $id !== $cartKey;
+            }));
+        } else {
+            $selectedCartIds[] = $cartKey;
+        }
+
+        session()->put('selected_cart_ids', $selectedCartIds);
+
+        return redirect()->route('cart.index');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | VOUCHER
+    |--------------------------------------------------------------------------
+    */
 
     public function applyVoucher(Request $request)
     {
         $request->validate([
-            'voucher_code' => 'required|string',
+            'voucher_code' => 'required|string|max:50',
         ]);
 
-        $code = strtoupper(trim($request->voucher_code));
-
-        $voucher = DB::table('vouchers')->where('code', $code)->first();
-
-        if (!$voucher) {
-            return redirect()->route('cart.index')
-                ->with('voucher_error', 'Mã giảm giá không tồn tại.');
-        }
-
-        if (!$voucher->is_active) {
-            return redirect()->route('cart.index')
-                ->with('voucher_error', 'Mã giảm giá đã bị vô hiệu hoá.');
-        }
-
-        $now = now();
-
-        if ($voucher->start_at && $now->lt($voucher->start_at)) {
-            return redirect()->route('cart.index')
-                ->with('voucher_error', 'Mã giảm giá chưa đến thời gian sử dụng.');
-        }
-
-        if ($voucher->end_at && $now->gt($voucher->end_at)) {
-            return redirect()->route('cart.index')
-                ->with('voucher_error', 'Mã giảm giá đã hết hạn.');
-        }
-
-        if ($voucher->usage_limit !== null && $voucher->used_count >= $voucher->usage_limit) {
-            return redirect()->route('cart.index')
-                ->with('voucher_error', 'Mã giảm giá đã được sử dụng hết lượt.');
-        }
-
-        $cart = $this->getCartForCurrentUser();
+        $cart = $this->syncCartSession();
         $selectedCartIds = session()->get('selected_cart_ids', []);
+
         $subtotal = 0;
 
         foreach ($selectedCartIds as $id) {
             if (isset($cart[$id])) {
-                $subtotal += $cart[$id]['price'] * $cart[$id]['quantity'];
+                $subtotal += (float) $cart[$id]['price'] * (int) $cart[$id]['quantity'];
             }
         }
 
         if ($subtotal <= 0) {
-            return redirect()->route('cart.index')
-                ->with('voucher_error', 'Vui lòng chọn ít nhất một sản phẩm trước khi áp dụng mã giảm giá.');
+            return redirect()
+                ->route('cart.index')
+                ->with('error', 'Vui lòng chọn sản phẩm trước khi áp dụng mã giảm giá!');
+        }
+
+        $voucher = DB::table('vouchers')
+            ->where('code', strtoupper($request->voucher_code))
+            ->orWhere('code', $request->voucher_code)
+            ->first();
+
+        if (!$voucher) {
+            return redirect()
+                ->route('cart.index')
+                ->with('error', 'Mã giảm giá không tồn tại!');
+        }
+
+        $now = now();
+
+        if (!(int) $voucher->is_active) {
+            return redirect()
+                ->route('cart.index')
+                ->with('error', 'Mã giảm giá chưa được kích hoạt!');
+        }
+
+        if ($voucher->start_at && $now->lt($voucher->start_at)) {
+            return redirect()
+                ->route('cart.index')
+                ->with('error', 'Mã giảm giá chưa đến thời gian sử dụng!');
+        }
+
+        if ($voucher->end_at && $now->gt($voucher->end_at)) {
+            return redirect()
+                ->route('cart.index')
+                ->with('error', 'Mã giảm giá đã hết hạn!');
+        }
+
+        if ($voucher->usage_limit !== null && $voucher->used_count >= $voucher->usage_limit) {
+            return redirect()
+                ->route('cart.index')
+                ->with('error', 'Mã giảm giá đã hết lượt sử dụng!');
         }
 
         if (is_numeric($voucher->min_order_value) && $subtotal < $voucher->min_order_value) {
-            return redirect()->route('cart.index')
-                ->with('voucher_error', 'Đơn hàng chưa đạt giá trị tối thiểu ' . number_format($voucher->min_order_value, 0, ',', '.') . '₫ để dùng mã này.');
+            return redirect()
+                ->route('cart.index')
+                ->with('error', 'Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã giảm giá!');
         }
 
         session()->put('applied_voucher', $voucher->voucher_id);
 
-        return redirect()->route('cart.index')
-            ->with('voucher_success', 'Áp dụng mã "' . $code . '" thành công!');
+        return redirect()
+            ->route('cart.index')
+            ->with('success', 'Áp dụng mã giảm giá thành công!');
     }
 
     public function removeVoucher()
     {
         session()->forget('applied_voucher');
 
-        return redirect()->route('cart.index')
-            ->with('voucher_success', 'Đã xoá mã giảm giá.');
+        return redirect()
+            ->route('cart.index')
+            ->with('success', 'Đã xóa mã giảm giá!');
     }
 }

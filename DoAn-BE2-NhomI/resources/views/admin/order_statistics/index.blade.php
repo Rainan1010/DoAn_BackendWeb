@@ -135,11 +135,11 @@ $paymentMethodMap = [
                 THÊM ĐƠN HÀNG MỚI
             </a>
 
-            <button type="button"
+            <!-- <button type="button"
                 class="flex items-center gap-2 px-6 py-3 bg-gradient-to-tr from-[#001e40] to-[#003366] text-white rounded-lg text-sm font-bold shadow-lg shadow-[#001e40]/20 hover:shadow-xl transition-all active:scale-95">
                 <i data-lucide="download" class="w-5 h-5"></i>
                 XUẤT FILE EXCEL
-            </button>
+            </button> -->
         </div>
     </div>
 

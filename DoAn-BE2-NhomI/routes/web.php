@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
 
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CrudUserController;
@@ -53,10 +52,14 @@ Route::get('/promotions', [ProductController::class, 'promotions'])
 */
 
 Route::middleware('guest')->group(function () {
-    Route::get('/login', [CrudUserController::class, 'showLogin'])->name('login');
+    Route::get('/login', [CrudUserController::class, 'showLogin'])
+        ->name('login');
+
     Route::post('/login', [CrudUserController::class, 'login']);
 
-    Route::get('/register', [CrudUserController::class, 'showRegister'])->name('register');
+    Route::get('/register', [CrudUserController::class, 'showRegister'])
+        ->name('register');
+
     Route::post('/register', [CrudUserController::class, 'register']);
 
     Route::get('auth/google', [SocialAuthController::class, 'redirectToGoogle'])
@@ -81,10 +84,14 @@ Route::middleware('guest')->group(function () {
     });
 });
 
-Route::post('/logout', function () {
-    Auth::logout();
-    return redirect('/');
-})->name('logout');
+/*
+|--------------------------------------------------------------------------
+| LOGOUT
+|--------------------------------------------------------------------------
+*/
+
+Route::post('/logout', [CrudUserController::class, 'logout'])
+    ->name('logout');
 
 /*
 |--------------------------------------------------------------------------
@@ -272,6 +279,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
         /*
         |--------------------------------------------------------------------------
+        | LOGIN HISTORY
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/login-history', [CrudUserController::class, 'loginHistory'])
+            ->name('login.history');
+
+        /*
+        |--------------------------------------------------------------------------
         | INVENTORY LOGS / NHẬP KHO MỚI
         |--------------------------------------------------------------------------
         | Dùng bảng chính: inventory_logs
@@ -374,7 +390,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders', [OrderController::class, 'history'])
         ->name('orders.history');
 
-    // In hóa đơn PDF - phải đặt trước /orders/{id}
+    /*
+     * In hóa đơn PDF - phải đặt trước /orders/{id}
+     */
     Route::get('/orders/{id}/invoice', [OrderController::class, 'invoicePdf'])
         ->name('orders.invoice');
 
@@ -445,6 +463,12 @@ Route::middleware('auth')->group(function () {
 */
 
 Route::get('/api/compare-product/{id}', [App\Http\Controllers\CompareController::class, 'getCompareProduct']);
+
+// Compare routes (session-based)
+Route::post('/compare/add', [App\Http\Controllers\CompareController::class, 'add'])->name('compare.add');
+Route::post('/compare/remove', [App\Http\Controllers\CompareController::class, 'remove'])->name('compare.remove');
+Route::post('/compare/clear', [App\Http\Controllers\CompareController::class, 'clear'])->name('compare.clear');
+Route::get('/compare', [App\Http\Controllers\CompareController::class, 'index'])->name('compare.index');
 
 Route::get('/api/prices/sync', [App\Http\Controllers\Api\ProductPriceController::class, 'sync'])
     ->name('api.prices.sync');

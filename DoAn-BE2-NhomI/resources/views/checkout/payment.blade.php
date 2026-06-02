@@ -291,16 +291,17 @@
 
                             {{-- MOMO --}}
                             <label
-                                class="payment-card rounded-[28px] p-6 flex justify-between items-center cursor-pointer border-2 border-transparent transition-all duration-300"
-                                id="momo_card">
+    class="payment-card rounded-[28px] p-6 flex justify-between items-center border-2 border-transparent transition-all duration-300
+    {{ $total > 50000000 ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer' }}"
+    id="momo_card">
 
                                 <div class="flex items-center gap-5">
 
                                     <div class="w-[60px] h-[60px]
-                        rounded-2xl
-                        bg-[#ae2070]/10
-                        flex items-center justify-center
-                        text-3xl">
+                            rounded-2xl
+                            bg-[#ae2070]/10
+                            flex items-center justify-center
+                            text-3xl">
 
                                         💗
 
@@ -315,13 +316,25 @@
                                         <p class="text-sm text-gray-500 mt-1">
                                             Ví điện tử MoMo Sandbox
                                         </p>
+                                        @if($total > 50000000)
 
+<p class="text-red-500 font-semibold text-sm mt-2">
+    ⚠️ MoMo chỉ hỗ trợ thanh toán tối đa 50.000.000đ.
+    Vui lòng chọn VNPAY.
+</p>
+
+@endif
                                     </div>
 
                                 </div>
 
-                                <input type="radio" name="payment_method" value="momo" class="w-5 h-5 accent-[#ae2070]"
-                                    onchange="changePayment()">
+                               <input type="radio"
+       name="payment_method"
+       value="momo"
+       class="w-5 h-5 accent-[#ae2070]"
+       onchange="changePayment()"
+       {{ $total > 50000000 ? 'disabled' : '' }}>
+                               
 
                             </label>
 
@@ -542,7 +555,7 @@
     <script>
 
         function changePayment() {
-
+          
             let cod =
                 document.querySelector(
                     'input[value="cod"]'
@@ -589,8 +602,20 @@
                 momoCard.classList.add(
                     'active'
                 );
-            }
 
+                if (orderTotal > 50000000) {
+
+                    momoWarning.classList.remove(
+                        'hidden'
+                    );
+
+                } else {
+
+                    momoWarning.classList.add(
+                        'hidden'
+                    );
+                }
+            }
             if (vnpay.checked) {
 
                 vnpayCard.classList.add(
@@ -598,9 +623,29 @@
                 );
             }
         }
+        document.querySelector('form')
+            .addEventListener('submit', function (e) {
 
+                let momo =
+                    document.querySelector(
+                        'input[value="momo"]'
+                    );
+
+                if (
+                    momo.checked &&
+                    orderTotal > 50000000
+                ) {
+
+                    e.preventDefault();
+
+                    alert(
+                        'MoMo chỉ hỗ trợ thanh toán tối đa 50.000.000đ. Vui lòng chọn VNPAY.'
+                    );
+                }
+
+            });
         window.onload = changePayment;
-
+        const orderTotal = {{ $total }};
     </script>
 
 @endsection
