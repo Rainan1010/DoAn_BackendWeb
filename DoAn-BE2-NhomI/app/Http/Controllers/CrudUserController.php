@@ -24,14 +24,18 @@ class CrudUserController extends Controller
 
     public function login(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ], [
-            'email.required' => 'Vui lòng nhập email.',
-            'email.email' => 'Định dạng email không hợp lệ.',
-            'password.required' => 'Vui lòng nhập mật khẩu.',
-        ]);
+       $request->validate([
+    'email' => 'required|email|max:100',
+    'password' => 'required|min:6|max:50',
+], [
+    'email.required' => 'Vui lòng nhập email.',
+    'email.email' => 'Định dạng email không hợp lệ.',
+    'email.max' => 'Email tối đa 100 ký tự.',
+
+    'password.required' => 'Vui lòng nhập mật khẩu.',
+    'password.min' => 'Mật khẩu tối thiểu 6 ký tự.',
+    'password.max' => 'Mật khẩu tối đa 50 ký tự.',
+]);
 
         $credentials = $request->only('email', 'password');
         $remember = $request->has('remember');
