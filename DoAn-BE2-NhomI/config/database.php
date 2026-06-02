@@ -17,6 +17,7 @@ return [
     */
 
     'default' => env('DB_CONNECTION', 'sqlite'),
+    'dump_path' => env('DB_DUMP_PATH', ''),
 
     /*
     |--------------------------------------------------------------------------

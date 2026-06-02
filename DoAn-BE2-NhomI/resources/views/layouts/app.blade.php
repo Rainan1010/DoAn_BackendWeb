@@ -1,19 +1,24 @@
+@php
+use Illuminate\Support\Facades\DB;
+@endphp
+
 <!DOCTYPE html>
 <html class="light" lang="vi">
 
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta name="price-sync-url" content="{{ url('/api/prices/sync') }}" />
     <title>B-Tris Precision Tech | Thiết Bị Công Nghệ Cao Cấp</title>
 
     {{-- Scripts & Fonts --}}
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    {{-- Lucide Icons (Dành cho trang Admin của Bảo) --}}
+
+    {{-- Lucide Icons --}}
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <script id="tailwind-config">
@@ -21,20 +26,20 @@
             darkMode: "class",
             theme: {
                 extend: {
-                    "colors": {
+                    colors: {
                         "surface-container-low": "#f2f4f6",
                         "surface": "#f7f9fb",
                         "error": "#ba1a1a",
-                        "brand-blue": "#003366"
+                        "brand-blue": "#003366",
+                        "primary": "#003366",
+                        "primary-container": "#004488"
                     },
-                    "borderRadius": {
-                        "full": "0.75rem"
+                    borderRadius: {
+                        full: "0.75rem"
                     },
-                    "fontFamily": {
-                        "body": ["Inter"]
-                    },
-                    "primary": "#003366",
-                    "primary-container": "#004488"
+                    fontFamily: {
+                        body: ["Inter"]
+                    }
                 },
             }
         }
@@ -54,7 +59,6 @@
             scroll-behavior: smooth;
         }
 
-        /* Hiệu ứng ẩn hiện mượt cho Flash Message */
         .flash-message {
             transition: all 0.5s ease;
         }
@@ -66,43 +70,139 @@
     {{-- NAVIGATION --}}
     <nav class="fixed top-0 w-full z-50 glass-nav shadow-lg tracking-tight">
         <div class="flex justify-between items-center px-6 h-20 max-w-full mx-auto">
+
+            {{-- LOGO + MENU --}}
             <div class="flex items-center gap-8">
                 <a class="flex items-center" href="{{ route('home') }}">
                     <img src="{{ asset('images/logo/logo.jpg') }}" alt="B-Tris Logo" class="h-12 w-auto object-contain" />
                 </a>
-                <div class="hidden md:flex gap-8">
-                    <a class="text-white hover:text-slate-300 transition-colors font-semibold" href="#dien-thoai">Điện thoại</a>
-                    <a class="text-white hover:text-slate-300 transition-colors font-semibold" href="#laptop">Laptop</a>
-                    <a class="text-white hover:text-slate-300 transition-colors font-semibold" href="#khuyen-mai">Khuyến mãi</a>
+                <div class="hidden md:flex gap-8 items-center">
+                    @php
+                        $dienThoai = isset($categories) ? $categories->firstWhere('slug', 'dien-thoai') : null;
+                        $laptop = isset($categories) ? $categories->firstWhere('slug', 'laptop') : null;
+                        $otherCategories = isset($categories) ? $categories->filter(function($cat) {
+                            return !in_array($cat->slug, ['dien-thoai', 'laptop']);
+                        }) : collect();
+                    @endphp
+
+                    {{-- 1. Điện thoại --}}
+                    @if($dienThoai)
+                        <a class="text-white hover:text-slate-300 transition-colors font-semibold {{ request()->is('category/' . $dienThoai->slug) ? 'underline decoration-2 underline-offset-8 font-bold text-slate-200' : '' }}" 
+                           href="{{ route('category.show', $dienThoai->slug) }}">
+                            {{ $dienThoai->name }}
+                        </a>
+                    @endif
+
+                    {{-- 2. Laptop --}}
+                    @if($laptop)
+                        <a class="text-white hover:text-slate-300 transition-colors font-semibold {{ request()->is('category/' . $laptop->slug) ? 'underline decoration-2 underline-offset-8 font-bold text-slate-200' : '' }}" 
+                           href="{{ route('category.show', $laptop->slug) }}">
+                            {{ $laptop->name }}
+                        </a>
+                    @endif
+
+                    {{-- 3. Khuyến mãi --}}
+                    <a class="text-white hover:text-slate-300 transition-colors font-semibold {{ request()->is('promotions') ? 'underline decoration-2 underline-offset-8 font-bold text-slate-200' : '' }}" 
+                       href="{{ route('promotions.index') }}">
+                        Khuyến mãi
+                    </a>
+
+                    {{-- 4. Các sản phẩm khác (Dropdown) --}}
+                    @if($otherCategories->count() > 0)
+                        <div class="relative group py-2">
+                            <button class="flex items-center gap-0.5 text-white hover:text-slate-300 transition-colors font-semibold outline-none">
+                                Các sản phẩm khác
+                                <span class="material-symbols-outlined text-lg transition-transform group-hover:rotate-180 duration-300">keyboard_arrow_down</span>
+                            </button>
+
+                            {{-- Dropdown Menu --}}
+                            <div class="absolute left-0 mt-2 w-48 bg-white text-[#0A2540] rounded-xl shadow-2xl p-2 font-semibold text-sm opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[100] border border-gray-100 transform origin-top scale-95 group-hover:scale-100">
+                                @foreach($otherCategories as $cat)
+                                    <a href="{{ route('category.show', $cat->slug) }}" 
+                                       class="block px-4 py-2.5 hover:bg-slate-50 hover:text-brand-blue rounded-lg transition-all {{ request()->is('category/' . $cat->slug) ? 'bg-slate-50 text-brand-blue font-bold' : '' }}">
+                                        {{ $cat->name }}
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
 
             {{-- SEARCH BOX --}}
             <div class="flex items-center gap-6 flex-1 max-w-xl mx-12">
                 <div class="relative w-full" id="search-container">
-                    <input id="search-input" class="w-full bg-white/20 border-none rounded-full py-2.5 px-6 text-sm text-white placeholder-slate-200 focus:ring-2 focus:ring-white/50 transition-all" placeholder="Tìm kiếm siêu phẩm..." type="text" />
-                    <span class="material-symbols-outlined absolute right-4 top-2.5 text-white/90">search</span>
+                    <input
+                        id="search-input"
+                        class="w-full bg-white/20 border-none rounded-full py-2.5 px-6 text-sm text-white placeholder-slate-200 focus:ring-2 focus:ring-white/50 transition-all"
+                        placeholder="Tìm kiếm siêu phẩm..."
+                        type="text" />
+
+                    <span class="material-symbols-outlined absolute right-4 top-2.5 text-white/90">
+                        search
+                    </span>
+
                     <div id="search-results" class="absolute w-full bg-white mt-2 rounded-xl shadow-2xl overflow-hidden hidden z-[100]"></div>
                 </div>
             </div>
 
+            {{-- RIGHT ACTIONS --}}
             <div class="flex items-center gap-6 text-white">
-                {{-- GIỎ HÀNG (DYNAMC) --}}
-                <a href="{{ route('cart.index') }}" class="hover:opacity-80 transition-all active:scale-95 relative group">
-                    <span class="material-symbols-outlined text-3xl">shopping_cart</span>
 
-                    @php
-                    $totalQuantity = collect(session('cart', []))->sum('quantity');
-                    @endphp
+                {{-- GIỎ HÀNG --}}
+                @php
+                $totalQuantity = 0;
+
+                /*
+                Nếu user đã đăng nhập:
+                Đếm trực tiếp từ database để trang chủ, trang chi tiết,
+                trang giỏ hàng đều hiện đúng số lượng.
+                */
+                if (auth()->check()) {
+                $totalQuantity = (int) DB::table('carts')
+                ->join('cart_items', 'carts.cart_id', '=', 'cart_items.cart_id')
+                ->where('carts.user_id', auth()->id())
+                ->sum('cart_items.quantity');
+
+                session()->put('cart_count', $totalQuantity);
+                } else {
+                /*
+                Nếu chưa đăng nhập:
+                Đọc từ session('cart').
+                */
+                $cartBadgeItems = session('cart', []);
+
+                if ($cartBadgeItems instanceof \Illuminate\Support\Collection) {
+                $cartBadgeItems = $cartBadgeItems->toArray();
+                }
+
+                if (is_array($cartBadgeItems)) {
+                foreach ($cartBadgeItems as $item) {
+                if (is_array($item)) {
+                $totalQuantity += (int) ($item['quantity'] ?? $item['qty'] ?? 1);
+                } elseif (is_object($item)) {
+                $totalQuantity += (int) ($item->quantity ?? $item->qty ?? 1);
+                }
+                }
+                }
+
+                session()->put('cart_count', $totalQuantity);
+                }
+                @endphp
+
+                <a href="{{ route('cart.index') }}" class="hover:opacity-80 transition-all active:scale-95 relative group inline-flex items-center justify-center">
+                    <span class="material-symbols-outlined text-3xl">
+                        shopping_cart
+                    </span>
 
                     @if($totalQuantity > 0)
-                    <span class="absolute -top-1 -right-2 bg-red-600 text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold border-2 border-[#003366]">
-                        {{ $totalQuantity }}
+                    <span class="absolute -top-2 -right-3 min-w-[22px] h-[22px] px-1 bg-red-600 text-white text-[11px] rounded-full flex items-center justify-center font-black border-2 border-[#003366] leading-none z-[999]">
+                        {{ $totalQuantity > 99 ? '99+' : $totalQuantity }}
                     </span>
                     @endif
 
                     {{-- Tooltip Header --}}
-                    <div class="absolute top-full mt-3 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-white text-brand-blue text-[10px] font-black rounded-lg opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-300 shadow-2xl z-[100] border border-gray-100 uppercase">
+                    <div class="absolute top-full mt-3 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-white text-brand-blue text-[10px] font-black rounded-lg opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-300 shadow-2xl z-[100] border border-gray-100 uppercase whitespace-nowrap">
                         Xem giỏ hàng
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-white"></div>
                     </div>
@@ -117,21 +217,33 @@
                         @else
                         <span class="material-symbols-outlined text-2xl">account_circle</span>
                         @endif
-                        <span class="font-bold text-sm">{{ Auth::user()->full_name }}</span>
+
+                        <span class="font-bold text-sm">
+                            {{ Auth::user()->full_name }}
+                        </span>
                     </div>
 
                     <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white text-[#0A2540] rounded-xl shadow-2xl p-2 font-bold text-sm">
-                        <a href="{{ route('profile') }}" class="block px-4 py-2 hover:bg-gray-100 rounded-lg">Hồ sơ cá nhân</a>
-                        <a href="#" class="block px-4 py-2 hover:bg-gray-100 rounded-lg border-b border-gray-50 mb-1">Đơn mua của tôi</a>
+                        <a href="{{ route('profile') }}" class="block px-4 py-2 hover:bg-gray-100 rounded-lg">
+                            Hồ sơ cá nhân
+                        </a>
+
+                        <a href="{{ route('orders.history') }}" class="block px-4 py-2 hover:bg-gray-100 rounded-lg border-b border-gray-50 mb-1">
+                            Đơn mua của tôi
+                        </a>
+
                         <form action="{{ route('logout') }}" method="POST">
                             @csrf
-                            <button class="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 rounded-lg">Đăng xuất</button>
+                            <button class="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 rounded-lg">
+                                Đăng xuất
+                            </button>
                         </form>
                     </div>
                 </div>
                 @else
                 <a href="{{ route('login') }}" class="flex items-center gap-2 hover:text-slate-300 font-bold">
-                    <span class="material-symbols-outlined">login</span> Đăng nhập
+                    <span class="material-symbols-outlined">login</span>
+                    Đăng nhập
                 </a>
                 @endauth
             </div>
@@ -146,14 +258,18 @@
             @if(session('success'))
             <div class="flash-message bg-emerald-100 border-l-4 border-emerald-500 text-emerald-700 p-4 rounded-lg shadow-sm mb-6 flex justify-between items-center" role="alert">
                 <p class="font-bold">{{ session('success') }}</p>
-                <button onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700">✕</button>
+                <button onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700">
+                    ✕
+                </button>
             </div>
             @endif
 
             @if(session('error'))
             <div class="flash-message bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-sm mb-6 flex justify-between items-center" role="alert">
                 <p class="font-bold">{{ session('error') }}</p>
-                <button onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700">✕</button>
+                <button onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700">
+                    ✕
+                </button>
             </div>
             @endif
         </div>
@@ -165,42 +281,60 @@
     <footer class="bg-brand-blue text-white pt-16 pb-8 px-6 mt-20">
         <div class="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
             <div class="space-y-6">
-                <h2 class="text-2xl font-black tracking-tighter">B-TRIS</h2>
-                <p class="text-slate-300 text-sm leading-relaxed">Hệ sinh thái kỹ thuật chính xác B-Tris. Tinh hoa công nghệ trong tầm tay bạn.</p>
+                <h2 class="text-2xl font-black tracking-tighter">
+                    B-TRIS
+                </h2>
+
+                <p class="text-slate-300 text-sm leading-relaxed">
+                    Hệ sinh thái kỹ thuật chính xác B-Tris. Tinh hoa công nghệ trong tầm tay bạn.
+                </p>
             </div>
-            {{-- Thêm các cột khác của Bảo ở đây --}}
+
+            {{-- Thêm các cột khác ở đây --}}
         </div>
+
         <div class="max-w-[1600px] mx-auto pt-8 border-t border-white/10 text-center">
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">© 2026 B-TRIS NHÓM I. DESIGNED FOR EXCELLENCE.</p>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                © 2026 B-TRIS NHÓM I. DESIGNED FOR EXCELLENCE.
+            </p>
         </div>
     </footer>
 
     {{-- SCRIPTS --}}
     <script src="{{ asset('js/search.js') }}"></script>
-    <script>
-        // Init Lucide
-        lucide.createIcons();
+    <script src="{{ asset('js/price-realtime.js') }}" defer></script>
 
-        // Dropdown User
+    <script>
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
         function toggleDropdown() {
-            document.getElementById('dropdownMenu').classList.toggle('hidden');
+            const dropdown = document.getElementById('dropdownMenu');
+
+            if (dropdown) {
+                dropdown.classList.toggle('hidden');
+            }
         }
 
         document.addEventListener('click', function(e) {
             const dropdown = document.getElementById('dropdownMenu');
+
             if (dropdown && !e.target.closest('.group') && !e.target.closest('#dropdownMenu')) {
                 dropdown.classList.add('hidden');
             }
         });
 
-        // Tự động ẩn Flash Message sau 5 giây
         setTimeout(() => {
             document.querySelectorAll('.flash-message').forEach(el => {
                 el.style.opacity = '0';
+
                 setTimeout(() => el.remove(), 500);
             });
         }, 5000);
     </script>
+
+    @stack('scripts')
 </body>
 
 </html>

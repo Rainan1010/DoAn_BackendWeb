@@ -198,7 +198,13 @@
                                 </p>
 
                             </div>
+                            
+                            {{-- NOTE --}}
+                            <div class="text-sm text-gray-500">
 
+                                Chỉ hỗ trợ JPG, JPEG, PNG, WEBP. Tối đa 2MB.
+
+                            </div>
                         </div>
 
 
@@ -233,7 +239,7 @@
 
                                     <input type="text" name="full_name" id="full_name" maxlength="50"
                                         value="{{ old('full_name', Auth::user()->full_name) }}" class="w-full border-0 border-b-2 rounded-md transition border-gray-200
-                                        focus:border-blue-900 focus:ring-0 py-3 px-0">
+                                            focus:border-blue-900 focus:ring-0 py-3 px-0">
 
                                     {{-- ERROR --}}
                                     <p id="full_name_error" class="text-red-500 text-sm mt-2 hidden">
@@ -253,7 +259,7 @@
 
                                     <input type="text" name="phone" id="phone" maxlength="10"
                                         value="{{ old('phone', Auth::user()->phone) }}" class="w-full border-0 border-b-2 rounded-md transition border-gray-200
-                                        focus:border-blue-900 focus:ring-0 py-3 px-0">
+                                            focus:border-blue-900 focus:ring-0 py-3 px-0">
 
                                     {{-- ERROR --}}
                                     <p id="phone_error" class="text-red-500 text-sm mt-2 hidden">
@@ -316,12 +322,7 @@
 
 
 
-                                {{-- NOTE --}}
-                                <div class="text-sm text-gray-500">
 
-                                    Chỉ hỗ trợ JPG, JPEG, PNG, WEBP. Tối đa 2MB.
-
-                                </div>
 
 
 
@@ -508,10 +509,6 @@
     @endif
 
 
-
-    // =====================================================
-    // Script
-    // =====================================================
     <script>
 
         // =====================================================
