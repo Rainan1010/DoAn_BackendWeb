@@ -12,6 +12,14 @@ class ProductImage extends Model
 
     protected $fillable = ['product_id', 'image_url', 'sort_order', 'is_primary'];
 
+    public function getImageUrlAttribute($value)
+    {
+        if ($value && strpos($value, '/storage/products/') === 0) {
+            return str_replace('/storage/products/', '/products/', $value);
+        }
+        return $value;
+    }
+
     public function product()
     {
         return $this->belongsTo(Product::class, 'product_id', 'product_id');
