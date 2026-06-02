@@ -28,6 +28,11 @@ class Order extends Model
         'paid_at',
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'paid_at' => 'datetime',
+    ];
+
     public function items()
     {
         return $this->hasMany(OrderItem::class, 'order_id', 'order_id');
