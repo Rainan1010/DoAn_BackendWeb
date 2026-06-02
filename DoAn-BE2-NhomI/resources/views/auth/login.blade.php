@@ -98,6 +98,12 @@
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
 
+        html,
+        body {
+            width: 100%;
+            overflow-x: hidden;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: #001e40;
@@ -156,6 +162,11 @@
             background-size: cover;
             background-position: center;
         }
+
+        .glass-panel {
+            width: 100%;
+            max-width: 500px;
+        }
     </style>
 </head>
 
@@ -164,13 +175,14 @@
     <div class="fixed inset-0 grid-overlay opacity-50 z-0"></div>
     <div class="tech-glow-1 z-0"></div>
     <div class="tech-glow-2 z-0"></div>
-    <main class="min-h-screen flex relative z-10">
+    <main class="min-h-[100dvh] flex relative z-10">
         <!-- Split Layout: Desktop Only Image Side -->
-        <div class="hidden lg:flex w-1/2 image-cover items-center justify-center p-12 relative overflow-hidden">
+        <div
+            class="hidden lg:flex lg:w-1/2 xl:w-3/5 image-cover items-center justify-center p-12 relative overflow-hidden">
             <div class="absolute inset-0 bg-gradient-to-br from-primary/40 to-transparent"></div>
             <div class="relative z-10 max-w-lg space-y-8">
-                <img alt="B-Tris Logo" class="w-full max-w-sm drop-shadow-[0_0_30px_rgba(167,200,255,0.5)]"
-                    src="https://lh3.googleusercontent.com/aida/ADBb0ujkfzLNdx7XZSZitQlk5uvj58AaPKD3Q4a8s-N0jif1cx4oHslaKAX8G2ZSnAHlcRzadbQdewYZKqoFk1mOb5nMlQ2IWE1LEkOPhgpQ_f3OAsi4xeTMJ3iOTa-_8eU52P20jiTjhhO_DVQY61OFzUJM8oDLw2QCxhc4jgJbee-3YfHibnbR1pzW15EedKEEkwJ2jT6xWslOUKe8XEFuUs5-rwpt-cQ8hs_cqBxpbSAhnRVFQyjHx3mj4QEwzI1P6AkPg2IpZ6OgwCA" />
+                <img alt="B-Tris Logo" class="h-14 sm:h-20 w-auto drop-shadow-lg"
+                    src="{{ asset('images/logo/logo.jpg') }}" />
                 <div class="space-y-4">
                     <h2 class="text-5xl font-black text-white tracking-tighter uppercase">Precision Engineering</h2>
                     <p class="text-primary-fixed-dim text-lg leading-relaxed font-medium">Hệ thống quản trị và vận hành
@@ -192,20 +204,21 @@
             </div>
         </div>
         <!-- Login Section -->
-        <div class="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-12">
-            <div class="w-full max-w-[500px] space-y-10">
+        <div class="w-full lg:w-1/2 xl:w-2/5 flex items-center justify-center px-4 py-8 sm:px-6 md:px-10 lg:p-12">
+            <div class="w-full max-w-[500px] mx-auto space-y-8 md:space-y-10">
                 <!-- Brand Mobile Header -->
                 <div class="lg:hidden flex flex-col items-center text-center space-y-4">
-                    <img alt="B-Tris Logo" class="h-20 w-auto drop-shadow-lg"
+                    <img alt="B-Tris Logo" class="h-14 sm:h-20 w-auto drop-shadow-lg"
                         src="https://lh3.googleusercontent.com/aida/ADBb0ujkfzLNdx7XZSZitQlk5uvj58AaPKD3Q4a8s-N0jif1cx4oHslaKAX8G2ZSnAHlcRzadbQdewYZKqoFk1mOb5nMlQ2IWE1LEkOPhgpQ_f3OAsi4xeTMJ3iOTa-_8eU52P20jiTjhhO_DVQY61OFzUJM8oDLw2QCxhc4jgJbee-3YfHibnbR1pzW15EedKEEkwJ2jT6xWslOUKe8XEFuUs5-rwpt-cQ8hs_cqBxpbSAhnRVFQyjHx3mj4QEwzI1P6AkPg2IpZ6OgwCA" />
                     <div class="space-y-1">
-                        <h1 class="text-3xl font-black tracking-tighter text-white uppercase">B-Tris</h1>
+                        <img alt="B-Tris Logo" class="h-14 sm:h-20 w-auto drop-s<h1 class=" text-2xl sm:text-3xl
+                            font-black tracking-tighter text-white uppercase">hadow-lg"B-Tris</h1>
                         <p class="text-primary-fixed-dim text-xs font-bold tracking-widest uppercase">Hệ thống Quản trị
                         </p>
                     </div>
                 </div>
                 <!-- Login Card -->
-                <div class="glass-panel p-8 md:p-12 rounded-[2rem]">
+                <div class="glass-panel p-5 sm:p-8 md:p-10 rounded-2xl md:rounded-[2rem]">
                     <div class="mb-10 hidden lg:block">
                         <h3 class="text-2xl font-black text-primary uppercase tracking-tight">Đăng nhập</h3>
                         <p class="text-sm text-on-surface-variant font-medium mt-1">Vui lòng nhập thông tin tài khoản
@@ -243,7 +256,7 @@
                                         data-icon="alternate_email">alternate_email</span>
                                 </div>
                                 <input
-                                    class="w-full bg-transparent border-b-2 border-outline-variant/30 focus:border-primary focus:ring-0 transition-all pl-8 py-3 text-on-surface placeholder:text-outline-variant/50 outline-none font-medium"
+                                    class="w-full text-sm md:text-base bg-transparent border-b-2 border-outline-variant/30 focus:border-primary focus:ring-0 transition-all pl-8 py-3 text-on-surface placeholder:text-outline-variant/50 outline-none font-medium"
                                     name="email" id="email" placeholder="admin@b-tris.com" type="text"
                                     value="{{ old('email') }}" />
                             </div>
@@ -258,10 +271,10 @@
                                     <span class="material-symbols-outlined text-xl" data-icon="lock">lock</span>
                                 </div>
                                 <input
-                                    class="w-full bg-transparent border-b-2 border-outline-variant/30 focus:border-primary focus:ring-0 transition-all pl-8 py-3 text-on-surface placeholder:text-outline-variant/50 outline-none font-medium"
+                                    class="w-full text-sm md:text-base bg-transparent border-b-2 border-outline-variant/30 focus:border-primary focus:ring-0 transition-all pl-8 py-3 text-on-surface placeholder:text-outline-variant/50 outline-none font-medium"
                                     name="password" id="password" placeholder="••••••••" type="password" />
                                 <span onclick="togglePassword()" id="eyeIcon"
-                                    class="material-symbols-outlined absolute right-0 top-3 text-outline cursor-pointer hover:text-primary transition-colors text-xl">
+                                    class="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-outline cursor-pointer hover:text-primary transition-colors text-xl">
                                     visibility
                                 </span>
                             </div>
@@ -281,21 +294,22 @@
                         </div>
                         <!-- Submit Button -->
                         <button
-                            class="vibrant-btn w-full text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-sm transition-all duration-300 active:scale-[0.98]"
+                            class="vibrant-btn w-full text-white py-4 md:py-5 rounded-xl md:rounded-2xl font-black uppercase tracking-[0.15em] md:tracking-[0.2em] text-xs sm:text-sm transition-all duration-300 active:scale-[0.98]"
                             type="submit">
                             Đăng nhập Hệ thống
                         </button>
                     </form>
                     <!-- Form Footer -->
                     <div class="mt-10 pt-10 border-t border-surface-container flex flex-col items-center space-y-4">
-                        <a href="/register" class="text-sm text-primary font-bold hover:underline">Bạn chưa có tài khoản?</a>
+                        <a href="/register" class="text-sm text-primary font-bold hover:underline">Bạn chưa có tài
+                            khoản?</a>
                         <a class="text-primary font-black hover:underline uppercase tracking-widest text-[11px]"
                             href="#">Liên hệ Quản trị viên</a>
                     </div>
                 </div>
                 <!-- Page Footer -->
                 <footer class="text-center space-y-4">
-                    <div class="flex justify-center gap-8">
+                    <div class="flex flex-wrap justify-center gap-4 md:gap-8">
                         <a class="text-[10px] font-bold uppercase tracking-widest text-primary-fixed/40 hover:text-primary-fixed transition-colors"
                             href="#">Chính sách bảo mật</a>
                         <a class="text-[10px] font-bold uppercase tracking-widest text-primary-fixed/40 hover:text-primary-fixed transition-colors"
