@@ -73,7 +73,7 @@
                     <input type="hidden" name="from" value="{{ $from }}">
                     <input type="hidden" name="to" value="{{ $to }}">
 
-                    <button class="group
+                    <!-- <button class="group
                                            bg-gradient-to-r
                                            from-[#001e40]
                                            to-[#003b80]
@@ -94,7 +94,7 @@
 
                         Xuất File Excel
 
-                    </button>
+                    </button> -->
 
                 </form>
 

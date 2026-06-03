@@ -19,9 +19,41 @@
 
     {{-- Grid Sản phẩm --}}
     <div class="space-y-10 mb-20">
-        <div class="flex items-center justify-between border-b border-slate-200 pb-4">
-            <h2 class="text-xl font-extrabold text-brand-blue uppercase tracking-tight">Tất cả sản phẩm</h2>
-            <p class="text-slate-500 text-sm font-semibold">Tìm thấy {{ $products->total() }} siêu phẩm</p>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+            <div class="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+                <h2 class="text-xl font-extrabold text-brand-blue uppercase tracking-tight shrink-0">Tất cả sản phẩm</h2>
+                
+                @if(isset($subCategories) && $subCategories->count() > 0)
+                    <div class="flex flex-wrap gap-2 items-center">
+                        {{-- Nút "Tất cả" (Liên kết đến danh mục cha nếu đang đứng ở danh mục con) --}}
+                        @if(isset($parentCategory) && $parentCategory)
+                            <a href="{{ route('category.show', $parentCategory->slug) }}" 
+                               class="px-4 py-1.5 rounded-full text-xs font-bold transition-all border border-slate-200 text-slate-600 bg-slate-50 hover:bg-slate-100">
+                                Tất cả
+                            </a>
+                        @else
+                            <span class="px-4 py-1.5 rounded-full text-xs font-bold transition-all bg-brand-blue text-white shadow-sm border border-brand-blue">
+                                Tất cả
+                            </span>
+                        @endif
+
+                        {{-- Các nút danh mục con --}}
+                        @foreach($subCategories as $subCat)
+                            @if($subCat->category_id == $category->category_id)
+                                <span class="px-4 py-1.5 rounded-full text-xs font-bold transition-all bg-brand-blue text-white shadow-sm border border-brand-blue">
+                                    {{ $subCat->name }}
+                                </span>
+                            @else
+                                <a href="{{ route('category.show', $subCat->slug) }}" 
+                                   class="px-4 py-1.5 rounded-full text-xs font-bold transition-all border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 hover:border-slate-300">
+                                    {{ $subCat->name }}
+                                </a>
+                            @endif
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+            <p class="text-slate-500 text-sm font-semibold shrink-0">Tìm thấy {{ $products->total() }} siêu phẩm</p>
         </div>
 
         @if($products->count() > 0)

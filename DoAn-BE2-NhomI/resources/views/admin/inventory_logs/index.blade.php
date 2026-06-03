@@ -14,31 +14,31 @@
         class="w-full bg-[#F4F5F7] border border-transparent rounded-full py-2.5 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A2540] focus:bg-white transition-colors text-[#0A2540] font-medium placeholder-gray-400" />
 
     @if(request('action_type'))
-        <input type="hidden" name="action_type" value="{{ request('action_type') }}">
+    <input type="hidden" name="action_type" value="{{ request('action_type') }}">
     @endif
 </form>
 @endsection
 
 @section('content')
 @php
-    $actionMap = [
-        'import' => [
-            'text' => 'IMPORT',
-            'class' => 'bg-green-100 text-green-700',
-        ],
-        'export' => [
-            'text' => 'EXPORT',
-            'class' => 'bg-red-100 text-red-700',
-        ],
-        'adjust' => [
-            'text' => 'ADJUST',
-            'class' => 'bg-amber-100 text-amber-700',
-        ],
-        'return' => [
-            'text' => 'RETURN',
-            'class' => 'bg-blue-100 text-blue-700',
-        ],
-    ];
+$actionMap = [
+'import' => [
+'text' => 'IMPORT',
+'class' => 'bg-green-100 text-green-700',
+],
+'export' => [
+'text' => 'EXPORT',
+'class' => 'bg-red-100 text-red-700',
+],
+'adjust' => [
+'text' => 'ADJUST',
+'class' => 'bg-amber-100 text-amber-700',
+],
+'return' => [
+'text' => 'RETURN',
+'class' => 'bg-blue-100 text-blue-700',
+],
+];
 @endphp
 
 <div class="space-y-8">
@@ -62,17 +62,17 @@
         </div>
 
         <div class="flex gap-3">
-            <button type="button"
+            <!-- <button type="button"
                 class="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-[#001e40] rounded-md font-bold text-sm shadow-sm hover:bg-slate-50 transition-all">
                 <i data-lucide="download" class="w-5 h-5"></i>
                 XUẤT FILE EXCEL
-            </button>
+            </button> -->
 
-            <button type="button"
+            <a href="{{ route('admin.inventory-logs.create') }}"
                 class="flex items-center gap-2 px-6 py-3 bg-[#003366] text-white rounded-md font-bold text-sm shadow-lg shadow-[#003366]/20 hover:opacity-90 transition-all active:scale-95">
                 <i data-lucide="plus-square" class="w-5 h-5"></i>
                 NHẬP KHO MỚI
-            </button>
+            </a>
         </div>
     </div>
 
@@ -183,7 +183,7 @@
                     </select>
 
                     @if(request('search'))
-                        <input type="hidden" name="search" value="{{ request('search') }}">
+                    <input type="hidden" name="search" value="{{ request('search') }}">
                     @endif
                 </div>
 
@@ -233,20 +233,20 @@
 
                 <tbody class="divide-y divide-gray-100">
                     @forelse($logs as $log)
-                        @php
-                            $action = $actionMap[$log->action_type] ?? [
-                                'text' => strtoupper($log->action_type ?? 'LOG'),
-                                'class' => 'bg-slate-100 text-slate-700',
-                            ];
+                    @php
+                    $action = $actionMap[$log->action_type] ?? [
+                    'text' => strtoupper($log->action_type ?? 'LOG'),
+                    'class' => 'bg-slate-100 text-slate-700',
+                    ];
 
-                            $quantityChange = $log->quantity_change ?? 0;
-                            $quantityClass = $quantityChange > 0
-                                ? 'text-green-600'
-                                : ($quantityChange < 0 ? 'text-red-600' : 'text-gray-600');
+                    $quantityChange = $log->quantity_change ?? 0;
+                    $quantityClass = $quantityChange > 0
+                    ? 'text-green-600'
+                    : ($quantityChange < 0 ? 'text-red-600' : 'text-gray-600' );
 
-                            $quantityText = $quantityChange > 0
-                                ? '+' . $quantityChange
-                                : $quantityChange;
+                        $quantityText=$quantityChange> 0
+                        ? '+' . $quantityChange
+                        : $quantityChange;
                         @endphp
 
                         <tr class="hover:bg-slate-50 transition-colors group">
@@ -320,13 +320,13 @@
                                 </div>
                             </td>
                         </tr>
-                    @empty
+                        @empty
                         <tr>
                             <td colspan="10" class="px-6 py-12 text-center text-gray-500">
                                 Chưa có nhật ký kho hàng nào.
                             </td>
                         </tr>
-                    @endforelse
+                        @endforelse
                 </tbody>
             </table>
         </div>

@@ -748,6 +748,9 @@ class OrderController extends Controller
                     'status' => 'success',
                 ]);
 
+            // Tự động gửi mail hóa đơn PDF
+            $this->sendInvoiceEmail($order->order_id);
+
             session()->forget([
                 'checkout_items',
                 'selected_cart_ids',
@@ -796,158 +799,87 @@ class OrderController extends Controller
      * =====================================================
      */
     public function momoPayment($amount = null)
-    {
-        $endpoint = env('MOMO_ENDPOINT');
-        $partnerCode = env('MOMO_PARTNER_CODE');
-        $accessKey = env('MOMO_ACCESS_KEY');
-        $secretKey = env('MOMO_SECRET_KEY');
-        $redirectUrl = env('MOMO_REDIRECT_URL');
-        $ipnUrl = env('MOMO_IPN_URL');
+{
+    $checkoutItems = session()->get('checkout_items', []);
 
-        $amount = $amount ?? request('amount') ?? session('checkout_total') ?? 0;
-        $checkoutItems = session()->get('checkout_items', []);
+    $subtotal = 0;
 
-        $subtotal = 0;
-
-        foreach ($checkoutItems as $item) {
-            $subtotal += $item['price'] * $item['quantity'];
-        }
-
-        $shippingFee = session('shipping_fee', 30000);
-
-        $discount = session('discount_amount', 0);
-
-        $vat = $subtotal * 0.1;
-
-        $amount = $subtotal + $shippingFee + $vat - $discount;
-        $orderInfo = "Thanh toan don hang";
-        $amount = (string) $amount;
-        $orderId = time() . "";
-        $requestId = time() . "";
-        $extraData = base64_encode("");
-        $requestType = "captureWallet";
-
-        $rawHash =
-            "accessKey=" . $accessKey .
-            "&amount=" . $amount .
-            "&extraData=" . $extraData .
-            "&ipnUrl=" . $ipnUrl .
-            "&orderId=" . $orderId .
-            "&orderInfo=" . $orderInfo .
-            "&partnerCode=" . $partnerCode .
-            "&redirectUrl=" . $redirectUrl .
-            "&requestId=" . $requestId .
-            "&requestType=" . $requestType;
-
-        $signature = hash_hmac("sha256", $rawHash, $secretKey);
-
-        $data = [
-            "partnerCode" => $partnerCode,
-            "partnerName" => "Test",
-            "storeId" => "MomoTestStore",
-            "requestId" => $requestId,
-            "amount" => $amount,
-            "orderId" => $orderId,
-            "orderInfo" => $orderInfo,
-            "redirectUrl" => $redirectUrl,
-            "ipnUrl" => $ipnUrl,
-            "lang" => "vi",
-            "extraData" => $extraData,
-            "requestType" => $requestType,
-            "autoCapture" => true,
-            "signature" => $signature,
-        ];
-
-        $result = $this->execPostRequest($endpoint, json_encode($data));
-        $jsonResult = json_decode($result, true);
-
-        if (isset($jsonResult['payUrl'])) {
-            return redirect($jsonResult['payUrl']);
-        }
-
-        dd($jsonResult);
+    foreach ($checkoutItems as $item) {
+        $subtotal += $item['price'] * $item['quantity'];
     }
+
+    $shippingFee = session('shipping_fee', 30000);
+    $discount = session('discount_amount', 0);
+    $vat = $subtotal * 0.1;
+
+    $total = $subtotal + $shippingFee + $vat - $discount;
+
+    $orderCode = 'MOMO-' . time();
+
+    $phone = 'PSP2615014800000215';
+
+    $qr = "https://img.vietqr.io/image/momo-{$phone}-compact2.png"
+        . "?amount=" . (int)$total
+        . "&addInfo=" . urlencode($orderCode);
+
+    return view(
+        'checkout.momo',
+        compact(
+            'qr',
+            'orderCode',
+            'checkoutItems',
+            'subtotal',
+            'shippingFee',
+            'discount',
+            'vat',
+            'total'
+        )
+    );
+}
 
     /**
      * =====================================================
      * MOMO RETURN
      * =====================================================
      */
-    public function momoReturn(Request $request)
-    {
-        $order = Order::with('items')
-            ->latest('order_id')
-            ->where('user_id', Auth::id())
-            ->first();
+   public function momoReturn(Request $request)
+{
+    $order = Order::latest('order_id')
+        ->where('user_id', Auth::id())
+        ->first();
 
-        if (!$order) {
-            return redirect('/')->with(
-                'error',
-                'Không tìm thấy đơn hàng'
-            );
-        }
+    if (!$order) {
+        return redirect('/')
+            ->with('error', 'Không tìm thấy đơn hàng');
+    }
 
-        if ($request->resultCode == 0 || empty($request->resultCode)) {
-            $order->update([
-                'payment_status' => 'paid',
-                'order_status' => 'processing',
-                'paid_at' => now(),
-            ]);
-
-            Payment::where('order_id', $order->order_id)
-                ->update([
-                    'status' => 'success',
-                ]);
-
-            $cartIds = Cart::where('user_id', $order->user_id)
-                ->pluck('cart_id');
-
-            $variantIds = $order->items
-                ->pluck('variant_id')
-                ->toArray();
-
-            DB::table('cart_items')
-                ->whereIn('cart_id', $cartIds)
-                ->whereIn('variant_id', $variantIds)
-                ->delete();
-
-            session()->forget([
-                'pending_order_id',
-                'selected_cart_ids',
-                'checkout_information',
-                'checkout_items',
-                'is_reorder',
-                'applied_voucher',
-            ]);
-
-            $this->syncCartSessionAfterCheckout();
-
-            return redirect()
-                ->route('orders.history')
-                ->with('success_order', [
-                    'code' => $order->order_code,
-                    'total' => $order->total_amount,
-                ]);
-        }
+    if (($request->resultCode ?? 0) == 0) {
 
         $order->update([
-            'payment_status' => 'pending',
-            'order_status' => 'pending',
+            'payment_status' => 'paid',
+            'order_status' => 'processing',
+            'paid_at' => now(),
         ]);
 
         Payment::where('order_id', $order->order_id)
             ->update([
-                'status' => 'pending',
+                'status' => 'success',
             ]);
+
+        $this->sendInvoiceEmail($order->order_id);
 
         return redirect()
             ->route('orders.history')
-            ->with(
-                'warning',
-                'Đơn hàng đã được tạo nhưng chưa thanh toán.'
-            );
+            ->with('success_order', [
+                'code' => $order->order_code,
+                'total' => $order->total_amount,
+            ]);
     }
 
+    return redirect()
+        ->route('checkout.payment')
+        ->with('error', 'Thanh toán thất bại');
+}
     private function execPostRequest($url, $data)
     {
         $ch = curl_init($url);
@@ -1134,6 +1066,9 @@ class OrderController extends Controller
                     'status' => 'success',
                 ]);
 
+            // Tự động gửi mail hóa đơn PDF
+            $this->sendInvoiceEmail($order->order_id);
+
             foreach ($order->items as $item) {
                 DB::table('cart_items')
                     ->whereIn(
@@ -1298,6 +1233,52 @@ class OrderController extends Controller
                 $totalQuantity += (int) ($it['quantity'] ?? 1);
             }
             session()->put('cart_count', $totalQuantity);
+        }
+    }
+
+    /**
+     * Gửi email kèm hóa đơn PDF khi đặt hàng thành công
+     */
+    private function sendInvoiceEmail($orderId)
+    {
+        try {
+            $order = DB::table('orders')
+                ->leftJoin('users', 'orders.user_id', '=', 'users.user_id')
+                ->leftJoin('shipping_addresses', 'orders.shipping_address_id', '=', 'shipping_addresses.address_id')
+                ->select(
+                    'orders.*',
+                    'users.full_name as user_full_name',
+                    'users.email as user_email',
+                    'shipping_addresses.full_name as receiver_name',
+                    'shipping_addresses.phone',
+                    'shipping_addresses.province',
+                    'shipping_addresses.district',
+                    'shipping_addresses.ward',
+                    'shipping_addresses.street_address'
+                )
+                ->where('orders.order_id', $orderId)
+                ->first();
+
+            if (!$order || empty($order->user_email)) {
+                return;
+            }
+
+            $items = DB::table('order_items')
+                ->leftJoin('product_variants', 'order_items.variant_id', '=', 'product_variants.variant_id')
+                ->leftJoin('products', 'product_variants.product_id', '=', 'products.product_id')
+                ->select(
+                    'order_items.*',
+                    'products.name as product_name_db',
+                    'product_variants.sku',
+                    'product_variants.attribute_values'
+                )
+                ->where('order_items.order_id', $orderId)
+                ->get();
+
+            \Illuminate\Support\Facades\Mail::to($order->user_email)
+                ->send(new \App\Mail\OrderInvoiceMail($order, $items));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Gửi mail hóa đơn thất bại cho đơn hàng #' . $orderId . ': ' . $e->getMessage());
         }
     }
 }
