@@ -129,9 +129,12 @@
                     <p class="text-sm font-bold text-white">Administrator</p>
                     <p class="text-xs text-blue-300">Quản trị viên</p>
                 </div>
-                <button class="ml-auto text-blue-300 hover:text-white transition-colors">
+                <button onclick="event.preventDefault(); document.getElementById('admin-logout-form').submit();" class="ml-auto text-blue-300 hover:text-white transition-colors" title="Đăng xuất">
                     <i data-lucide="log-out" class="w-4 h-4"></i>
                 </button>
+                <form id="admin-logout-form" action="{{ route('logout') }}" method="POST" class="hidden">
+                    @csrf
+                </form>
             </div>
         </div>
     </aside>
@@ -143,10 +146,7 @@
             <div class="flex-1 max-w-xl relative">
                 @yield('header_search')
             </div>
-            <div class="flex items-center gap-4 text-gray-500">
-                <button><i data-lucide="bell" class="w-5 h-5"></i></button>
-                <button><i data-lucide="settings" class="w-5 h-5"></i></button>
-            </div>
+
         </header>
 
         <!-- Content -->
