@@ -62,11 +62,11 @@ $actionMap = [
         </div>
 
         <div class="flex gap-3">
-            <button type="button"
+            <!-- <button type="button"
                 class="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-[#001e40] rounded-md font-bold text-sm shadow-sm hover:bg-slate-50 transition-all">
                 <i data-lucide="download" class="w-5 h-5"></i>
                 XUẤT FILE EXCEL
-            </button>
+            </button> -->
 
             <a href="{{ route('admin.inventory-logs.create') }}"
                 class="flex items-center gap-2 px-6 py-3 bg-[#003366] text-white rounded-md font-bold text-sm shadow-lg shadow-[#003366]/20 hover:opacity-90 transition-all active:scale-95">
