@@ -29,10 +29,9 @@
         }
     </style>
     @php
-        $from = request('from', now()->subDays(5)->format('Y-m-d'));
+        $from = request('from', now()->format('Y-m-d'));
         $to = request('to', now()->format('Y-m-d'));
     @endphp
-
     <div class="space-y-8">
 
         {{-- BREADCRUMB --}}
@@ -74,27 +73,27 @@
                     <input type="hidden" name="to" value="{{ $to }}">
 
                     <!-- <button class="group
-                                           bg-gradient-to-r
-                                           from-[#001e40]
-                                           to-[#003b80]
-                                           hover:from-[#003366]
-                                           hover:to-[#004c99]
-                                           text-white
-                                           px-8 py-4
-                                           rounded-2xl
-                                           font-black
-                                           shadow-[0_10px_30px_rgba(0,30,64,0.25)]
-                                           hover:shadow-[0_16px_40px_rgba(0,30,64,0.35)]
-                                           transition-all duration-300
-                                           flex items-center gap-3
-                                           hover:-translate-y-1">
+                                                       bg-gradient-to-r
+                                                       from-[#001e40]
+                                                       to-[#003b80]
+                                                       hover:from-[#003366]
+                                                       hover:to-[#004c99]
+                                                       text-white
+                                                       px-8 py-4
+                                                       rounded-2xl
+                                                       font-black
+                                                       shadow-[0_10px_30px_rgba(0,30,64,0.25)]
+                                                       hover:shadow-[0_16px_40px_rgba(0,30,64,0.35)]
+                                                       transition-all duration-300
+                                                       flex items-center gap-3
+                                                       hover:-translate-y-1">
 
-                        <i data-lucide="download" class="w-5 h-5 transition-transform
-                                               group-hover:-translate-y-1"></i>
+                                    <i data-lucide="download" class="w-5 h-5 transition-transform
+                                                           group-hover:-translate-y-1"></i>
 
-                        Xuất File Excel
+                                    Xuất File Excel
 
-                    </button> -->
+                                </button> -->
 
                 </form>
 
@@ -108,87 +107,71 @@
 
             <div class="grid lg:grid-cols-4 gap-5">
 
-                {{-- FROM --}}
+                {{-- NGÀY BẮT ĐẦU --}}
                 <div>
 
                     <label class="font-bold text-sm text-[#001e40]">
-                        Từ ngày
+                        Ngày bắt đầu
                     </label>
 
                     <div class="relative mt-3">
 
-                        <i data-lucide="calendar" class="absolute left-4 top-1/2
-                                                      -translate-y-1/2
-                                                      w-5 h-5 text-gray-400 z-10">
+                        <i data-lucide="calendar"
+                            class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 z-10">
                         </i>
 
-                        <input type="date" name="from" value="{{ $from }}" max="{{ now()->subDay()->format('Y-m-d') }}"
-                            class="w-full h-[56px]
-                                                       rounded-2xl
-                                                       border border-gray-200
-                                                       bg-white
-                                                       px-12
-                                                       text-[#001e40]
-                                                       font-semibold
-                                                       focus:ring-2
-                                                       focus:ring-[#003366]
-                                                       focus:border-[#003366]
-                                                       outline-none" />
+                        <input type="date" name="from" value="{{ $from }}" class="w-full h-[56px]
+                                   rounded-2xl
+                                   border border-gray-200
+                                   bg-white
+                                   px-12
+                                   text-[#001e40]
+                                   font-semibold
+                                   focus:ring-2
+                                   focus:ring-[#003366]
+                                   focus:border-[#003366]
+                                   outline-none">
 
                     </div>
 
                 </div>
 
+                {{-- NGÀY KẾT THÚC --}}
                 <div>
 
                     <label class="font-bold text-sm text-[#001e40]">
-                        Đến ngày
+                        Ngày kết thúc
                     </label>
 
                     <div class="relative mt-3">
 
-                        <i data-lucide="calendar-days" class="absolute left-4 top-1/2
-                                                      -translate-y-1/2
-                                                      w-5 h-5 text-gray-400 z-10">
+                        <i data-lucide="calendar-days"
+                            class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 z-10">
                         </i>
 
-                        <input type="date" name="to" value="{{ $to }}" max="{{ now()->format('Y-m-d') }}" class="w-full h-[56px]
-                                                       rounded-2xl
-                                                       border border-gray-200
-                                                       bg-white
-                                                       px-12
-                                                       text-[#001e40]
-                                                       font-semibold
-                                                       focus:ring-2
-                                                       focus:ring-[#003366]
-                                                       focus:border-[#003366]
-                                                       outline-none" />
+                        <input type="date" name="to" value="{{ $to }}" class="w-full h-[56px]
+                                   rounded-2xl
+                                   border border-gray-200
+                                   bg-white
+                                   px-12
+                                   text-[#001e40]
+                                   font-semibold
+                                   focus:ring-2
+                                   focus:ring-[#003366]
+                                   focus:border-[#003366]
+                                   outline-none">
 
                     </div>
 
                 </div>
 
-                {{-- BTN --}}
+                {{-- LỌC --}}
                 <div class="flex items-end">
-                    <button class="group
-                                       w-full
-                                       bg-gradient-to-r
-                                       from-[#001e40]
-                                       to-[#003b80]
-                                       hover:from-[#003366]
-                                       hover:to-[#004c99]
-                                       text-white
-                                       h-[56px]
-                                       rounded-2xl
-                                       font-black
-                                       transition-all duration-300
-                                       flex items-center justify-center gap-3
-                                       shadow-lg
-                                       hover:-translate-y-1">
 
-                        <i data-lucide="search" class="w-5 h-5
-                                           transition-transform
-                                           group-hover:scale-110"></i>
+                    <button type="submit"
+                        class="group w-full bg-gradient-to-r from-[#001e40] to-[#003b80] text-white h-[56px] rounded-2xl font-black flex items-center justify-center gap-3">
+
+                        <i data-lucide="search" class="w-5 h-5"></i>
 
                         Lọc doanh thu
 
@@ -200,23 +183,16 @@
                 <div class="flex items-end">
 
                     <a href="{{ route('admin.revenue_reports.index') }}" class="group
-                                           w-full
-                                           h-[56px]
-                                           rounded-2xl
-                                           bg-gray-100
-                                           hover:bg-red-50
-                                           border border-gray-200
-                                           hover:border-red-200
-                                           text-gray-700
-                                           hover:text-red-500
-                                           font-black
-                                           transition-all duration-300
-                                           flex items-center justify-center gap-3
-                                           hover:-translate-y-1">
+                               w-full
+                               h-[56px]
+                               rounded-2xl
+                               bg-gray-100
+                               border border-gray-200
+                               text-gray-700
+                               font-black
+                               flex items-center justify-center gap-3">
 
-                        <i data-lucide="rotate-ccw" class="w-5 h-5
-                                               transition-transform
-                                               group-hover:-rotate-180"></i>
+                        <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
 
                         Reset
 
@@ -226,33 +202,36 @@
 
             </div>
 
+            <p id="dateError" class="hidden text-red-500 text-sm mt-3">
+            </p>
+
         </form>
         {{-- TOTAL SYSTEM REVENUE --}}
         <div class="relative overflow-hidden
-               rounded-[32px]
-               bg-gradient-to-r
-               from-[#001e40]
-               via-[#003366]
-               to-[#004c99]
-               p-8
-               text-white
-               shadow-[0_20px_50px_rgba(0,30,64,0.25)]">
+                           rounded-[32px]
+                           bg-gradient-to-r
+                           from-[#001e40]
+                           via-[#003366]
+                           to-[#004c99]
+                           p-8
+                           text-white
+                           shadow-[0_20px_50px_rgba(0,30,64,0.25)]">
 
             {{-- BACKGROUND EFFECT --}}
             <div class="absolute
-                   -right-10
-                   -top-10
-                   w-56 h-56
-                   bg-white/10
-                   rounded-full blur-3xl"></div>
+                               -right-10
+                               -top-10
+                               w-56 h-56
+                               bg-white/10
+                               rounded-full blur-3xl"></div>
 
             <div class="absolute
-                   bottom-0
-                   right-0
-                   opacity-10
-                   text-[220px]
-                   leading-none
-                   font-black">
+                               bottom-0
+                               right-0
+                               opacity-10
+                               text-[220px]
+                               leading-none
+                               font-black">
 
                 ₫
 
@@ -266,14 +245,14 @@
                     <div>
 
                         <div class="inline-flex
-                               items-center gap-2
-                               bg-white/10
-                               px-4 py-2
-                               rounded-full">
+                                           items-center gap-2
+                                           bg-white/10
+                                           px-4 py-2
+                                           rounded-full">
 
                             <span class="w-2 h-2
-                                   rounded-full
-                                   bg-green-400"></span>
+                                               rounded-full
+                                               bg-green-400"></span>
 
                             <span class="text-sm font-bold">
                                 TOÀN HỆ THỐNG
@@ -300,10 +279,10 @@
 
                         {{-- TOTAL ORDERS --}}
                         <div class="bg-white/10
-                               backdrop-blur-xl
-                               rounded-3xl
-                               px-6 py-5
-                               min-w-[180px]">
+                                           backdrop-blur-xl
+                                           rounded-3xl
+                                           px-6 py-5
+                                           min-w-[180px]">
 
                             <p class="text-blue-200 text-sm">
                                 Tổng đơn hàng
@@ -319,10 +298,10 @@
 
                         {{-- AVG --}}
                         <div class="bg-white/10
-                               backdrop-blur-xl
-                               rounded-3xl
-                               px-6 py-5
-                               min-w-[180px]">
+                                           backdrop-blur-xl
+                                           rounded-3xl
+                                           px-6 py-5
+                                           min-w-[180px]">
 
                             <p class="text-blue-200 text-sm">
                                 Giá trị TB
@@ -352,8 +331,8 @@
                 <div class="flex items-center justify-between">
 
                     <div class="w-16 h-16 rounded-2xl
-                                                                bg-blue-50
-                                                                flex items-center justify-center">
+                                                                            bg-blue-50
+                                                                            flex items-center justify-center">
 
                         <i data-lucide="wallet" class="w-8 h-8 text-[#003366]">
                         </i>
@@ -361,11 +340,11 @@
                     </div>
 
                     <span class="bg-green-100
-                                                                 text-green-600
-                                                                 text-sm
-                                                                 px-3 py-1
-                                                                 rounded-full
-                                                                 font-bold">
+                                                                             text-green-600
+                                                                             text-sm
+                                                                             px-3 py-1
+                                                                             rounded-full
+                                                                             font-bold">
 
                         +12.4%
 
@@ -403,8 +382,8 @@
                 <div class="flex items-center justify-between">
 
                     <div class="w-16 h-16 rounded-2xl
-                                                                bg-indigo-50
-                                                                flex items-center justify-center">
+                                                                            bg-indigo-50
+                                                                            flex items-center justify-center">
 
                         <i data-lucide="shopping-cart" class="w-8 h-8 text-indigo-600">
                         </i>
@@ -412,11 +391,11 @@
                     </div>
 
                     <span class="bg-green-100
-                                                                 text-green-600
-                                                                 text-sm
-                                                                 px-3 py-1
-                                                                 rounded-full
-                                                                 font-bold">
+                                                                             text-green-600
+                                                                             text-sm
+                                                                             px-3 py-1
+                                                                             rounded-full
+                                                                             font-bold">
 
                         +5.2%
 
@@ -442,8 +421,8 @@
                 <div class="flex items-center justify-between">
 
                     <div class="w-16 h-16 rounded-2xl
-                                                                bg-orange-50
-                                                                flex items-center justify-center">
+                                                                            bg-orange-50
+                                                                            flex items-center justify-center">
 
                         <i data-lucide="package-check" class="w-8 h-8 text-orange-500">
                         </i>
@@ -451,11 +430,11 @@
                     </div>
 
                     <span class="bg-red-100
-                                                                 text-red-500
-                                                                 text-sm
-                                                                 px-3 py-1
-                                                                 rounded-full
-                                                                 font-bold">
+                                                                             text-red-500
+                                                                             text-sm
+                                                                             px-3 py-1
+                                                                             rounded-full
+                                                                             font-bold">
 
                         -2.1%
 
@@ -481,8 +460,8 @@
                 <div class="flex items-center justify-between">
 
                     <div class="w-16 h-16 rounded-2xl
-                                                                bg-green-50
-                                                                flex items-center justify-center">
+                                                                            bg-green-50
+                                                                            flex items-center justify-center">
 
                         <i data-lucide="chart-column" class="w-8 h-8 text-green-600">
                         </i>
@@ -490,11 +469,11 @@
                     </div>
 
                     <span class="bg-green-100
-                                                                 text-green-600
-                                                                 text-sm
-                                                                 px-3 py-1
-                                                                 rounded-full
-                                                                 font-bold">
+                                                                             text-green-600
+                                                                             text-sm
+                                                                             px-3 py-1
+                                                                             rounded-full
+                                                                             font-bold">
 
                         +3.8%
 
@@ -516,8 +495,8 @@
 
         </div>
 
-        {{-- CHART + KPI --}}
-        <div class="grid lg:grid-cols-4 gap-6">
+        {{-- CHART--}}
+        <div class="bg-white rounded-3xl p-8 shadow-sm border">
 
             {{-- CHART --}}
             <div class="lg:col-span-3 bg-white rounded-3xl p-8 shadow-sm border">
@@ -540,11 +519,11 @@
 
                         {{-- BUTTON LINE --}}
                         <button id="lineBtn" type="button" onclick="changeChart('line')" class="chart-btn-active
-                                   flex items-center gap-2
-                                   px-5 py-3
-                                   rounded-xl
-                                   font-bold
-                                   transition-all duration-300">
+                                               flex items-center gap-2
+                                               px-5 py-3
+                                               rounded-xl
+                                               font-bold
+                                               transition-all duration-300">
 
                             <i data-lucide="chart-spline" class="w-5 h-5">
                             </i>
@@ -555,11 +534,11 @@
 
                         {{-- BUTTON BAR --}}
                         <button id="barBtn" type="button" onclick="changeChart('bar')" class="chart-btn
-                                   flex items-center gap-2
-                                   px-5 py-3
-                                   rounded-xl
-                                   font-bold
-                                   transition-all duration-300">
+                                               flex items-center gap-2
+                                               px-5 py-3
+                                               rounded-xl
+                                               font-bold
+                                               transition-all duration-300">
 
                             <i data-lucide="chart-column" class="w-5 h-5">
                             </i>
@@ -580,79 +559,7 @@
 
             </div>
 
-            {{-- KPI --}}
-            <div class="bg-[#001e40]
-                                                        rounded-3xl
-                                                        p-8
-                                                        text-white
-                                                        shadow-2xl">
 
-                <div class="space-y-8">
-
-                    <div>
-
-                        <div class="bg-blue-500/20
-                                                                    inline-flex
-                                                                    items-center gap-2
-                                                                    px-4 py-2
-                                                                    rounded-full">
-
-                            <span class="w-2 h-2 rounded-full bg-blue-300"></span>
-
-                            <span class="text-sm font-bold">
-                                CHỈ TIÊU THÁNG 10
-                            </span>
-
-                        </div>
-
-                        <h2 class="text-6xl font-black mt-8">
-                            82%
-                        </h2>
-
-                        <p class="text-blue-100 mt-5 leading-8">
-
-                            Doanh thu đang tăng trưởng ổn định
-                            và gần đạt KPI tháng.
-
-                        </p>
-
-                    </div>
-
-                    <div>
-
-                        <div class="flex justify-between mb-3">
-
-                            <span>
-                                Tiến độ
-                            </span>
-
-                            <span class="font-black">
-                                8.2 tỷ / 10 tỷ
-                            </span>
-
-                        </div>
-
-                        <div class="w-full bg-blue-900 rounded-full h-5">
-
-                            <div class="bg-blue-400 h-5 rounded-full" style="width:82%"></div>
-
-                        </div>
-
-                    </div>
-
-                    <button class="w-full py-4 rounded-2xl
-                                                               bg-white/10
-                                                               hover:bg-white/20
-                                                               transition
-                                                               font-black">
-
-                        XEM KPI
-
-                    </button>
-
-                </div>
-
-            </div>
 
         </div>
 
@@ -737,9 +644,9 @@
                     @if ($reports->onFirstPage())
 
                         <span class="w-11 h-11
-                                       rounded-xl
-                                       flex items-center justify-center
-                                       text-gray-300 bg-gray-100">
+                                                               rounded-xl
+                                                               flex items-center justify-center
+                                                               text-gray-300 bg-gray-100">
 
                             <i data-lucide="chevron-left" class="w-5 h-5">
                             </i>
@@ -749,12 +656,12 @@
                     @else
 
                         <a href="{{ $reports->previousPageUrl() }}" class="w-11 h-11
-                                       rounded-xl
-                                       flex items-center justify-center
-                                       text-gray-500
-                                       hover:bg-[#001e40]
-                                       hover:text-white
-                                       transition">
+                                                               rounded-xl
+                                                               flex items-center justify-center
+                                                               text-gray-500
+                                                               hover:bg-[#001e40]
+                                                               hover:text-white
+                                                               transition">
 
                             <i data-lucide="chevron-left" class="w-5 h-5">
                             </i>
@@ -769,12 +676,12 @@
                         @if ($page == $reports->currentPage())
 
                             <span class="w-11 h-11
-                                                   rounded-xl
-                                                   flex items-center justify-center
-                                                   bg-[#001e40]
-                                                   text-white
-                                                   font-black
-                                                   shadow-lg">
+                                                                                       rounded-xl
+                                                                                       flex items-center justify-center
+                                                                                       bg-[#001e40]
+                                                                                       text-white
+                                                                                       font-black
+                                                                                       shadow-lg">
 
                                 {{ $page }}
 
@@ -783,12 +690,12 @@
                         @else
 
                             <a href="{{ $url }}" class="w-11 h-11
-                                                   rounded-xl
-                                                   flex items-center justify-center
-                                                   text-gray-500
-                                                   font-bold
-                                                   hover:bg-gray-100
-                                                   transition">
+                                                                                       rounded-xl
+                                                                                       flex items-center justify-center
+                                                                                       text-gray-500
+                                                                                       font-bold
+                                                                                       hover:bg-gray-100
+                                                                                       transition">
 
                                 {{ $page }}
 
@@ -802,12 +709,12 @@
                     @if ($reports->hasMorePages())
 
                         <a href="{{ $reports->nextPageUrl() }}" class="w-11 h-11
-                                       rounded-xl
-                                       flex items-center justify-center
-                                       text-gray-500
-                                       hover:bg-[#001e40]
-                                       hover:text-white
-                                       transition">
+                                                               rounded-xl
+                                                               flex items-center justify-center
+                                                               text-gray-500
+                                                               hover:bg-[#001e40]
+                                                               hover:text-white
+                                                               transition">
 
                             <i data-lucide="chevron-right" class="w-5 h-5">
                             </i>
@@ -817,9 +724,9 @@
                     @else
 
                         <span class="w-11 h-11
-                                       rounded-xl
-                                       flex items-center justify-center
-                                       text-gray-300 bg-gray-100">
+                                                               rounded-xl
+                                                               flex items-center justify-center
+                                                               text-gray-300 bg-gray-100">
 
                             <i data-lucide="chevron-right" class="w-5 h-5">
                             </i>
@@ -852,82 +759,88 @@
             );
 
         /*
-        |--------------------------------------------------------------------------
-        | DATE VALIDATE
-        |--------------------------------------------------------------------------
-        */
+    |--------------------------------------------------------------------------
+    | DATE VALIDATE
+    |--------------------------------------------------------------------------
+    */
 
-        const form =
-            document.getElementById(
-                'filterForm'
-            );
+        const fromInput =
+    document.querySelector('input[name="from"]');
 
-        form.addEventListener(
-            'submit',
-            function (e) {
+const toInput =
+    document.querySelector('input[name="to"]');
 
-                const fromValue =
-                    document.querySelector(
-                        'input[name="from"]'
-                    ).value;
+const error =
+    document.getElementById('dateError');
 
-                const toValue =
-                    document.querySelector(
-                        'input[name="to"]'
-                    ).value;
+function validateDate() {
 
-                const from =
-                    new Date(
-                        fromValue + 'T00:00:00'
-                    );
+    const fromValue = fromInput.value;
+    const toValue = toInput.value;
 
-                const to =
-                    new Date(
-                        toValue + 'T00:00:00'
-                    );
+    const today =
+        new Date()
+            .toISOString()
+            .split('T')[0];
 
-                const today =
-                    new Date();
+    error.textContent = '';
+    error.classList.add('hidden');
 
-                from.setHours(0, 0, 0, 0);
-                to.setHours(0, 0, 0, 0);
-                today.setHours(0, 0, 0, 0);
+    if (fromValue > today) {
 
-                if (from.getTime() >= to.getTime()) {
+        error.textContent =
+            'Ngày bắt đầu không được lớn hơn ngày hiện tại';
 
-                    e.preventDefault();
+        error.classList.remove('hidden');
 
-                    alert(
-                        'Ngày bắt đầu phải nhỏ hơn ngày kết thúc'
-                    );
+        return false;
+    }
 
-                    return;
-                }
+    if (toValue > today) {
 
-                if (from.getTime() > today.getTime()) {
+        error.textContent =
+            'Ngày kết thúc không được lớn hơn ngày hiện tại';
 
-                    e.preventDefault();
+        error.classList.remove('hidden');
 
-                    alert(
-                        'Ngày bắt đầu không được lớn hơn hôm nay'
-                    );
+        return false;
+    }
 
-                    return;
-                }
+    if (toValue < fromValue) {
 
-                if (to.getTime() > today.getTime()) {
+        error.textContent =
+            'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu';
 
-                    e.preventDefault();
+        error.classList.remove('hidden');
 
-                    alert(
-                        'Ngày kết thúc không được lớn hơn hôm nay'
-                    );
+        return false;
+    }
 
-                    return;
-                }
+    return true;
+}
+
+fromInput.addEventListener(
+    'change',
+    validateDate
+);
+
+toInput.addEventListener(
+    'change',
+    validateDate
+);
+
+document
+    .getElementById('filterForm')
+    .addEventListener(
+        'submit',
+        function (e) {
+
+            if (!validateDate()) {
+
+                e.preventDefault();
             }
-        );
-
+        }
+    );
         /*
         |--------------------------------------------------------------------------
         | CHART

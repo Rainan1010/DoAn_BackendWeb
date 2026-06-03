@@ -78,10 +78,10 @@ class RevenueReportController extends Controller
                     'total_amount'
                 );
         /*
-|--------------------------------------------------------------------------
-|  GIÁ TRỊ TRUNG BÌNH CỦA TOÀN HỆ THỐNG
-|--------------------------------------------------------------------------
-*/
+        |--------------------------------------------------------------------------
+        |  GIÁ TRỊ TRUNG BÌNH CỦA TOÀN HỆ THỐNG
+        |--------------------------------------------------------------------------
+        */
         $avgOrderValueAll =
 
             Order::where(
@@ -182,13 +182,13 @@ class RevenueReportController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $reports =
-
-            RevenueReport::latest(
-                'report_date'
-            )
-
-                ->paginate(10);
+        $reports = RevenueReport::whereBetween(
+            'report_date',
+            [$from, $to]
+        )
+            ->latest('report_date')
+            ->paginate(10)
+            ->withQueryString();
 
         /*
         |--------------------------------------------------------------------------
