@@ -680,6 +680,11 @@
                 Chi tiết
             </a>
 
+            {{-- Nút In hóa đơn --}}
+            <a href="{{ route('orders.invoice', $order->order_id) }}" target="_blank" class="flex-1 lg:flex-none text-center border border-slate-200 bg-white text-slate-700 px-4 py-2 rounded-xl text-[11px] font-bold tracking-wider uppercase hover:bg-slate-100 transition duration-300">
+                In hóa đơn
+            </a>
+
             {{-- Nút Hủy hoặc mua lại --}}
             @if($order->order_status == 'confirmed' || $order->order_status == 'processing' || $order->order_status == 'pending')
                 <button type="button" onclick="openCancelModal('{{ $order->order_id }}', '{{ $item->product_name }}')" class="flex-1 lg:flex-none border border-red-200 bg-red-50 text-red-600 px-4 py-2 rounded-xl text-[11px] font-bold tracking-wider uppercase hover:bg-red-500 hover:text-white hover:-translate-y-0.5 transition duration-300">
