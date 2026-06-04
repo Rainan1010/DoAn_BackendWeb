@@ -26,6 +26,10 @@ class OTPController extends Controller
         $code = implode('', $request->otp);
         $userId = session('otp_user_id');
         
+        if (!$userId) {
+            return redirect()->route('register')->with('error', 'Phiên đăng ký đã hết hạn hoặc không hợp lệ.');
+        }
+        
         $otpEntry = DB::table('otp_verifications')
             ->where('user_id', $userId)
             ->where('otp_code', $code)
