@@ -79,9 +79,16 @@ class ShippingAddressController extends Controller
                     $id
                 )
 
-                ->firstOrFail();
+                ->first();
 
-
+        if (!$address) {
+            return redirect()
+                ->route('addresses.index')
+                ->with(
+                    'error',
+                    'Địa chỉ không tồn tại hoặc bạn không có quyền truy cập.'
+                );
+        }
 
         return view(
             'auth.address.edit',
