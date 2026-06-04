@@ -348,17 +348,6 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/change-address/default/{id}', [ShippingAddressController::class, 'setDefault'])
         ->name('addresses.default');
-
-    Route::post(
-    '/addresses/unlock/{id}',
-    [ShippingAddressController::class, 'unlock']
-)
-->name('addresses.unlock');
-    
-    Route::post(
-    '/addresses/heartbeat/{id}',
-    [ShippingAddressController::class, 'heartbeat']
-)->name('addresses.heartbeat');
 });
 
 /*
