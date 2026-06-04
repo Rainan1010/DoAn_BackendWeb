@@ -77,7 +77,9 @@ class AttributeController extends Controller
                 ->with('error', 'Thuộc tính không tồn tại hoặc đã bị xóa.');
         }
 
-        return view('admin.attributes.edit', compact('attribute'));
+        $snapshot = $this->makeAttributeSnapshot($attribute);
+
+        return view('admin.attributes.edit', compact('attribute', 'snapshot'));
     }
 
     public function update(Request $request, $id)
@@ -88,6 +90,22 @@ class AttributeController extends Controller
             return redirect()
                 ->route('admin.attributes.index')
                 ->with('error', 'Không thể cập nhật vì thuộc tính không tồn tại hoặc đã bị xóa.');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Chống cập nhật trùng 2 tab
+        |--------------------------------------------------------------------------
+        | Khi mở edit ở 2 tab, mỗi tab giữ một snapshot dữ liệu ban đầu.
+        | Nếu tab 1 đã update, snapshot trong database sẽ thay đổi.
+        | Tab 2 gửi snapshot cũ lên thì hệ thống chặn lại, tránh ghi đè dữ liệu.
+        */
+        $currentSnapshot = $this->makeAttributeSnapshot($attribute);
+
+        if ($request->input('_snapshot') !== $currentSnapshot) {
+            return redirect()
+                ->route('admin.attributes.edit', $attribute->attribute_id)
+                ->with('error', 'Dữ liệu đã thay đổi ở tab khác. Vui lòng tải lại trang trước khi cập nhật.');
         }
 
         $request->merge([
@@ -174,12 +192,31 @@ class AttributeController extends Controller
         // Chuyển khoảng trắng full-width thành khoảng trắng thường
         $value = str_replace('　', ' ', $value);
 
-        // Xóa khoảng trắng đầu/cuối, bao gồm unicode whitespace
+        // Xóa khoảng trắng đầu/cuối, bao gồm Unicode whitespace
         $value = preg_replace('/^\s+|\s+$/u', '', $value);
 
         // Gộp nhiều khoảng trắng liên tiếp thành một khoảng trắng
         $value = preg_replace('/\s+/u', ' ', $value);
 
         return $value;
+    }
+
+    private function makeAttributeSnapshot(Attribute $attribute): string
+    {
+        $values = $attribute->values
+            ->pluck('value')
+            ->map(function ($value) {
+                return $this->normalizeText((string) $value);
+            })
+            ->sort()
+            ->values()
+            ->toArray();
+
+        return sha1(json_encode([
+            'attribute_id' => $attribute->attribute_id,
+            'name' => $this->normalizeText($attribute->name),
+            'unit' => $this->normalizeText($attribute->unit),
+            'values' => $values,
+        ], JSON_UNESCAPED_UNICODE));
     }
 }
