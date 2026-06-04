@@ -191,19 +191,18 @@
 
                             </label>
 
-                            <input type="text" name="full_name" maxlength="100" value="{{ $address->full_name }}" class="w-full border-0 border-b-2 rounded-md transition border-gray-200
-            focus:border-blue-900 focus:ring-0 py-3 px-0">
+                            <input type="text" name="full_name" maxlength="50" value="{{ $address->full_name }}" class="w-full border-0 border-b-2 rounded-md transition border-gray-200
+                                            focus:border-blue-900 focus:ring-0 py-3 px-0">
 
 
+
+                            <p id="fullNameError" class="text-red-500 text-sm mt-2 hidden">
+                            </p>
 
                             @error('full_name')
-
                                 <p class="text-red-500 text-sm mt-2">
-
                                     {{ $message }}
-
                                 </p>
-
                             @enderror
 
                         </div>
@@ -222,7 +221,7 @@
                             </label>
                             <input type="text" id="phone" name="phone" maxlength="10" inputmode="numeric"
                                 value="{{ $address->phone }}" class="w-full border-0 border-b-2 rounded-md transition border-gray-200
-            focus:border-blue-900 focus:ring-0 py-3 px-0">
+                                            focus:border-blue-900 focus:ring-0 py-3 px-0">
 
                             <p id="phoneError" class="text-red-500 text-sm mt-2 hidden">
                             </p>
@@ -371,9 +370,11 @@
 
                             </label>
 
-                            <textarea name="street_address" rows="4"
-                                class="w-full border border-gray-200 rounded-2xl focus:border-blue-900 focus:ring-0 p-4 resize-none">{{  old('street_address', $address->street_address) }}</textarea>
+                            <textarea id="street_address" name="street_address" rows="4" maxlength="255"
+                                class="w-full border border-gray-200 rounded-2xl focus:border-blue-900 focus:ring-0 p-4 resize-none">{{ old('street_address', $address->street_address) }}</textarea>
 
+                            <p id="streetAddressError" class="text-red-500 text-sm mt-2 hidden">
+                            </p>
 
 
                             @error('street_address')
@@ -582,19 +583,76 @@
             document.getElementById(
                 'phoneError'
             );
+        const streetAddress =
+            document.getElementById(
+                'street_address'
+            );
+
+        const streetAddressError =
+            document.getElementById(
+                'streetAddressError'
+            );
         // =============================
         // FULL NAME
         // =============================
-        fullName.addEventListener('input', function () {
+        fullName.addEventListener('blur', function () {
 
-            this.value = this.value.replace(
-                /[0-9!@#$%^&*()_+=\[\]{};:'"\\|,.<>/?`~-]/g,
-                ''
-            );
+            const error =
+                document.getElementById(
+                    'fullNameError'
+                );
 
-            if (this.value.length > 100) {
-                this.value = this.value.slice(0, 100);
+            if (!error) return;
+
+            // Chuẩn hoá khoảng trắng
+            this.value = this.value
+                .trim()
+                .replace(/\s+/g, ' ');
+
+            const value =
+                this.value;
+
+            if (value === '') {
+
+                error.innerHTML =
+                    'Họ tên không được để trống hoặc chỉ chứa khoảng trắng';
+
+                error.classList.remove(
+                    'hidden'
+                );
+
+                return;
             }
+
+            if (value.length > 50) {
+
+                error.innerHTML =
+                    'Họ tên tối đa 50 ký tự';
+
+                error.classList.remove(
+                    'hidden'
+                );
+
+                return;
+            }
+
+            if (
+                !/^[\p{L}\s]+$/u.test(value)
+            ) {
+
+                error.innerHTML =
+                    'Họ tên không được chứa số hoặc ký tự đặc biệt';
+
+                error.classList.remove(
+                    'hidden'
+                );
+
+                return;
+            }
+
+            error.classList.add(
+                'hidden'
+            );
 
         });
 
@@ -602,7 +660,20 @@
         // PHONE
         // =============================
         phoneInput.addEventListener('input', function () {
+            const value =
+                this.value.trim();
 
+            if (value === '') {
+
+                phoneError.textContent =
+                    'Vui lòng nhập số điện thoại';
+
+                phoneError.classList.remove(
+                    'hidden'
+                );
+
+                return;
+            }
             this.value =
                 this.value.replace(/\D/g, '');
 
@@ -632,6 +703,99 @@
             }
 
         });
+        phoneInput.addEventListener(
+            'blur',
+            function () {
+
+                const value =
+                    this.value.trim();
+
+                if (value === '') {
+
+                    phoneError.textContent =
+                        'Vui lòng nhập số điện thoại';
+
+                    phoneError.classList.remove(
+                        'hidden'
+                    );
+
+                    return;
+                }
+
+                if (
+                    !/^(02|03|07|08|09)[0-9]{8}$/.test(value)
+                ) {
+
+                    phoneError.textContent =
+                        'Số điện thoại không hợp lệ (10 số, bắt đầu bằng 02, 03, 07, 08 hoặc 09)';
+
+                    phoneError.classList.remove(
+                        'hidden'
+                    );
+
+                    return;
+                }
+
+                phoneError.classList.add(
+                    'hidden'
+                );
+
+            }
+        );
+        streetAddress.addEventListener(
+            'blur',
+            function () {
+
+                this.value =
+                    this.value.trim();
+
+                const value =
+                    this.value;
+
+                if (value === '') {
+
+                    streetAddressError.textContent =
+                        'Vui lòng nhập địa chỉ cụ thể';
+
+                    streetAddressError.classList.remove(
+                        'hidden'
+                    );
+
+                    return;
+                }
+
+                if (value.length > 255) {
+
+                    streetAddressError.textContent =
+                        'Địa chỉ tối đa 255 ký tự';
+
+                    streetAddressError.classList.remove(
+                        'hidden'
+                    );
+
+                    return;
+                }
+
+                if (
+                    !/^[a-zA-ZÀ-ỹ0-9\s\/\-,.]+$/.test(value)
+                ) {
+
+                    streetAddressError.textContent =
+                        'Địa chỉ cụ thể không được chứa ký tự đặc biệt';
+
+                    streetAddressError.classList.remove(
+                        'hidden'
+                    );
+
+                    return;
+                }
+
+                streetAddressError.classList.add(
+                    'hidden'
+                );
+
+            }
+        );
         // =====================================================
         // OLD VALUE
         // =====================================================
@@ -890,29 +1054,33 @@
         // MODAL
         // =====================================================
         function openSaveModal() {
+
+            fullName.dispatchEvent(
+                new Event('blur')
+            );
+
+            const fullNameError =
+                document.getElementById(
+                    'fullNameError'
+                );
+
             if (
-                fullName.value.trim() === ''
+                !fullNameError.classList.contains(
+                    'hidden'
+                )
             ) {
 
-                alert('Vui lòng nhập họ tên');
                 fullName.focus();
+
                 return;
             }
+            phoneInput.dispatchEvent(
+                new Event('blur')
+            );
 
             if (
-                fullName.value.trim().length > 100
-            ) {
-
-                alert('Họ tên tối đa 100 ký tự');
-                fullName.focus();
-                return;
-            }
-            const regex =
-                /^(03|07|08|09|02)[0-9]{8}$/;
-
-            if (
-                !regex.test(
-                    phoneInput.value.trim()
+                !phoneError.classList.contains(
+                    'hidden'
                 )
             ) {
 
@@ -921,6 +1089,20 @@
                 return;
             }
 
+            streetAddress.dispatchEvent(
+                new Event('blur')
+            );
+
+            if (
+                !streetAddressError.classList.contains(
+                    'hidden'
+                )
+            ) {
+
+                streetAddress.focus();
+
+                return;
+            }
             document
                 .getElementById(
                     'saveModal'
@@ -937,9 +1119,9 @@
                     'flex'
                 );
 
+
+
         }
-
-
 
 
 
@@ -979,23 +1161,24 @@
                     'saveButton'
                 );
 
+            if (button.disabled) {
+                return;
+            }
 
+            const modalButton =
+                event.target;
+
+            modalButton.disabled = true;
 
             const text =
                 document.getElementById(
                     'saveButtonText'
                 );
 
-
-
             text.innerHTML =
                 'ĐANG LƯU... ⏳';
 
-
-
             button.disabled = true;
-
-
 
             setTimeout(() => {
 
