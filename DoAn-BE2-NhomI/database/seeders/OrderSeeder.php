@@ -2,123 +2,224 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class OrderSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('orders')->insert([
+        DB::table('revenue_reports')->truncate();
+        DB::table('payments')->truncate();
+        DB::table('orders')->truncate();
 
-            // ORDER 1
-            [
-                'user_id' => 1,
-                'shipping_address_id' => 3,
-                'voucher_id' => null,
-                'order_code' => 'BT-1001',
-                'subtotal' => 34990000,
-                'shipping_fee' => 30000,
-                'discount_amount' => 0,
-                'total_amount' => 35020000,
-                'payment_method' => 'cod',
-                'payment_status' => 'pending',
-                'order_status' => 'pending',
-                'cancel_reason' => null,
-                'paid_at' => null,
-                'created_at' => now(),
-            ],
+        $startDate = Carbon::create(2026, 5, 20);
+        $endDate   = Carbon::create(2026, 6, 4);
 
-            // ORDER 2
-            [
-                'user_id' => 1,
-                'shipping_address_id' => 4,
-                'voucher_id' => null,
-                'order_code' => 'BT-1002',
-                'subtotal' => 28500000,
-                'shipping_fee' => 30000,
-                'discount_amount' => 500000,
-                'total_amount' => 28030000,
-                'payment_method' => 'momo',
-                'payment_status' => 'paid',
-                'order_status' => 'confirmed',
-                'cancel_reason' => null,
-                'paid_at' => now(),
-                'created_at' => now(),
-            ],
+        while ($startDate <= $endDate) {
 
-            // ORDER 3
-            [
-                'user_id' => 1,
-                'shipping_address_id' => 3,
-                'voucher_id' => null,
-                'order_code' => 'BT-1003',
-                'subtotal' => 21990000,
-                'shipping_fee' => 30000,
-                'discount_amount' => 1000000,
-                'total_amount' => 21020000,
-                'payment_method' => 'vnpay',
-                'payment_status' => 'paid',
-                'order_status' => 'shipped',
-                'cancel_reason' => null,
-                'paid_at' => now(),
-                'created_at' => now(),
-            ],
+            // MỖI NGÀY 10 ĐƠN
+            for ($i = 1; $i <= 10; $i++) {
 
-            // ORDER 4
-            [
-                'user_id' => 1,
-                'shipping_address_id' => 3,
-                'voucher_id' => null,
-                'order_code' => 'BT-1004',
-                'subtotal' => 15990000,
-                'shipping_fee' => 30000,
-                'discount_amount' => 0,
-                'total_amount' => 16020000,
-                'payment_method' => 'cod',
-                'payment_status' => 'pending',
-                'order_status' => 'processing',
-                'cancel_reason' => null,
-                'paid_at' => null,
-                'created_at' => now(),
-            ],
+                $address = DB::table('shipping_addresses')
+                    ->inRandomOrder()
+                    ->first();
 
-            // ORDER 5
-            [
-                'user_id' => 1,
-                'shipping_address_id' =>4,
-                'voucher_id' => null,
-                'order_code' => 'BT-1005',
-                'subtotal' => 45990000,
-                'shipping_fee' => 30000,
-                'discount_amount' => 2000000,
-                'total_amount' => 44020000,
-                'payment_method' => 'momo',
-                'payment_status' => 'paid',
-                'order_status' => 'delivered',
-                'cancel_reason' => null,
-                'paid_at' => now(),
-                'created_at' => now(),
-            ],
+                if (!$address) {
+                    continue;
+                }
 
-            // ORDER 6
-            [
-                'user_id' => 1,
-                'shipping_address_id' => 4,
-                'voucher_id' => null,
-                'order_code' => 'BT-1006',
-                'subtotal' => 12500000,
-                'shipping_fee' => 30000,
-                'discount_amount' => 0,
-                'total_amount' => 12530000,
-                'payment_method' => 'vnpay',
-                'payment_status' => 'refunded',
-                'order_status' => 'cancelled',
-                'cancel_reason' => 'Khách yêu cầu huỷ',
-                'paid_at' => now(),
-                'created_at' => now(),
-            ],
+                $shippingFee = DB::table('shipping_fees')
+                    ->where('province', $address->province)
+                    ->value('fee') ?? 30000;
 
-        ]);
+                $createdAt = $startDate->copy()->setTime(
+                    rand(8, 22),
+                    rand(0, 59),
+                    rand(0, 59)
+                );
+
+                $paymentStatus = fake()->randomElement([
+                    'paid',
+                    'paid',
+                    'paid',
+                    'paid',
+                    'paid',
+                    'paid',
+                    'paid',
+                    'pending',
+                    'pending',
+                    'refunded',
+                ]);
+
+                $orderStatus = match ($paymentStatus) {
+
+                    'paid' => fake()->randomElement([
+                        'confirmed',
+                        'processing',
+                        'shipped',
+                        'delivered',
+                    ]),
+
+                    'pending' => 'pending',
+
+                    'refunded' => 'cancelled',
+                };
+
+                $subtotal = rand(
+                    5000000,
+                    48000000
+                );
+
+                $totalAmount = $subtotal + $shippingFee;
+
+                // MOMO CHỈ DƯỚI 50 TRIỆU
+                if ($totalAmount >= 50000000) {
+
+                    $paymentMethod = fake()->randomElement([
+                        'cod',
+                        'vnpay',
+                    ]);
+                } else {
+
+                    $paymentMethod = fake()->randomElement([
+                        'cod',
+                        'momo',
+                        'vnpay',
+                    ]);
+                }
+
+                $paidAt = $paymentStatus === 'paid'
+                    ? $createdAt->copy()->addHours(rand(1, 5))
+                    : null;
+
+                $orderId = DB::table('orders')->insertGetId([
+
+                    'user_id' => $address->user_id,
+
+                    'shipping_address_id' => $address->address_id,
+
+                    'voucher_id' => null,
+
+                    'order_code' => 'ORD-' . strtoupper(Str::random(8)),
+
+                    'subtotal' => $subtotal,
+
+                    'shipping_fee' => $shippingFee,
+
+                    'discount_amount' => 0,
+
+                    'total_amount' => $totalAmount,
+
+                    'payment_method' => $paymentMethod,
+
+                    'payment_status' => $paymentStatus,
+
+                    'order_status' => $orderStatus,
+
+                    'cancel_reason' => $paymentStatus === 'refunded'
+                        ? 'Khách yêu cầu huỷ đơn'
+                        : null,
+
+                    'paid_at' => $paidAt,
+
+                    'created_at' => $createdAt,
+                ]);
+
+                /*
+                |--------------------------------------------------------------------------
+                | PAYMENT
+                |--------------------------------------------------------------------------
+                */
+
+                DB::table('payments')->insert([
+
+                    'order_id' => $orderId,
+
+                    'gateway' => $paymentMethod,
+
+                    'transaction_id' => match ($paymentMethod) {
+
+                        'momo' => 'MOMO-' . strtoupper(uniqid()),
+
+                        'vnpay' => 'VNPAY-' . strtoupper(uniqid()),
+
+                        default => null,
+                    },
+
+                    'amount' => $totalAmount,
+
+                    'status' => match ($paymentStatus) {
+
+                        'paid' => 'success',
+
+                        'pending' => 'pending',
+
+                        'refunded' => 'refunded',
+
+                        default => 'failed',
+                    },
+
+                    'gateway_response' => json_encode([
+                        'message' => 'Seeder Payment'
+                    ]),
+
+                    'paid_at' => $paidAt,
+                ]);
+
+                /*
+                |--------------------------------------------------------------------------
+                | REVENUE REPORT
+                |--------------------------------------------------------------------------
+                */
+
+                if ($paymentStatus === 'paid') {
+
+                    $reportDate = $createdAt->toDateString();
+
+                    $report = DB::table('revenue_reports')
+                        ->where('report_date', $reportDate)
+                        ->first();
+
+                    if ($report) {
+
+                        $newRevenue = $report->total_revenue + $totalAmount;
+                        $newOrders  = $report->total_orders + 1;
+
+                        DB::table('revenue_reports')
+                            ->where('report_id', $report->report_id)
+                            ->update([
+
+                                'total_revenue' => $newRevenue,
+
+                                'total_orders' => $newOrders,
+
+                                'avg_order_value' => round(
+                                    $newRevenue / $newOrders
+                                ),
+                            ]);
+                    } else {
+
+                        DB::table('revenue_reports')->insert([
+
+                            'report_date' => $reportDate,
+
+                            'total_revenue' => $totalAmount,
+
+                            'total_orders' => 1,
+
+                            'total_items_sold' => 0,
+
+                            'avg_order_value' => $totalAmount,
+                        ]);
+                    }
+                }
+            }
+
+            // CHỈ TĂNG NGÀY SAU KHI TẠO XONG 10 ĐƠN
+            $startDate->addDay();
+        }
     }
 }
