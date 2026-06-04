@@ -89,9 +89,12 @@
                             value="{{ request('from_date', now()->toDateString()) }}"
                             class="w-full border border-gray-200 rounded-2xl px-4 py-3">
 
-                        <p id="fromDateError" class="text-red-500 text-xs mt-1 break-words hidden">
-                        </p>
+                        <p id="fromDateError"
+                            class="text-red-500 text-xs mt-1 break-words {{ $errors->has('from_date') ? '' : 'hidden' }}">
 
+                            {{ $errors->first('from_date') }}
+
+                        </p>
                     </div>
                     <div class="w-64">
 
@@ -103,7 +106,11 @@
                             value="{{ request('to_date', now()->toDateString()) }}"
                             class="w-full border border-gray-200 rounded-2xl px-4 py-3">
 
-                        <p id="toDateError" class="text-red-500 text-xs mt-1 break-words hidden">
+                        <p id="toDateError"
+                            class="text-red-500 text-xs mt-1 break-words {{ $errors->has('to_date') ? '' : 'hidden' }}">
+
+                            {{ $errors->first('to_date') }}
+
                         </p>
 
                     </div>

@@ -390,29 +390,29 @@ class CrudUserController extends Controller
             'to_date.before_or_equal' =>
                 'Ngày kết thúc không được lớn hơn ngày hiện tại.'
         ]);
-$query = LoginHistory::with('user');
+        $query = LoginHistory::with('user');
 
-$fromDate = $request->input(
-    'from_date',
-    now()->toDateString()
-);
+        $fromDate = $request->input(
+            'from_date',
+            now()->toDateString()
+        );
 
-$toDate = $request->input(
-    'to_date',
-    now()->toDateString()
-);
+        $toDate = $request->input(
+            'to_date',
+            now()->toDateString()
+        );
 
-$query->whereDate(
-    'login_time',
-    '>=',
-    $fromDate
-);
+        $query->whereDate(
+            'login_time',
+            '>=',
+            $fromDate
+        );
 
-$query->whereDate(
-    'login_time',
-    '<=',
-    $toDate
-);
+        $query->whereDate(
+            'login_time',
+            '<=',
+            $toDate
+        );
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
