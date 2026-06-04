@@ -349,16 +349,24 @@ Route::middleware('auth')->group(function () {
         ->name('addresses.store');
 
     Route::get('/change-address/edit/{id}', [ShippingAddressController::class, 'edit'])
-        ->name('addresses.edit');
+        ->name('addresses.edit')
+        ->where('id', '.*');
 
     Route::post('/change-address/update/{id}', [ShippingAddressController::class, 'update'])
-        ->name('addresses.update');
+        ->name('addresses.update')
+        ->where('id', '.*');
 
     Route::delete('/change-address/delete/{id}', [ShippingAddressController::class, 'destroy'])
-        ->name('addresses.destroy');
+        ->name('addresses.destroy')
+        ->where('id', '.*');
 
     Route::post('/change-address/default/{id}', [ShippingAddressController::class, 'setDefault'])
-        ->name('addresses.default');
+        ->name('addresses.default')
+        ->where('id', '.*');
+
+    Route::get('/change-address/{id}', [ShippingAddressController::class, 'edit'])
+        ->name('addresses.edit_fallback')
+        ->where('id', '.*');
 });
 
 /*

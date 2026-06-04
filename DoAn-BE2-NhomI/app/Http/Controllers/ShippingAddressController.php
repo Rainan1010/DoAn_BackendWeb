@@ -65,35 +65,28 @@ class ShippingAddressController extends Controller
     // =====================================================
     // FORM EDIT
     // =====================================================
-    public function edit($id)
+   public function edit($id)
     {
-        if (!is_numeric($id)) {
 
-            return redirect()
-                ->route('addresses.index')
-                ->with(
-                    'error',
-                    'Địa chỉ không tồn tại.'
-                );
-        }
-
-        $address = ShippingAddress::where(
-            'user_id',
-            Auth::id()
-        )
-            ->where(
-                'address_id',
-                $id
+        $address =
+            ShippingAddress::where(
+                'user_id',
+                Auth::id()
             )
-            ->first();
+
+                ->where(
+                    'address_id',
+                    $id
+                )
+
+                ->first();
 
         if (!$address) {
-
             return redirect()
                 ->route('addresses.index')
                 ->with(
                     'error',
-                    'Địa chỉ không tồn tại.'
+                    'Địa chỉ không tồn tại hoặc bạn không có quyền truy cập.'
                 );
         }
 
@@ -101,8 +94,8 @@ class ShippingAddressController extends Controller
             'auth.address.edit',
             compact('address')
         );
-    }
 
+    }
 
 
 
