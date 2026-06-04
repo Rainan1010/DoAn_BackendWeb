@@ -12,21 +12,10 @@ class ShippingAddress extends Model
     // =====================================================
     protected $table = 'shipping_addresses';
 
-
-
     // =====================================================
     // PRIMARY KEY
     // =====================================================
     protected $primaryKey = 'address_id';
-
-
-
-    // =====================================================
-    // KHÔNG DÙNG TIMESTAMP
-    // =====================================================
-    public $timestamps = false;
-
-
 
     // =====================================================
     // FIELD CHO PHÉP INSERT
@@ -40,8 +29,10 @@ class ShippingAddress extends Model
         'district',
         'ward',
         'street_address',
-        'is_default'
-
+        'is_default',
+        'editing_by',
+        'editing_at',
+        'editing_token',
     ];
 
 }
