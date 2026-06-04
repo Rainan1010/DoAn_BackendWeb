@@ -9,6 +9,24 @@
 
 @section('content')
 <div class="space-y-6">
+    @if(session('error') || $errors->any())
+        <div class="px-5 py-3 bg-red-50 text-red-600 text-sm font-bold rounded-lg border border-red-200 flex flex-col gap-1.5 animate-fadeIn">
+            @if(session('error'))
+                <div class="flex items-center gap-2">
+                    <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                    <span>{{ session('error') }}</span>
+                </div>
+            @endif
+            @if($errors->any())
+                @foreach($errors->all() as $error)
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                        <span>{{ $error }}</span>
+                    </div>
+                @endforeach
+            @endif
+        </div>
+    @endif
     
     <!-- Breadcrumb & Header section -->
     <div class="flex flex-col gap-2">

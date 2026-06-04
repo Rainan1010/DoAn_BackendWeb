@@ -123,7 +123,7 @@ class DashboardController extends Controller
             ->map(function($p) {
                 return [
                     'name' => $p->name,
-                    'category' => $p->category->name ?? 'Uncategorized',
+                    'category' => $p->category->name ?? 'Chưa phân loại',
                     'revenue' => $p->base_price * ($p->view_count / 10),
                     'sold' => round($p->view_count / 5),
                     'image' => $p->primaryImage->image_url ?? 'https://ui-avatars.com/api/?name='.urlencode($p->name)

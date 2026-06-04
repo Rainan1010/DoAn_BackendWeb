@@ -15,9 +15,9 @@ class Product extends Model
     protected $primaryKey = 'product_id';
     public $incrementing = true;
 
-    // Bảng chỉ có created_at, không có updated_at
+    // Bảng có created_at và updated_at
     const CREATED_AT = 'created_at';
-    const UPDATED_AT = null;
+    const UPDATED_AT = 'updated_at';
 
     public $timestamps = true;
 
@@ -44,6 +44,7 @@ class Product extends Model
         'is_hot' => 'boolean',
         'is_trending' => 'boolean',
         'created_at' => 'datetime',
+        'updated_at' => 'datetime',
         'prices_updated_at' => 'datetime',
     ];
 
