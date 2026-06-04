@@ -130,7 +130,30 @@ class RevenueReportController extends Controller
         $totalOrders =
 
             $query->count();
+        $confirmedOrders = Order::whereDate('created_at', '>=', $from)
+            ->whereDate('created_at', '<=', $to)
+            ->where('order_status', 'confirmed')
+            ->count();
 
+        $processingOrders = Order::whereDate('created_at', '>=', $from)
+            ->whereDate('created_at', '<=', $to)
+            ->where('order_status', 'processing')
+            ->count();
+
+        $shippedOrders = Order::whereDate('created_at', '>=', $from)
+            ->whereDate('created_at', '<=', $to)
+            ->where('order_status', 'shipped')
+            ->count();
+
+        $deliveredOrders = Order::whereDate('created_at', '>=', $from)
+            ->whereDate('created_at', '<=', $to)
+            ->where('order_status', 'delivered')
+            ->count();
+
+        $cancelledOrders = Order::whereDate('created_at', '>=', $from)
+            ->whereDate('created_at', '<=', $to)
+            ->where('order_status', 'cancelled')
+            ->count();
         /*
         |--------------------------------------------------------------------------
         | TỔNG SẢN PHẨM ĐÃ BÁN
@@ -194,15 +217,25 @@ class RevenueReportController extends Controller
             ->get()
             ->map(function ($item) {
 
+                $expectedRevenue = Order::whereDate(
+                    'created_at',
+                    $item->report_date
+                )
+                    ->whereNotIn(
+                        'order_status',
+                        ['cancelled']
+                    )
+                    ->sum('total_amount');
+
                 return [
 
-                    'date' =>
-                        \Carbon\Carbon::parse(
-                            $item->report_date
-                        )->format('d/m'),
+                    'date' => \Carbon\Carbon::parse(
+                        $item->report_date
+                    )->format('d/m'),
 
-                    'revenue' =>
-                        (int) $item->total_revenue
+                    'revenue' => (int) $item->total_revenue,
+
+                    'expected' => (int) $expectedRevenue,
                 ];
             });
         /*
@@ -249,8 +282,19 @@ class RevenueReportController extends Controller
 
                 'from',
 
-                'to'
+                'to',
+
+                'confirmedOrders',
+
+                'processingOrders',
+
+                'shippedOrders',
+
+                'deliveredOrders',
+
+                'cancelledOrders'
             )
         );
+
     }
 }
