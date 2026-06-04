@@ -16,12 +16,13 @@
     max_discount: {{ old('max_discount', $voucher->max_discount ?? 0) }},
     start_at: '{{ old('start_at', $voucher->start_at ? \Carbon\Carbon::parse($voucher->start_at)->format('Y-m-d\TH:i') : '') }}',
     end_at: '{{ old('end_at', $voucher->end_at ? \Carbon\Carbon::parse($voucher->end_at)->format('Y-m-d\TH:i') : '') }}',
-    is_active: {{ $voucher->is_active ? 'true' : 'false' }}
+    is_active: {{ old('_token') ? (old('is_active') ? 'true' : 'false') : ($voucher->is_active ? 'true' : 'false') }}
 }" class="pb-10">
     
     <form action="{{ route('admin.vouchers.update', $voucher->voucher_id) }}" method="POST">
         @csrf
         @method('PUT')
+        <input type="hidden" name="last_updated_at" value="{{ $voucher->updated_at ? $voucher->updated_at->format('Y-m-d H:i:s') : '' }}">
         
         <!-- Header Actions -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -43,6 +44,23 @@
             </div>
         </div>
 
+        {{-- Thông báo thành công --}}
+        @if(session('success'))
+            <div class="mb-6 p-4 rounded-xl bg-green-50 text-green-700 border border-green-200 flex items-start gap-3">
+                <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                <p class="text-sm font-bold">{{ session('success') }}</p>
+            </div>
+        @endif
+
+        {{-- Thông báo lỗi / xung đột --}}
+        @if(session('error'))
+            <div class="mb-6 p-4 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 flex items-start gap-3">
+                <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                <p class="text-sm font-bold">{{ session('error') }}</p>
+            </div>
+        @endif
+
+        {{-- Lỗi validation --}}
         @if($errors->any())
             <div class="mb-6 p-4 rounded-xl bg-red-50 text-red-600 border border-red-100">
                 <ul class="list-disc list-inside text-sm font-bold">
@@ -118,7 +136,7 @@
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Giới hạn sử dụng</label>
-                            <input type="number" name="usage_limit" value="{{ $voucher->usage_limit }}" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10">
+                            <input type="number" name="usage_limit" value="{{ old('usage_limit', $voucher->usage_limit) }}" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10">
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Đã sử dụng</label>
@@ -139,11 +157,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                         <div>
                             <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Thời gian bắt đầu</label>
-                            <input type="datetime-local" name="start_at" x-model="start_at" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10">
+                            <input type="datetime-local" name="start_at" x-model="start_at" min="1000-01-01T00:00" max="9999-12-31T23:59" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10">
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Thời gian kết thúc</label>
-                            <input type="datetime-local" name="end_at" x-model="end_at" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10">
+                            <input type="datetime-local" name="end_at" x-model="end_at" min="1000-01-01T00:00" max="9999-12-31T23:59" class="w-full bg-[#F4F5F7] border-none rounded-xl py-3 px-4 text-sm font-bold text-[#0A2540] focus:ring-2 focus:ring-[#0A2540]/10">
                         </div>
                     </div>
 

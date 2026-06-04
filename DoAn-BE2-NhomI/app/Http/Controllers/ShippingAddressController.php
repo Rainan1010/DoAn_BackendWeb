@@ -542,10 +542,30 @@ class ShippingAddressController extends Controller
                     $id
                 )
 
-                ->firstOrFail();
+                ->first();
+        if (!$address) {
+
+            return redirect()
+                ->route('addresses.index')
+                ->with(
+                    'error',
+                    'Địa chỉ này đã bị xóa.'
+                );
+        }
 
 
+        if (
+            $request->old_updated_at !=
+            $address->updated_at
+        ) {
 
+            return redirect()
+                ->route('addresses.edit', $id)
+                ->with(
+                    'error',
+                    'Thông tin địa chỉ đã được thay đổi. Dữ liệu mới nhất đã được tải lại.'
+                );
+        }
 
 
         $address->update([
@@ -601,10 +621,17 @@ class ShippingAddressController extends Controller
                     $id
                 )
 
-                ->firstOrFail();
+                ->first();
 
+        if (!$address) {
 
-
+            return redirect()
+                ->route('addresses.index')
+                ->with(
+                    'error',
+                    'Địa chỉ này đã bị xóa.'
+                );
+        }
 
 
         // =================================================
@@ -664,9 +691,17 @@ class ShippingAddressController extends Controller
                     $id
                 )
 
-                ->firstOrFail();
+                ->first();
 
+        if (!$address) {
 
+            return redirect()
+                ->route('addresses.index')
+                ->with(
+                    'error',
+                    'Địa chỉ này đã bị xóa.'
+                );
+        }
 
 
 
