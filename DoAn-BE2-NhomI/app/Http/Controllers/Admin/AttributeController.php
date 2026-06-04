@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Attribute;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class AttributeController extends Controller
 {
@@ -31,12 +32,18 @@ class AttributeController extends Controller
         ]);
 
         $request->validate([
-            'name' => 'required|string|max:100',
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('attributes', 'name'),
+            ],
             'unit' => 'nullable|string|max:50',
             'values' => 'nullable|string|max:2000',
         ], [
             'name.required' => 'Vui lòng nhập tên thuộc tính.',
             'name.max' => 'Tên thuộc tính không được vượt quá 100 ký tự.',
+            'name.unique' => 'Tên thuộc tính này đã tồn tại.',
             'unit.max' => 'Đơn vị không được vượt quá 50 ký tự.',
             'values.max' => 'Danh sách giá trị thuộc tính quá dài.',
         ]);
@@ -77,7 +84,9 @@ class AttributeController extends Controller
                 ->with('error', 'Thuộc tính không tồn tại hoặc đã bị xóa.');
         }
 
-        return view('admin.attributes.edit', compact('attribute'));
+        $snapshot = $this->makeAttributeSnapshot($attribute);
+
+        return view('admin.attributes.edit', compact('attribute', 'snapshot'));
     }
 
     public function update(Request $request, $id)
@@ -90,6 +99,14 @@ class AttributeController extends Controller
                 ->with('error', 'Không thể cập nhật vì thuộc tính không tồn tại hoặc đã bị xóa.');
         }
 
+        $currentSnapshot = $this->makeAttributeSnapshot($attribute);
+
+        if ($request->input('_snapshot') !== $currentSnapshot) {
+            return redirect()
+                ->route('admin.attributes.edit', $attribute->attribute_id)
+                ->with('error', 'Dữ liệu đã thay đổi ở tab khác. Vui lòng tải lại trang trước khi cập nhật.');
+        }
+
         $request->merge([
             'name' => $this->normalizeText($request->name),
             'unit' => $this->normalizeText($request->unit),
@@ -97,12 +114,18 @@ class AttributeController extends Controller
         ]);
 
         $request->validate([
-            'name' => 'required|string|max:100',
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('attributes', 'name')->ignore($attribute->attribute_id, 'attribute_id'),
+            ],
             'unit' => 'nullable|string|max:50',
             'values' => 'nullable|string|max:2000',
         ], [
             'name.required' => 'Vui lòng nhập tên thuộc tính.',
             'name.max' => 'Tên thuộc tính không được vượt quá 100 ký tự.',
+            'name.unique' => 'Tên thuộc tính này đã tồn tại.',
             'unit.max' => 'Đơn vị không được vượt quá 50 ký tự.',
             'values.max' => 'Danh sách giá trị thuộc tính quá dài.',
         ]);
@@ -153,11 +176,14 @@ class AttributeController extends Controller
         }
 
         $values = explode(',', $values);
+        $uniqueValues = [];
 
         foreach ($values as $value) {
             $value = $this->normalizeText($value);
 
-            if ($value !== '') {
+            if ($value !== '' && !in_array($value, $uniqueValues, true)) {
+                $uniqueValues[] = $value;
+
                 $attribute->values()->create([
                     'value' => $value,
                 ]);
@@ -171,15 +197,33 @@ class AttributeController extends Controller
             return null;
         }
 
-        // Chuyển khoảng trắng full-width thành khoảng trắng thường
+        if (function_exists('mb_convert_kana')) {
+            $value = mb_convert_kana($value, 'asKV', 'UTF-8');
+        }
+
         $value = str_replace('　', ' ', $value);
-
-        // Xóa khoảng trắng đầu/cuối, bao gồm unicode whitespace
         $value = preg_replace('/^\s+|\s+$/u', '', $value);
-
-        // Gộp nhiều khoảng trắng liên tiếp thành một khoảng trắng
         $value = preg_replace('/\s+/u', ' ', $value);
 
         return $value;
+    }
+
+    private function makeAttributeSnapshot(Attribute $attribute): string
+    {
+        $values = $attribute->values
+            ->pluck('value')
+            ->map(function ($value) {
+                return $this->normalizeText((string) $value);
+            })
+            ->sort()
+            ->values()
+            ->toArray();
+
+        return sha1(json_encode([
+            'attribute_id' => $attribute->attribute_id,
+            'name' => $this->normalizeText($attribute->name),
+            'unit' => $this->normalizeText($attribute->unit),
+            'values' => $values,
+        ], JSON_UNESCAPED_UNICODE));
     }
 }
