@@ -44,6 +44,26 @@
             <form id="editForm" action="{{ route('admin.brands.update', $brand->brand_id) }}" method="POST">
                 @csrf
                 @method('PUT')
+                <input type="hidden" name="last_updated_at" value="{{ $brand->updated_at ? $brand->updated_at->toIso8601String() : ($brand->created_at ? $brand->created_at->toIso8601String() : '') }}">
+
+                @if(session('error') || $errors->any())
+                    <div class="mb-5 flex flex-col gap-2 bg-red-50 border border-red-200 text-red-700 px-5 py-4 rounded-2xl shadow-sm">
+                        @if(session('error'))
+                            <div class="flex items-center gap-2 font-semibold text-sm">
+                                <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                <span>{{ session('error') }}</span>
+                            </div>
+                        @endif
+                        @if($errors->any())
+                            @foreach($errors->all() as $error)
+                                <div class="flex items-center gap-2 font-semibold text-sm">
+                                    <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                    <span>{{ $error }}</span>
+                                </div>
+                            @endforeach
+                        @endif
+                    </div>
+                @endif
 
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <div class="flex items-center gap-2 mb-5">
