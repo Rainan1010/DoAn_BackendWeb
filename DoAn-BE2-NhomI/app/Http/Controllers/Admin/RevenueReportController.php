@@ -26,6 +26,35 @@ class RevenueReportController extends Controller
         $to =
             request('to')
             ?? now()->format('Y-m-d');
+        if ($from > now()->toDateString()) {
+
+            return redirect()
+                ->route('admin.revenue_reports.index')
+                ->with(
+                    'error',
+                    'Ngày bắt đầu không được lớn hơn ngày hiện tại'
+                );
+        }
+
+        if ($to > now()->toDateString()) {
+
+            return redirect()
+                ->route('admin.revenue_reports.index')
+                ->with(
+                    'error',
+                    'Ngày kết thúc không được lớn hơn ngày hiện tại'
+                );
+        }
+
+        if ($to < $from) {
+
+            return redirect()
+                ->route('admin.revenue_reports.index')
+                ->with(
+                    'error',
+                    'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu'
+                );
+        }
         /*
         |--------------------------------------------------------------------------
         | QUERY ĐƠN ĐÃ THANH TOÁN
@@ -78,10 +107,10 @@ class RevenueReportController extends Controller
                     'total_amount'
                 );
         /*
-|--------------------------------------------------------------------------
-|  GIÁ TRỊ TRUNG BÌNH CỦA TOÀN HỆ THỐNG
-|--------------------------------------------------------------------------
-*/
+        |--------------------------------------------------------------------------
+        |  GIÁ TRỊ TRUNG BÌNH CỦA TOÀN HỆ THỐNG
+        |--------------------------------------------------------------------------
+        */
         $avgOrderValueAll =
 
             Order::where(
@@ -182,13 +211,13 @@ class RevenueReportController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $reports =
-
-            RevenueReport::latest(
-                'report_date'
-            )
-
-                ->paginate(10);
+        $reports = RevenueReport::whereBetween(
+            'report_date',
+            [$from, $to]
+        )
+            ->latest('report_date')
+            ->paginate(10)
+            ->withQueryString();
 
         /*
         |--------------------------------------------------------------------------

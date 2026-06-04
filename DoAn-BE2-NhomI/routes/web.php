@@ -24,6 +24,17 @@ use App\Http\Controllers\Admin\InventoryLogController;
 
 /*
 |--------------------------------------------------------------------------
+| GLOBAL ROUTE PATTERNS
+|--------------------------------------------------------------------------
+| Chặn các route có tham số {id} nhận chuỗi không phải số.
+| Ví dụ: /admin/attributes/abc sẽ trả 404 thay vì vào controller.
+|--------------------------------------------------------------------------
+*/
+
+Route::pattern('id', '[0-9]+');
+
+/*
+|--------------------------------------------------------------------------
 | PUBLIC ROUTES
 |--------------------------------------------------------------------------
 */
@@ -348,17 +359,6 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/change-address/default/{id}', [ShippingAddressController::class, 'setDefault'])
         ->name('addresses.default');
-
-    Route::post(
-    '/addresses/unlock/{id}',
-    [ShippingAddressController::class, 'unlock']
-)
-->name('addresses.unlock');
-    
-    Route::post(
-    '/addresses/heartbeat/{id}',
-    [ShippingAddressController::class, 'heartbeat']
-)->name('addresses.heartbeat');
 });
 
 /*
