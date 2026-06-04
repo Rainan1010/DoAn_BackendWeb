@@ -13,15 +13,54 @@
             <span class="font-bold text-gray-800">{{ $product->name }}</span>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+        {{-- ===== FIX BIẾN THIẾU + ẢNH SẢN PHẨM ===== --}}
+        @php
+            $relatedProducts = $relatedProducts ?? collect();
+            $reviews = $reviews ?? collect();
+
+            $productImage = $product->image_url ?? null;
+
+            if (!$productImage && isset($images) && count($images) > 0) {
+                $primaryImg = $images->where('is_primary', 1)->first() ?? $images->first();
+
+                if ($primaryImg) {
+                    $productImage = $primaryImg->image_url
+                        ?? $primaryImg->url
+                        ?? $primaryImg->image
+                        ?? $primaryImg->path
+                        ?? null;
+                }
+            }
+
+            $productImage = $productImage ?: 'images/products/default.png';
+        @endphp
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start" data-realtime-price-root data-product-id="{{ $product->product_id }}">
 
             {{-- ===== ẢNH SẢN PHẨM ===== --}}
-            <div class="lg:col-span-6 sticky top-24">
+            <div class="lg:col-span-6 sticky top-24 space-y-6">
                 <div class="border-2 border-gray-50 p-8 rounded-3xl bg-white shadow-sm hover:shadow-md transition-shadow">
-                    <img src="{{ asset(str_replace('public/', '', $product->image_url)) }}"
+                    <img id="mainProductImage" src="{{ asset(str_replace(['public/', '/storage/products/'], ['', '/products/'], $productImage)) }}"
                          class="w-full h-[450px] object-contain hover:scale-105 transition-transform duration-500"
                          alt="{{ $product->name }}">
                 </div>
+
+                {{-- DANH SÁCH ẢNH NHỎ (THUMBNAILS) --}}
+                @if(isset($images) && count($images) > 0)
+                <div class="grid grid-cols-5 gap-4">
+                    @foreach($images as $img)
+                        @php 
+                            $imgUrl = asset(str_replace(['public/', '/storage/products/'], ['', '/products/'], $img->image_url)); 
+                            $isCurrentPrimary = ($img->is_primary || ($img->image_url == $productImage) || (str_replace('public/', '', $img->image_url) == str_replace('public/', '', $productImage)));
+                        @endphp
+                        <div onclick="changeMainImage(this, '{{ $imgUrl }}')"
+                             class="thumbnail-item aspect-square bg-white rounded-2xl border-2 {{ $isCurrentPrimary ? 'border-blue-900 shadow-md' : 'border-gray-100 hover:border-blue-200' }} overflow-hidden cursor-pointer transition-all p-2 flex items-center justify-center group shadow-sm">
+                            <img alt="Thumbnail" class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300" 
+                                 src="{{ $imgUrl }}"/>
+                        </div>
+                    @endforeach
+                </div>
+                @endif
             </div>
 
 
@@ -34,8 +73,15 @@
                     </h1>
                     <div class="flex items-center gap-4">
                         {{-- Giá sẽ nhảy theo biến thể nhờ JS ở dưới --}}
-                        <p id="mainPrice" class="text-3xl text-red-600 font-black">
-                            {{ number_format($variants[0]->price ?? $product->base_price, 0, ',', '.') }}₫
+                        @php
+                            $firstVariantForPrice = $variants->first();
+                            $mainDisplayPrice = \App\Services\ProductPriceService::effectiveVariantPrice(
+                                $firstVariantForPrice,
+                                (float) $product->base_price
+                            );
+                        @endphp
+                        <p id="mainPrice" class="text-3xl text-red-600 font-black" data-realtime-price data-product-id="{{ $product->product_id }}">
+                            {{ number_format($mainDisplayPrice, 0, ',', '.') }}₫
                         </p>
                         <span class="bg-red-50 text-red-600 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Tiết kiệm 10%</span>
                     </div>
@@ -67,12 +113,16 @@
                         </p>
                         <div class="flex flex-wrap gap-3">
                             @foreach($uniqueVariants as $index => $v)
-                                @php $attr = json_decode($v->attribute_values, true); @endphp
+                                @php
+                                    $attr = json_decode($v->attribute_values, true);
+                                    $variantDisplayPrice = \App\Services\ProductPriceService::effectiveVariantPrice($v, (float) $product->base_price);
+                                @endphp
                                 <button type="button"
                                     class="variant-btn border-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all
                                     {{ $index == 0 ? 'bg-blue-900 text-white border-blue-900 shadow-md' : 'bg-white text-gray-500 border-gray-100 hover:border-blue-200' }}"
                                     data-value="{{ $attr['RAM'] ?? '' }} {{ $attr['ROM'] ?? '' }}"
-                                    data-price="{{ number_format($v->price, 0, ',', '.') }}₫"
+                                    data-price="{{ number_format($variantDisplayPrice, 0, ',', '.') }}₫"
+                                    data-price-value="{{ $variantDisplayPrice }}"
                                     data-variant-id="{{ $v->variant_id }}">
                                     {{ $attr['RAM'] ?? '' }} {{ $attr['ROM'] ?? '' }}
                                 </button>
@@ -155,14 +205,14 @@
                 </div>
                 <div class="flex flex-col border-r text-center">
                     <div class="h-44 p-6 flex flex-col items-center justify-end border-b">
-                        <img src="{{ asset(str_replace('public/', '', $product->image_url)) }}" class="h-24 object-contain mb-2" />
+                        <img src="{{ asset(str_replace(['public/', '/storage/products/'], ['', '/products/'], $productImage)) }}" class="h-24 object-contain mb-2" />
                         <span class="text-sm font-black text-blue-900">{{ $product->name }}</span>
                     </div>
                     <div class="flex-1 text-sm font-bold text-blue-900">
                         <div class="h-24 border-b flex items-center justify-center bg-blue-900/5">A-Series Precision</div>
                         <div class="h-24 border-b flex items-center justify-center">Pro Camera System</div>
                         <div class="h-24 border-b flex items-center justify-center bg-blue-900/5">All-day Battery</div>
-                        <div class="h-24 flex items-center justify-center text-lg font-black text-red-600">{{ number_format($product->base_price, 0, ',', '.') }}₫</div>
+                        <div class="h-24 flex items-center justify-center text-lg font-black text-red-600"><span data-realtime-price data-product-id="{{ $product->product_id }}">{{ number_format($product->base_price, 0, ',', '.') }}₫</span></div>
                     </div>
                 </div>
                 <div class="flex flex-col" id="compare-column-2">
@@ -197,14 +247,22 @@
                 <h2 class="text-2xl font-black text-blue-900 mb-8 uppercase tracking-tight">Cùng dòng sản phẩm</h2>
                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
                     @foreach($relatedProducts as $item)
+                        @php
+                            $itemImage = $item->image_url
+                                ?? $item->image
+                                ?? $item->thumbnail
+                                ?? $item->path
+                                ?? 'images/products/default.png';
+                        @endphp
+
                         <a href="{{ url('/product/' . $item->product_id) }}" class="group border border-gray-100 rounded-2xl p-4 hover:shadow-2xl hover:-translate-y-1 transition-all bg-white flex flex-col">
                             <div class="aspect-square mb-4 overflow-hidden rounded-xl">
-                                <img src="{{ asset(str_replace('public/', '', $item->image_url)) }}" 
+                                <img src="{{ asset(str_replace(['public/', '/storage/products/'], ['', '/products/'], $itemImage)) }}"
                                      class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500" 
                                      alt="{{ $item->name }}">
                             </div>
                             <h4 class="text-sm font-bold text-gray-800 line-clamp-1 group-hover:text-blue-900 transition-colors"> {{ $item->name }} </h4>
-                            <p class="text-red-500 font-black text-sm mt-2"> {{ number_format($item->base_price, 0, ',', '.') }}₫ </p>
+                            <p class="text-red-500 font-black text-sm mt-2"><span data-realtime-price data-product-id="{{ $item->product_id }}">{{ number_format($item->base_price, 0, ',', '.') }}₫</span></p>
                         </a>
                     @endforeach
                 </div>
@@ -273,6 +331,22 @@
                 </div>
             @endif
 
+            @if(session('error'))
+                <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                    {{ session('error') }}
+                </div>
+            @endif
+
+            @if($errors->any())
+                <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                    <ul class="list-disc pl-5">
+                        @foreach($errors->all() as $err)
+                            <li>{{ $err }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             {{-- Form Đánh Giá --}}
             @auth
                 <div class="mt-8 pt-6 border-t">
@@ -310,9 +384,8 @@
                             </div>
                             
                             <style>
-                                /* Để hover 1 sao thì các sao bên trái nó cũng sáng theo */
                                 #star-rating label:hover ~ label {
-                                    color: #facc15; /* tailwind yellow-400 */
+                                    color: #facc15;
                                 }
                                 #star-rating input:checked ~ label {
                                     color: #facc15;
@@ -324,15 +397,54 @@
                             <textarea name="comment" rows="3" class="w-full border-gray-300 rounded-md shadow-sm p-2 border" placeholder="Mời bạn chia sẻ cảm nhận về sản phẩm..." required></textarea>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Thêm hình ảnh (Tuỳ chọn)</label>
-                            <input type="file" name="images[]" multiple accept="image/*" class="w-full text-sm text-gray-500
-                              file:mr-4 file:py-2 file:px-4
-                              file:rounded-md file:border-0
-                              file:text-sm file:font-semibold
-                              file:bg-blue-50 file:text-blue-700
-                              hover:file:bg-blue-100 cursor-pointer
-                            "/>
+                        <div x-data="{
+                            uploadPreviews: [],
+                            selectedFiles: [],
+                            handleFile(e) {
+                                const files = Array.from(e.target.files);
+                                let hasInvalidFile = false;
+                                files.forEach(file => {
+                                    if (!file.type.startsWith('image/')) {
+                                        hasInvalidFile = true;
+                                        return;
+                                    }
+                                    this.selectedFiles.push(file);
+                                    this.uploadPreviews.push(URL.createObjectURL(file));
+                                });
+                                if (hasInvalidFile) {
+                                    alert('Vui lòng chỉ chọn các file hình ảnh (jpeg, png, jpg, gif, webp...). Các file không hợp lệ đã bị bỏ qua.');
+                                }
+                                this.updateInput();
+                            },
+                            removeFile(idx) {
+                                this.selectedFiles.splice(idx, 1);
+                                this.uploadPreviews.splice(idx, 1);
+                                this.updateInput();
+                            },
+                            updateInput() {
+                                const dt = new DataTransfer();
+                                this.selectedFiles.forEach(file => dt.items.add(file));
+                                this.$refs.fileInput.files = dt.files;
+                            }
+                        }">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Thêm hình ảnh (Tuỳ chọn)</label>
+                            <div class="flex flex-wrap items-center gap-4">
+                                <label class="cursor-pointer px-4 py-2 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-900 hover:bg-gray-50 transition-colors flex flex-col items-center justify-center text-gray-400 gap-1.5 h-24 w-24 group">
+                                    <span class="material-symbols-outlined text-2xl group-hover:text-blue-900 transition-colors">cloud_upload</span>
+                                    <span class="text-[9px] font-bold uppercase mt-1 text-center group-hover:text-blue-900 transition-colors">Chọn ảnh</span>
+                                    <input type="file" name="images[]" x-ref="fileInput" multiple accept="image/*" class="hidden" @change="handleFile">
+                                </label>
+                                <!-- Render Preview các ảnh được chọn -->
+                                <template x-for="(url, idx) in uploadPreviews" :key="idx">
+                                    <div class="w-24 h-24 rounded-xl border-2 border-green-200 relative bg-green-50/50 flex items-center justify-center group mr-2">
+                                        <img :src="url" class="w-full h-full object-contain p-1 rounded-xl">
+                                        <div class="absolute top-1 left-1 px-1.5 py-0.5 bg-green-500 text-white text-[8px] font-black rounded shadow">MỚI</div>
+                                        <button type="button" @click.stop.prevent="removeFile(idx)" class="absolute -top-2.5 -right-2.5 w-6 h-6 bg-white hover:bg-red-50 text-gray-600 hover:text-red-500 rounded-full shadow border border-gray-200 flex items-center justify-center transition-colors z-10 cursor-pointer">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
                         </div>
 
                         <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition-colors">Gửi đánh giá</button>
@@ -375,16 +487,14 @@
 
         variantBtns.forEach(btn => {
             btn.addEventListener('click', function () {
-                // Reset style tất cả button
                 variantBtns.forEach(b => {
                     b.classList.remove('bg-blue-900', 'text-white', 'border-blue-900', 'shadow-md');
                     b.classList.add('bg-white', 'text-gray-500', 'border-gray-100');
                 });
-                // Active button được chọn
+
                 this.classList.remove('bg-white', 'text-gray-500', 'border-gray-100');
                 this.classList.add('bg-blue-900', 'text-white', 'border-blue-900', 'shadow-md');
 
-                // Cập nhật thông tin hiển thị và input ẩn
                 if (selectedVariantLabel) selectedVariantLabel.innerText = "(" + this.dataset.value + ")";
                 if (mainPrice) mainPrice.innerText = this.dataset.price;
                 if (hiddenVariantInput) hiddenVariantInput.value = this.dataset.variantId;
@@ -417,7 +527,6 @@
         }
     });
 
-    // --- 3. Các hàm hỗ trợ ---
     function resetCompare() {
         document.getElementById('select-compare-product').value = "";
         document.getElementById('compare-info-2').classList.add('hidden');
@@ -427,7 +536,6 @@
         document.querySelectorAll('#compare-specs-2 .spec-value').forEach(s => s.innerText = "-");
     }
 
-    // ── Lightbox ──
     let _lbIdx = 0;
     let _lbScale = 1;
     window._lbSrcs = [];
@@ -468,7 +576,6 @@
         _lbScale = 1;
     };
 
-    // Wheel zoom
     document.getElementById('lightbox').addEventListener('wheel', e => {
         if (document.getElementById('lightbox').classList.contains('hidden')) return;
         e.preventDefault();
@@ -483,8 +590,27 @@
         if (!lb || lb.classList.contains('hidden')) return;
 
         if (e.key === 'Escape') closeLightbox();
-        if (e.key === 'ArrowLeft')  lbNav(-1);
+        if (e.key === 'ArrowLeft') lbNav(-1);
         if (e.key === 'ArrowRight') lbNav(1);
     });
+
+    function changeMainImage(el, url) {
+        const mainImg = document.getElementById('mainProductImage');
+        if (mainImg) {
+            mainImg.src = url;
+        }
+
+        // Bỏ active border của toàn bộ thumbnails
+        document.querySelectorAll('.thumbnail-item').forEach(item => {
+            item.classList.remove('border-blue-900', 'shadow-md');
+            item.classList.add('border-gray-100', 'hover:border-blue-200');
+        });
+
+        // Thêm active border cho thumbnail được click
+        el.classList.remove('border-gray-100', 'hover:border-blue-200');
+        el.classList.add('border-blue-900', 'shadow-md');
+    }
+
+
 </script>
 @endpush
