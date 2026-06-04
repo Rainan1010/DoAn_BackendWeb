@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
-
 class InventoryLogController extends Controller
 {
     public function index(Request $request)
@@ -51,7 +50,7 @@ class InventoryLogController extends Controller
         }
 
         if ($request->filled('search')) {
-            $keyword = $request->search;
+            $keyword = $this->normalizeText($request->search);
 
             $logsQuery->where(function ($query) use ($keyword) {
                 $query->where('product_variants.sku', 'like', '%' . $keyword . '%')
@@ -107,38 +106,88 @@ class InventoryLogController extends Controller
             ->orderBy('products.name')
             ->get();
 
-        return view('admin.inventory_logs.create', compact('variants'));
+        /*
+        |--------------------------------------------------------------------------
+        | Token chống submit trùng
+        |--------------------------------------------------------------------------
+        | Mỗi lần mở form nhập kho sẽ sinh một token.
+        | Khi store xử lý xong token sẽ bị xóa khỏi session.
+        | Nếu người dùng bấm submit nhiều lần, request sau sẽ bị chặn.
+        */
+        $importToken = bin2hex(random_bytes(16));
+
+        $tokens = session('inventory_import_tokens', []);
+        $tokens[$importToken] = true;
+
+        session(['inventory_import_tokens' => $tokens]);
+
+        return view('admin.inventory_logs.create', compact('variants', 'importToken'));
     }
 
     public function store(Request $request)
     {
+        $request->merge([
+            'variant_id' => $this->normalizeNumber($request->variant_id),
+            'quantity' => $this->normalizeNumber($request->quantity),
+            'import_price' => $this->normalizeMoney($request->import_price),
+            'supplier_name' => $this->normalizeText($request->supplier_name),
+            'reference_code' => $this->normalizeText($request->reference_code),
+            'note' => $this->normalizeText($request->note),
+        ]);
+
         $request->validate([
-            'variant_id' => 'required|exists:product_variants,variant_id',
-            'quantity' => 'required|integer|min:1',
-            'import_price' => 'nullable|numeric|min:0',
+            '_form_token' => 'required|string',
+            'variant_id' => 'required|integer|exists:product_variants,variant_id',
+            'quantity' => 'required|integer|min:1|max:10000',
+            'import_price' => 'nullable|numeric|min:0|max:999999999999',
             'supplier_name' => 'nullable|string|max:255',
-            'reference_code' => 'nullable|string|max:255',
+            'reference_code' => 'nullable|string|max:100',
             'note' => 'nullable|string|max:1000',
         ], [
+            '_form_token.required' => 'Phiên nhập kho không hợp lệ. Vui lòng tải lại trang.',
             'variant_id.required' => 'Vui lòng chọn sản phẩm cần nhập kho.',
-            'variant_id.exists' => 'Sản phẩm không tồn tại.',
+            'variant_id.integer' => 'Sản phẩm nhập kho không hợp lệ.',
+            'variant_id.exists' => 'Sản phẩm không tồn tại hoặc đã bị xóa.',
             'quantity.required' => 'Vui lòng nhập số lượng nhập kho.',
             'quantity.integer' => 'Số lượng nhập kho phải là số nguyên.',
             'quantity.min' => 'Số lượng nhập kho phải lớn hơn 0.',
+            'quantity.max' => 'Số lượng nhập kho quá lớn.',
+            'import_price.numeric' => 'Giá nhập phải là số.',
+            'import_price.min' => 'Giá nhập không được âm.',
+            'import_price.max' => 'Giá nhập quá lớn.',
+            'supplier_name.max' => 'Tên nhà cung cấp không được vượt quá 255 ký tự.',
+            'reference_code.max' => 'Mã hóa đơn tham chiếu không được vượt quá 100 ký tự.',
+            'note.max' => 'Ghi chú không được vượt quá 1000 ký tự.',
         ]);
+
+        $tokens = session('inventory_import_tokens', []);
+        $formToken = $request->input('_form_token');
+
+        if (!isset($tokens[$formToken])) {
+            return redirect()
+                ->route('admin.inventory-logs.create')
+                ->with('error', 'Yêu cầu nhập kho đã được xử lý hoặc không hợp lệ. Vui lòng tạo phiếu nhập kho mới.');
+        }
+
+        unset($tokens[$formToken]);
+        session(['inventory_import_tokens' => $tokens]);
 
         DB::beginTransaction();
 
         try {
             $variant = DB::table('product_variants')
                 ->where('variant_id', $request->variant_id)
+                ->where('is_active', 1)
                 ->lockForUpdate()
                 ->first();
 
             if (!$variant) {
-                return back()
+                DB::rollBack();
+
+                return redirect()
+                    ->route('admin.inventory-logs.create')
                     ->withInput()
-                    ->with('error', 'Không tìm thấy sản phẩm cần nhập kho.');
+                    ->with('error', 'Không tìm thấy sản phẩm cần nhập kho hoặc sản phẩm đã bị ẩn.');
             }
 
             $oldStock = (int) $variant->stock_quantity;
@@ -163,7 +212,7 @@ class InventoryLogController extends Controller
             }
 
             if ($request->filled('import_price')) {
-                $noteParts[] = 'Giá nhập: ' . number_format($request->import_price, 0, ',', '.') . 'đ';
+                $noteParts[] = 'Giá nhập: ' . number_format((float) $request->import_price, 0, ',', '.') . 'đ';
             }
 
             if ($request->filled('note')) {
@@ -191,12 +240,71 @@ class InventoryLogController extends Controller
             return redirect()
                 ->route('admin.inventory-logs.index')
                 ->with('success', 'Nhập kho thành công. Tồn kho đã được cập nhật.');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
 
-            return back()
+            // Tạo lại token mới để người dùng có thể thử nhập kho lại sau khi lỗi
+            $newToken = bin2hex(random_bytes(16));
+            $tokens = session('inventory_import_tokens', []);
+            $tokens[$newToken] = true;
+            session(['inventory_import_tokens' => $tokens]);
+
+            return redirect()
+                ->route('admin.inventory-logs.create')
                 ->withInput()
+                ->with('importToken', $newToken)
                 ->with('error', 'Nhập kho thất bại: ' . $e->getMessage());
         }
+    }
+
+    private function normalizeText(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (function_exists('mb_convert_kana')) {
+            $value = mb_convert_kana($value, 'asKV', 'UTF-8');
+        }
+
+        $value = str_replace('　', ' ', $value);
+        $value = preg_replace('/^\s+|\s+$/u', '', $value);
+        $value = preg_replace('/\s+/u', ' ', $value);
+
+        return $value;
+    }
+
+    private function normalizeNumber($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = (string) $value;
+
+        if (function_exists('mb_convert_kana')) {
+            $value = mb_convert_kana($value, 'n', 'UTF-8');
+        }
+
+        $value = preg_replace('/\s+/u', '', $value);
+
+        return $value;
+    }
+
+    private function normalizeMoney($value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $value = (string) $value;
+
+        if (function_exists('mb_convert_kana')) {
+            $value = mb_convert_kana($value, 'n', 'UTF-8');
+        }
+
+        $value = preg_replace('/[^\d]/u', '', $value);
+
+        return $value === '' ? null : $value;
     }
 }
