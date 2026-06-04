@@ -15,6 +15,23 @@
         <h1 class="text-2xl font-black text-[#0A2540] tracking-tight">Thêm nhân sự mới</h1>
     </div>
 
+    {{-- Danh sách lỗi validation --}}
+    @if($errors->any())
+        <div class="bg-red-50 border border-red-200 rounded-2xl px-5 py-4 shadow-sm">
+            <div class="flex items-center gap-2 mb-2">
+                <svg class="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+                <p class="text-sm font-black text-red-700 uppercase tracking-widest">Vui lòng kiểm tra lại thông tin</p>
+            </div>
+            <ul class="list-disc list-inside space-y-1">
+                @foreach($errors->all() as $error)
+                    <li class="text-sm text-red-600 font-medium">{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <form action="{{ route('admin.permissions.store') }}" method="POST" class="space-y-8" x-data="{
         permissions: {},
         toggleAll(module, checked) {
