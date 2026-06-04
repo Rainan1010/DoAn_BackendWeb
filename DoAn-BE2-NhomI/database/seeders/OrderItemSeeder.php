@@ -9,89 +9,66 @@ class OrderItemSeeder extends Seeder
 {
     public function run(): void
     {
-        $items = [
+        DB::table('order_items')->truncate();
 
-            // ORDER 5
-            [
-                'order_id' => 5,
-                'variant_id' => 1,
-                'quantity' => 1,
-            ],
+        $orders = DB::table('orders')->get();
 
-            // ORDER 6
-            [
-                'order_id' => 6,
-                'variant_id' => 4,
-                'quantity' => 1,
-            ],
+        foreach ($orders as $order) {
 
-            // ORDER 7
-            [
-                'order_id' => 7,
-                'variant_id' => 3,
-                'quantity' => 1,
-            ],
+            // mỗi đơn 1 -> 3 sản phẩm
+            $itemCount = rand(1, 3);
 
-            // ORDER 8
-            [
-                'order_id' => 8,
-                'variant_id' => 6,
-                'quantity' => 1,
-            ],
+            $usedVariants = [];
 
-            // ORDER 9 ITEM 1
-            [
-                'order_id' => 9,
-                'variant_id' => 5,
-                'quantity' => 1,
-            ],
+            for ($i = 0; $i < $itemCount; $i++) {
 
-            // ORDER 9 ITEM 2
-            [
-                'order_id' => 9,
-                'variant_id' => 8,
-                'quantity' => 1,
-            ],
+                $variant = DB::table('product_variants')
+                    ->inRandomOrder()
+                    ->first();
 
-            // ORDER 10
-            [
-                'order_id' => 10,
-                'variant_id' => 9,
-                'quantity' => 2,
-            ],
-        ];
+                if (!$variant) {
+                    continue;
+                }
 
-        foreach ($items as $item) {
+                // tránh trùng variant trong cùng 1 đơn
+                if (in_array($variant->variant_id, $usedVariants)) {
+                    continue;
+                }
 
-            $variant = DB::table('product_variants')
-                ->join('products', 'products.product_id', '=', 'product_variants.product_id')
-                ->where('product_variants.variant_id', $item['variant_id'])
-                ->select(
-                    'products.name',
-                    'product_variants.sale_price',
-                    'product_variants.price',
-                    'product_variants.attribute_values'
-                )
-                ->first();
+                $usedVariants[] = $variant->variant_id;
 
-            $price = $variant->sale_price ?? $variant->price;
+                $product = DB::table('products')
+                    ->where(
+                        'product_id',
+                        $variant->product_id
+                    )
+                    ->first();
 
-            DB::table('order_items')->insert([
+                $price = $variant->sale_price
+                    ? $variant->sale_price
+                    : $variant->price;
 
-                'order_id' => $item['order_id'],
+                $quantity = rand(1, 3);
 
-                'variant_id' => $item['variant_id'],
+                DB::table('order_items')->insert([
 
-                'product_name' => $variant->name,
+                    'order_id' => $order->order_id,
 
-                'variant_info' => $variant->attribute_values,
+                    'variant_id' => $variant->variant_id,
 
-                'unit_price' => $price,
+                    'product_name' => $product->name,
 
-                'quantity' => $item['quantity'],
+                    'variant_info' =>
+                        $variant->attribute_values,
 
-                'subtotal' => $price * $item['quantity'],
-            ]);
+                    'unit_price' => $price,
+
+                    'quantity' => $quantity,
+
+                    'subtotal' =>
+                        $price * $quantity,
+                ]);
+            }
         }
     }
 }
