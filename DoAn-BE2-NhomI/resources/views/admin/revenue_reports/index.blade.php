@@ -70,27 +70,27 @@
                     <input type="hidden" name="to" value="{{ $to }}">
 
                     <!-- <button class="group
-                                                                               bg-gradient-to-r
-                                                                               from-[#001e40]
-                                                                               to-[#003b80]
-                                                                               hover:from-[#003366]
-                                                                               hover:to-[#004c99]
-                                                                               text-white
-                                                                               px-8 py-4
-                                                                               rounded-2xl
-                                                                               font-black
-                                                                               shadow-[0_10px_30px_rgba(0,30,64,0.25)]
-                                                                               hover:shadow-[0_16px_40px_rgba(0,30,64,0.35)]
-                                                                               transition-all duration-300
-                                                                               flex items-center gap-3
-                                                                               hover:-translate-y-1">
+                                                                                           bg-gradient-to-r
+                                                                                           from-[#001e40]
+                                                                                           to-[#003b80]
+                                                                                           hover:from-[#003366]
+                                                                                           hover:to-[#004c99]
+                                                                                           text-white
+                                                                                           px-8 py-4
+                                                                                           rounded-2xl
+                                                                                           font-black
+                                                                                           shadow-[0_10px_30px_rgba(0,30,64,0.25)]
+                                                                                           hover:shadow-[0_16px_40px_rgba(0,30,64,0.35)]
+                                                                                           transition-all duration-300
+                                                                                           flex items-center gap-3
+                                                                                           hover:-translate-y-1">
 
-                                                            <i data-lucide="download" class="w-5 h-5 transition-transform
-                                                                                   group-hover:-translate-y-1"></i>
+                                                                        <i data-lucide="download" class="w-5 h-5 transition-transform
+                                                                                               group-hover:-translate-y-1"></i>
 
-                                                            Xuất File Excel
+                                                                        Xuất File Excel
 
-                                                        </button> -->
+                                                                    </button> -->
 
                 </form>
 
@@ -160,96 +160,7 @@
             </div>
 
         </form>
-        {{-- TOTAL SYSTEM REVENUE --}}
-        <div
-            class="relative overflow-hidden rounded-[32px] bg-gradient-to-r from-[#001e40] via-[#003366]   to-[#004c99]   p-8   text-white   shadow-[0_20px_50px_rgba(0,30,64,0.25)]">
 
-            {{-- BACKGROUND EFFECT --}}
-            <div class="absolute -right-10 -top-10 w-56 h-56 bg-white/10 rounded-full blur-3xl"></div>
-
-            <div class="absolute bottom-0 right-0 opacity-10 text-[220px] leading-none font-black">
-
-                ₫
-
-            </div>
-
-            <div class="relative z-10">
-
-                <div class="flex items-start justify-between flex-wrap gap-6">
-
-                    {{-- LEFT --}}
-                    <div>
-
-                        <div class="inline-flex
-                                                                   items-center gap-2
-                                                                   bg-white/10
-                                                                   px-4 py-2
-                                                                   rounded-full">
-
-                            <span class="w-2 h-2
-                                                                       rounded-full
-                                                                       bg-green-400"></span>
-
-                            <span class="text-sm font-bold">
-                                TOÀN HỆ THỐNG
-                            </span>
-
-                        </div>
-
-                        <h2 class="text-5xl lg:text-6xl font-black mt-6">
-
-                            {{ number_format($totalRevenueAll) }}đ
-
-                        </h2>
-
-                        <p class="text-blue-100 mt-4 text-lg">
-
-                            Tổng doanh thu từ trước đến nay
-
-                        </p>
-
-                    </div>
-
-                    {{-- RIGHT --}}
-                    <div class="flex gap-4 flex-wrap">
-
-                        {{-- TOTAL ORDERS --}}
-                        <div class="bg-white/10 backdrop-blur-xl rounded-3xl px-6 py-5 min-w-[180px]">
-
-                            <p class="text-blue-200 text-sm">
-                                Tổng đơn hàng
-                            </p>
-
-                            <h3 class="text-3xl font-black mt-3">
-
-                                {{ number_format($totalOrders) }}
-
-                            </h3>
-
-                        </div>
-
-                        {{-- AVG --}}
-                        <div class="bg-white/10 backdrop-blur-xl rounded-3xl px-6 py-5 min-w-[180px]">
-
-                            <p class="text-blue-200 text-sm">
-                                Giá trị TB
-                            </p>
-
-                            <h3 class="text-3xl font-black mt-3">
-
-                                {{ number_format($avgOrderValueAll) }}đ
-
-                            </h3>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
         {{-- STATS --}}
         <div class="grid lg:grid-cols-4 gap-6">
 
@@ -265,11 +176,7 @@
 
                     </div>
 
-                    <span class="bg-green-100 text-green-600 text-sm px-3 py-1 rounded-full font-bold">
 
-                        +12.4%
-
-                    </span>
 
                 </div>
 
@@ -277,10 +184,10 @@
                     Tổng doanh thu
                 </p>
 
-                <h2 class="text-4xl font-black text-[#001e40] mt-3">
-
+                <h2 class="font-black text-slate-900 mt-3
+               text-3xl lg:text-4xl
+               break-words">
                     {{ number_format($totalRevenue) }}đ
-
                 </h2>
                 <div class="mt-4 pt-4 border-t border-gray-100">
 
@@ -309,12 +216,6 @@
 
                     </div>
 
-                    <span class="bg-green-100 text-green-600 text-sm px-3 py-1 rounded-full      font-bold">
-
-                        +5.2%
-
-                    </span>
-
                 </div>
 
                 <p class="text-gray-400 text-sm mt-6">
@@ -322,10 +223,62 @@
                 </p>
 
                 <h2 class="text-4xl font-black text-indigo-600 mt-3">
-
                     {{ $totalOrders }}
-
                 </h2>
+
+                <div class="mt-5 space-y-2 text-sm border-t pt-4">
+
+                    <div class="flex justify-between">
+                        <span class="text-yellow-600 font-medium">
+                            Xác nhận
+                        </span>
+
+                        <span class="font-bold">
+                            {{ $confirmedOrders }}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-blue-600 font-medium">
+                            Đang xử lý
+                        </span>
+
+                        <span class="font-bold">
+                            {{ $processingOrders }}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-indigo-600 font-medium">
+                            Đang giao
+                        </span>
+
+                        <span class="font-bold">
+                            {{ $shippedOrders }}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-green-600 font-medium">
+                            Hoàn thành
+                        </span>
+
+                        <span class="font-bold">
+                            {{ $deliveredOrders }}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-red-600 font-medium">
+                            Đã huỷ
+                        </span>
+
+                        <span class="font-bold">
+                            {{ $cancelledOrders }}
+                        </span>
+                    </div>
+
+                </div>
 
             </div>
 
@@ -341,16 +294,11 @@
 
                     </div>
 
-                    <span class="bg-red-100 text-red-500 text-sm px-3 py-1 rounded-full font-bold">
-
-                        -2.1%
-
-                    </span>
 
                 </div>
 
                 <p class="text-gray-400 text-sm mt-6">
-                    Đã bán
+                    Tổng sản phẩm bán ra
                 </p>
 
                 <h2 class="text-4xl font-black text-orange-500 mt-3">
@@ -373,11 +321,6 @@
 
                     </div>
 
-                    <span class="bg-green-100 text-green-600 text-sm px-3 py-1 rounded-full font-bold">
-
-                        +3.8%
-
-                    </span>
 
                 </div>
 
@@ -419,11 +362,11 @@
 
                         {{-- BUTTON LINE --}}
                         <button id="lineBtn" type="button" onclick="changeChart('line')" class="chart-btn-active
-                                                                       flex items-center gap-2
-                                                                       px-5 py-3
-                                                                       rounded-xl
-                                                                       font-bold
-                                                                       transition-all duration-300">
+                                                                                   flex items-center gap-2
+                                                                                   px-5 py-3
+                                                                                   rounded-xl
+                                                                                   font-bold
+                                                                                   transition-all duration-300">
 
                             <i data-lucide="chart-spline" class="w-5 h-5">
                             </i>
@@ -434,11 +377,11 @@
 
                         {{-- BUTTON BAR --}}
                         <button id="barBtn" type="button" onclick="changeChart('bar')" class="chart-btn
-                                                                       flex items-center gap-2
-                                                                       px-5 py-3
-                                                                       rounded-xl
-                                                                       font-bold
-                                                                       transition-all duration-300">
+                                                                                   flex items-center gap-2
+                                                                                   px-5 py-3
+                                                                                   rounded-xl
+                                                                                   font-bold
+                                                                                   transition-all duration-300">
 
                             <i data-lucide="chart-column" class="w-5 h-5">
                             </i>
@@ -545,9 +488,9 @@
 
                         <span
                             class="w-11 h-11
-                                                                                                               rounded-xl
-                                                                                                               flex items-center justify-center
-                                                                                                               text-gray-300 bg-gray-100">
+                                                                                                                                       rounded-xl
+                                                                                                                                       flex items-center justify-center
+                                                                                                                                       text-gray-300 bg-gray-100">
 
                             <i data-lucide="chevron-left" class="w-5 h-5">
                             </i>
@@ -556,13 +499,14 @@
 
                     @else
 
-                        <a href="{{ $reports->previousPageUrl() }}" class="w-11 h-11
-                                                                                                               rounded-xl
-                                                                                                               flex items-center justify-center
-                                                                                                               text-gray-500
-                                                                                                               hover:bg-[#001e40]
-                                                                                                               hover:text-white
-                                                                                                               transition">
+                        <a href="{{ $reports->previousPageUrl() }}"
+                            class="w-11 h-11
+                                                                                                                                       rounded-xl
+                                                                                                                                       flex items-center justify-center
+                                                                                                                                       text-gray-500
+                                                                                                                                       hover:bg-[#001e40]
+                                                                                                                                       hover:text-white
+                                                                                                                                       transition">
 
                             <i data-lucide="chevron-left" class="w-5 h-5">
                             </i>
@@ -578,12 +522,12 @@
 
                             <span
                                 class="w-11 h-11
-                                                                                                                                                               rounded-xl
-                                                                                                                                                               flex items-center justify-center
-                                                                                                                                                               bg-[#001e40]
-                                                                                                                                                               text-white
-                                                                                                                                                               font-black
-                                                                                                                                                               shadow-lg">
+                                                                                                                                                                                                   rounded-xl
+                                                                                                                                                                                                   flex items-center justify-center
+                                                                                                                                                                                                   bg-[#001e40]
+                                                                                                                                                                                                   text-white
+                                                                                                                                                                                                   font-black
+                                                                                                                                                                                                   shadow-lg">
 
                                 {{ $page }}
 
@@ -593,12 +537,12 @@
 
                             <a href="{{ $url }}"
                                 class="w-11 h-11
-                                                                                                                                                               rounded-xl
-                                                                                                                                                               flex items-center justify-center
-                                                                                                                                                               text-gray-500
-                                                                                                                                                               font-bold
-                                                                                                                                                               hover:bg-gray-100
-                                                                                                                                                               transition">
+                                                                                                                                                                                                   rounded-xl
+                                                                                                                                                                                                   flex items-center justify-center
+                                                                                                                                                                                                   text-gray-500
+                                                                                                                                                                                                   font-bold
+                                                                                                                                                                                                   hover:bg-gray-100
+                                                                                                                                                                                                   transition">
 
                                 {{ $page }}
 
@@ -649,9 +593,7 @@
             @json($chartData->pluck('revenue'));
 
         const expectedRevenues =
-            revenues.map(
-                item => item + Math.floor(Math.random() * 30000000)
-            );
+            @json($chartData->pluck('expected'));
 
         /*
     |--------------------------------------------------------------------------

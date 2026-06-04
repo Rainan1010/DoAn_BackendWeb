@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -9,89 +10,207 @@ class OrderItemSeeder extends Seeder
 {
     public function run(): void
     {
-        $items = [
+        DB::table('order_items')->truncate();
 
-            // ORDER 5
-            [
-                'order_id' => 5,
-                'variant_id' => 1,
-                'quantity' => 1,
-            ],
+        $orders = DB::table('orders')->get();
 
-            // ORDER 6
-            [
-                'order_id' => 6,
-                'variant_id' => 4,
-                'quantity' => 1,
-            ],
+        foreach ($orders as $order) {
 
-            // ORDER 7
-            [
-                'order_id' => 7,
-                'variant_id' => 3,
-                'quantity' => 1,
-            ],
+            $itemCount = rand(1, 3);
 
-            // ORDER 8
-            [
-                'order_id' => 8,
-                'variant_id' => 6,
-                'quantity' => 1,
-            ],
+            $usedVariants = [];
 
-            // ORDER 9 ITEM 1
-            [
-                'order_id' => 9,
-                'variant_id' => 5,
-                'quantity' => 1,
-            ],
+            $orderSubtotal = 0;
 
-            // ORDER 9 ITEM 2
-            [
-                'order_id' => 9,
-                'variant_id' => 8,
-                'quantity' => 1,
-            ],
+            for ($i = 0; $i < $itemCount; $i++) {
 
-            // ORDER 10
-            [
-                'order_id' => 10,
-                'variant_id' => 9,
-                'quantity' => 2,
-            ],
-        ];
+                $variant = DB::table('product_variants')
+                    ->inRandomOrder()
+                    ->first();
 
-        foreach ($items as $item) {
+                if (!$variant) {
+                    continue;
+                }
 
-            $variant = DB::table('product_variants')
-                ->join('products', 'products.product_id', '=', 'product_variants.product_id')
-                ->where('product_variants.variant_id', $item['variant_id'])
-                ->select(
-                    'products.name',
-                    'product_variants.sale_price',
-                    'product_variants.price',
-                    'product_variants.attribute_values'
+                if (in_array(
+                    $variant->variant_id,
+                    $usedVariants
+                )) {
+                    continue;
+                }
+
+                $usedVariants[] =
+                    $variant->variant_id;
+
+                $product = DB::table('products')
+                    ->where(
+                        'product_id',
+                        $variant->product_id
+                    )
+                    ->first();
+
+                $price =
+                    $variant->sale_price
+                    ? $variant->sale_price
+                    : $variant->price;
+
+                $quantity = rand(1, 3);
+
+                $itemSubtotal =
+                    $price * $quantity;
+
+                $orderSubtotal +=
+                    $itemSubtotal;
+
+                DB::table('order_items')
+                    ->insert([
+
+                        'order_id' =>
+                            $order->order_id,
+
+                        'variant_id' =>
+                            $variant->variant_id,
+
+                        'product_name' =>
+                            $product->name,
+
+                        'variant_info' =>
+                            $variant->attribute_values,
+
+                        'unit_price' =>
+                            $price,
+
+                        'quantity' =>
+                            $quantity,
+
+                        'subtotal' =>
+                            $itemSubtotal,
+                    ]);
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | UPDATE ORDER TOTAL
+            |--------------------------------------------------------------------------
+            */
+
+            $totalAmount =
+                $orderSubtotal
+                + $order->shipping_fee
+                - $order->discount_amount;
+
+            DB::table('orders')
+                ->where(
+                    'order_id',
+                    $order->order_id
                 )
-                ->first();
+                ->update([
 
-            $price = $variant->sale_price ?? $variant->price;
+                    'subtotal' =>
+                        $orderSubtotal,
 
-            DB::table('order_items')->insert([
+                    'total_amount' =>
+                        $totalAmount,
+                ]);
 
-                'order_id' => $item['order_id'],
+            /*
+            |--------------------------------------------------------------------------
+            | UPDATE REVENUE REPORT
+            |--------------------------------------------------------------------------
+            */
 
-                'variant_id' => $item['variant_id'],
+            if (
+                $order->payment_status === 'paid'
+            ) {
 
-                'product_name' => $variant->name,
+                $reportDate =
+                    Carbon::parse(
+                        $order->created_at
+                    )->toDateString();
 
-                'variant_info' => $variant->attribute_values,
+                $report =
+                    DB::table(
+                        'revenue_reports'
+                    )
+                        ->where(
+                            'report_date',
+                            $reportDate
+                        )
+                        ->first();
 
-                'unit_price' => $price,
+                $itemsSold =
+                    DB::table('order_items')
+                        ->where(
+                            'order_id',
+                            $order->order_id
+                        )
+                        ->sum(
+                            'quantity'
+                        );
 
-                'quantity' => $item['quantity'],
+                if ($report) {
 
-                'subtotal' => $price * $item['quantity'],
-            ]);
+                    $newRevenue =
+                        $report->total_revenue
+                        + $totalAmount;
+
+                    $newOrders =
+                        $report->total_orders
+                        + 1;
+
+                    $newItems =
+                        $report->total_items_sold
+                        + $itemsSold;
+
+                    DB::table(
+                        'revenue_reports'
+                    )
+                        ->where(
+                            'report_id',
+                            $report->report_id
+                        )
+                        ->update([
+
+                            'total_revenue' =>
+                                $newRevenue,
+
+                            'total_orders' =>
+                                $newOrders,
+
+                            'total_items_sold' =>
+                                $newItems,
+
+                            'avg_order_value' =>
+                                round(
+                                    $newRevenue /
+                                    $newOrders
+                                ),
+                        ]);
+
+                } else {
+
+                    DB::table(
+                        'revenue_reports'
+                    )
+                        ->insert([
+
+                            'report_date' =>
+                                $reportDate,
+
+                            'total_revenue' =>
+                                $totalAmount,
+
+                            'total_orders' =>
+                                1,
+
+                            'total_items_sold' =>
+                                $itemsSold,
+
+                            'avg_order_value' =>
+                                $totalAmount,
+                        ]);
+                }
+            }
         }
     }
 }

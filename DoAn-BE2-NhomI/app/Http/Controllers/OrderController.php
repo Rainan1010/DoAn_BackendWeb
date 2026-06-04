@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
-
+use App\Models\RevenueReport;
 class OrderController extends Controller
 {
     /**
@@ -817,87 +817,87 @@ class OrderController extends Controller
      * =====================================================
      */
     public function momoPayment($amount = null)
-{
-    $checkoutItems = session()->get('checkout_items', []);
+    {
+        $checkoutItems = session()->get('checkout_items', []);
 
-    $subtotal = 0;
+        $subtotal = 0;
 
-    foreach ($checkoutItems as $item) {
-        $subtotal += $item['price'] * $item['quantity'];
+        foreach ($checkoutItems as $item) {
+            $subtotal += $item['price'] * $item['quantity'];
+        }
+
+        $shippingFee = session('shipping_fee', 30000);
+        $discount = session('discount_amount', 0);
+        $vat = $subtotal * 0.1;
+
+        $total = $subtotal + $shippingFee + $vat - $discount;
+
+        $orderCode = 'MOMO-' . time();
+
+        $phone = 'PSP2615014800000215';
+
+        $qr = "https://img.vietqr.io/image/momo-{$phone}-compact2.png"
+            . "?amount=" . (int) $total
+            . "&addInfo=" . urlencode($orderCode);
+
+        return view(
+            'checkout.momo',
+            compact(
+                'qr',
+                'orderCode',
+                'checkoutItems',
+                'subtotal',
+                'shippingFee',
+                'discount',
+                'vat',
+                'total'
+            )
+        );
     }
-
-    $shippingFee = session('shipping_fee', 30000);
-    $discount = session('discount_amount', 0);
-    $vat = $subtotal * 0.1;
-
-    $total = $subtotal + $shippingFee + $vat - $discount;
-
-    $orderCode = 'MOMO-' . time();
-
-    $phone = 'PSP2615014800000215';
-
-    $qr = "https://img.vietqr.io/image/momo-{$phone}-compact2.png"
-        . "?amount=" . (int)$total
-        . "&addInfo=" . urlencode($orderCode);
-
-    return view(
-        'checkout.momo',
-        compact(
-            'qr',
-            'orderCode',
-            'checkoutItems',
-            'subtotal',
-            'shippingFee',
-            'discount',
-            'vat',
-            'total'
-        )
-    );
-}
 
     /**
      * =====================================================
      * MOMO RETURN
      * =====================================================
      */
-   public function momoReturn(Request $request)
-{
-    $order = Order::latest('order_id')
-        ->where('user_id', Auth::id())
-        ->first();
+    public function momoReturn(Request $request)
+    {
+        $order = Order::latest('order_id')
+            ->where('user_id', Auth::id())
+            ->first();
 
-    if (!$order) {
-        return redirect('/')
-            ->with('error', 'Không tìm thấy đơn hàng');
-    }
+        if (!$order) {
+            return redirect('/')
+                ->with('error', 'Không tìm thấy đơn hàng');
+        }
 
-    if (($request->resultCode ?? 0) == 0) {
+        if (($request->resultCode ?? 0) == 0) {
 
-        $order->update([
-            'payment_status' => 'paid',
-            'order_status' => 'processing',
-            'paid_at' => now(),
-        ]);
-
-        Payment::where('order_id', $order->order_id)
-            ->update([
-                'status' => 'success',
+            $order->update([
+                'payment_status' => 'paid',
+                'order_status' => 'processing',
+                'paid_at' => now(),
             ]);
 
-        $this->sendInvoiceEmail($order->order_id);
+            Payment::where('order_id', $order->order_id)
+                ->update([
+                    'status' => 'success',
+                ]);
+            $this->updateRevenueReport($order);
+            $this->sendInvoiceEmail($order->order_id);
+
+            return redirect()
+                ->route('orders.history')
+                ->with('success_order', [
+                    'code' => $order->order_code,
+                    'total' => $order->total_amount,
+                ]);
+        }
 
         return redirect()
-            ->route('orders.history')
-            ->with('success_order', [
-                'code' => $order->order_code,
-                'total' => $order->total_amount,
-            ]);
+            ->route('checkout.payment')
+            ->with('error', 'Thanh toán thất bại');
     }
-
-    return redirect()
-        ->route('checkout.payment')
-        ->with('error', 'Thanh toán thất bại');
-}
     private function execPostRequest($url, $data)
     {
         $ch = curl_init($url);
@@ -1083,7 +1083,7 @@ class OrderController extends Controller
                 ->update([
                     'status' => 'success',
                 ]);
-
+            $this->updateRevenueReport($order);
             // Tự động gửi mail hóa đơn PDF
             $this->sendInvoiceEmail($order->order_id);
 
@@ -1222,9 +1222,9 @@ class OrderController extends Controller
                         ->where('product_id', $product->product_id)
                         ->where('is_primary', 1)
                         ->value('image_url');
-                    
+
                     $cartKey = $product->product_id . '_variant_' . $variant->variant_id;
-                    
+
                     $variantName = null;
                     if (is_array($variant->attribute_values)) {
                         $variantName = implode(' - ', $variant->attribute_values);
@@ -1298,5 +1298,42 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Gửi mail hóa đơn thất bại cho đơn hàng #' . $orderId . ': ' . $e->getMessage());
         }
+    }
+
+
+
+    private function updateRevenueReport(Order $order)
+    {
+        $reportDate = now()->toDateString();
+
+        $report = RevenueReport::firstOrCreate(
+            [
+                'report_date' => $reportDate,
+            ],
+            [
+                'total_revenue' => 0,
+                'total_orders' => 0,
+                'total_items_sold' => 0,
+                'avg_order_value' => 0,
+            ]
+        );
+
+        $itemsSold = OrderItem::where(
+            'order_id',
+            $order->order_id
+        )->sum('quantity');
+
+        $report->total_revenue += $order->total_amount;
+
+        $report->total_orders += 1;
+
+        $report->total_items_sold += $itemsSold;
+
+        $report->avg_order_value =
+            $report->total_orders > 0
+            ? $report->total_revenue / $report->total_orders
+            : 0;
+
+        $report->save();
     }
 }
