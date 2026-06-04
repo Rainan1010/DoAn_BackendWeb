@@ -363,6 +363,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/change-address/default/{id}', [ShippingAddressController::class, 'setDefault'])
         ->name('addresses.default')
         ->where('id', '.*');
+
+    Route::get('/change-address/{id}', [ShippingAddressController::class, 'edit'])
+        ->name('addresses.edit_fallback')
+        ->where('id', '.*');
 });
 
 /*
