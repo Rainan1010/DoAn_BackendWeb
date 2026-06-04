@@ -2,154 +2,24 @@
 
 @section('content')
 
-<div class="max-w-7xl mx-auto flex flex-col lg:flex-row min-h-screen">
+    <div class="max-w-7xl mx-auto flex flex-col lg:flex-row min-h-screen">
 
-    {{-- ===================================================== --}}
-    {{-- SIDEBAR --}}
-    {{-- ===================================================== --}}
-    <aside class="bg-slate-50 w-full lg:w-80 rounded-r-2xl py-8">
+        {{-- ===================================================== --}}
+        {{-- SIDEBAR --}}
+        {{-- ===================================================== --}}
+        <aside class="bg-slate-50 w-full lg:w-80 rounded-r-2xl py-8">
 
-        <div class="px-8 mb-6">
+            <div class="px-8 mb-6">
 
-            <h2 class="text-blue-900 text-sm font-bold uppercase tracking-widest">
+                <h2 class="text-blue-900 text-sm font-bold uppercase tracking-widest">
 
-                Account Settings
+                    Account Settings
 
-            </h2>
+                </h2>
 
-            <p class="text-gray-500 text-xs mt-1">
+                <p class="text-gray-500 text-xs mt-1">
 
-                Quản lý thông tin tài khoản
-
-            </p>
-
-        </div>
-
-
-
-        {{-- MENU --}}
-        <div class="flex flex-col gap-1">
-
-            {{-- profile --}}
-            <a
-                href="{{ url('/profile') }}"
-                class="flex items-center gap-4 py-4 text-gray-500 pl-8 hover:bg-gray-100 transition">
-
-                <span class="material-symbols-outlined">
-                    person
-                </span>
-
-                <span class="text-sm uppercase tracking-widest">
-
-                    Thông tin tài khoản
-
-                </span>
-
-            </a>
-
-
-
-
-
-            {{-- password --}}
-            <a
-                href="{{ url('/password/change') }}"
-                class="flex items-center gap-4 py-4 text-gray-500 pl-8 hover:bg-gray-100 transition">
-
-                <span class="material-symbols-outlined">
-                    shield
-                </span>
-
-                <span class="text-sm uppercase tracking-widest">
-
-                    Đổi mật khẩu
-
-                </span>
-
-            </a>
-
-
-
-
-
-            {{-- address --}}
-            <a
-                href="{{ route('addresses.index') }}"
-                class="flex items-center gap-4 py-4 text-blue-900 font-bold border-l-4 border-blue-900 pl-8 bg-white">
-
-                <span class="material-symbols-outlined">
-
-                    location_on
-
-                </span>
-
-                <span class="text-sm uppercase tracking-widest">
-
-                    Địa chỉ giao hàng
-
-                </span>
-
-            </a>
-
-
-
-
-
-            {{-- logout --}}
-            <div class="mt-8 border-t pt-4">
-
-                <form action="{{ route('logout') }}" method="POST">
-
-                    @csrf
-
-                    <button
-                        class="flex items-center gap-4 py-4 text-red-500 pl-8 hover:bg-red-50 transition w-full">
-
-                        <span class="material-symbols-outlined">
-
-                            logout
-
-                        </span>
-
-                        <span class="text-sm uppercase tracking-widest">
-
-                            Đăng xuất
-
-                        </span>
-
-                    </button>
-
-                </form>
-
-            </div>
-
-        </div>
-
-    </aside>
-
-
-
-
-
-    {{-- ===================================================== --}}
-    {{-- CONTENT --}}
-    {{-- ===================================================== --}}
-    <section class="flex-1 bg-gray-50 px-4 md:px-12 py-12">
-
-        <div class="max-w-4xl mx-auto">
-
-            {{-- TITLE --}}
-            <div class="mb-12">
-
-                <h1 class="text-3xl font-bold text-blue-900">
-
-                   Cập nhật địa chỉ
-
-                </h1>
-
-                <p class="text-gray-500 mt-2">
-
-                    Cập nhật địa chỉ giao hàng cho tài khoản của bạn
+                    Quản lý thông tin tài khoản
 
                 </p>
 
@@ -157,793 +27,1102 @@
 
 
 
+            {{-- MENU --}}
+            <div class="flex flex-col gap-1">
 
+                {{-- profile --}}
+                <a href="{{ url('/profile') }}"
+                    class="flex items-center gap-4 py-4 text-gray-500 pl-8 hover:bg-gray-100 transition">
 
-            {{-- ERROR --}}
-            @if(session('error'))
+                    <span class="material-symbols-outlined">
+                        person
+                    </span>
 
-                <div
-                    class="bg-red-100 border border-red-300 text-red-600 px-5 py-4 rounded-2xl mb-8">
+                    <span class="text-sm uppercase tracking-widest">
 
-                    {{ session('error') }}
+                        Thông tin tài khoản
 
-                </div>
+                    </span>
 
-            @endif
+                </a>
 
 
 
 
 
-            {{-- CARD --}}
-            <div class="bg-white rounded-2xl shadow-sm p-8">
+                {{-- password --}}
+                <a href="{{ url('/password/change') }}"
+                    class="flex items-center gap-4 py-4 text-gray-500 pl-8 hover:bg-gray-100 transition">
 
-                <form
-                    id="addressForm"
-                    action="{{ route('addresses.update', $address->address_id) }}"
-                    method="POST"
-                    class="space-y-6">
+                    <span class="material-symbols-outlined">
+                        shield
+                    </span>
 
-                    @csrf
+                    <span class="text-sm uppercase tracking-widest">
 
+                        Đổi mật khẩu
 
+                    </span>
 
+                </a>
 
 
-                    {{-- FULL NAME --}}
-                    <div>
 
-                        <label
-                            class="block text-xs font-bold uppercase tracking-widest text-blue-900 mb-2">
 
-                            Họ và tên
 
-                        </label>
+                {{-- address --}}
+                <a href="{{ route('addresses.index') }}"
+                    class="flex items-center gap-4 py-4 text-blue-900 font-bold border-l-4 border-blue-900 pl-8 bg-white">
 
-                        <input
-                            type="text"
-                            name="full_name"
-                            value="{{ $address->full_name }}"
-                            class="w-full border-0 border-b-2 rounded-md transition border-gray-200
-                            focus:border-blue-900 focus:ring-0 py-3 px-0">
+                    <span class="material-symbols-outlined">
 
+                        location_on
 
+                    </span>
 
-                        @error('full_name')
+                    <span class="text-sm uppercase tracking-widest">
 
-                            <p class="text-red-500 text-sm mt-2">
+                        Địa chỉ giao hàng
 
-                                {{ $message }}
+                    </span>
 
-                            </p>
+                </a>
 
-                        @enderror
 
-                    </div>
 
 
 
+                {{-- logout --}}
+                <div class="mt-8 border-t pt-4">
 
+                    <form action="{{ route('logout') }}" method="POST">
 
-                    {{-- PHONE --}}
-                    <div>
+                        @csrf
 
-                        <label
-                            class="block text-xs font-bold uppercase tracking-widest text-blue-900 mb-2">
+                        <button class="flex items-center gap-4 py-4 text-red-500 pl-8 hover:bg-red-50 transition w-full">
 
-                            Số điện thoại
+                            <span class="material-symbols-outlined">
 
-                        </label>
+                                logout
 
-                        <input
-                            type="text"
-                            name="phone"
-                            value="{{ $address->phone }}"
-                            class="w-full border-0 border-b-2 rounded-md transition border-gray-200
-                            focus:border-blue-900 focus:ring-0 py-3 px-0">
+                            </span>
 
+                            <span class="text-sm uppercase tracking-widest">
 
-
-                        @error('phone')
-
-                            <p class="text-red-500 text-sm mt-2">
-
-                                {{ $message }}
-
-                            </p>
-
-                        @enderror
-
-                    </div>
-
-
-
-
-
-                    {{-- ADDRESS --}}
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-                        {{-- province --}}
-                        <div>
-
-                            <label
-                                class="block text-xs font-bold uppercase tracking-widest text-blue-900 mb-2">
-
-                                Tỉnh / Thành phố
-
-                            </label>
-
-                            <select
-                                id="province"
-                                name="province"
-                                data-old="{{ old('province', $address->province) }}"
-                                class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:border-blue-900 focus:ring-0">
-
-                                <option value="">
-
-                                    Chọn tỉnh/thành
-
-                                </option>
-
-                            </select>
-
-
-
-                            @error('province')
-
-                                <p class="text-red-500 text-sm mt-2">
-
-                                    {{ $message }}
-
-                                </p>
-
-                            @enderror
-
-                        </div>
-
-
-
-
-
-                        {{-- district --}}
-                        <div>
-
-                            <label
-                                class="block text-xs font-bold uppercase tracking-widest text-blue-900 mb-2">
-
-                                Quận / Huyện
-
-                            </label>
-
-                            <select
-                                id="district"
-                                name="district"
-                                data-old="{{ old('district', $address->district) }}"
-                                class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:border-blue-900 focus:ring-0">
-
-                                <option value="">
-
-                                    Chọn quận/huyện
-
-                                </option>
-
-                            </select>
-
-
-
-                            @error('district')
-
-                                <p class="text-red-500 text-sm mt-2">
-
-                                    {{ $message }}
-
-                                </p>
-
-                            @enderror
-
-                        </div>
-
-
-
-
-
-                        {{-- ward --}}
-                        <div>
-
-                            <label
-                                class="block text-xs font-bold uppercase tracking-widest text-blue-900 mb-2">
-
-                                Phường / Xã
-
-                            </label>
-
-                            <select
-                                id="ward"
-                                name="ward"
-                                data-old="{{ old('ward', $address->ward ) }}"
-                                class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:border-blue-900 focus:ring-0">
-
-                                <option value="">
-
-                                    Chọn phường/xã
-
-                                </option>
-
-                            </select>
-
-
-
-                            @error('ward')
-
-                                <p class="text-red-500 text-sm mt-2">
-
-                                    {{ $message }}
-
-                                </p>
-
-                            @enderror
-
-                        </div>
-
-                    </div>
-
-
-
-
-
-                    {{-- STREET --}}
-                    <div>
-
-                        <label
-                            class="block text-xs font-bold uppercase tracking-widest text-blue-900 mb-2">
-
-                            Địa chỉ cụ thể
-
-                        </label>
-
-                        <textarea
-                            name="street_address"
-                            rows="4"
-                            class="w-full border border-gray-200 rounded-2xl focus:border-blue-900 focus:ring-0 p-4 resize-none">{{  old('street_address', $address->street_address) }}</textarea>
-
-
-
-                        @error('street_address')
-
-                            <p class="text-red-500 text-sm mt-2">
-
-                                {{ $message }}
-
-                            </p>
-
-                        @enderror
-
-                    </div>
-
-
-
-
-
-                    {{-- BUTTON --}}
-                    <div class="pt-8">
-
-                        <button
-                            type="button"
-                            id="saveButton"
-                            onclick="openSaveModal()"
-                            class="bg-gradient-to-r from-blue-900 to-blue-700 text-white py-3 px-12 rounded-xl font-bold uppercase tracking-widest hover:brightness-110 transition">
-
-                            <span id="saveButtonText">
-
-                                Cập nhật địa chỉ
+                                Đăng xuất
 
                             </span>
 
                         </button>
 
-                    </div>
+                    </form>
 
-                </form>
+                </div>
 
             </div>
 
-        </div>
-
-    </section>
-
-</div>
+        </aside>
 
 
 
 
 
-{{-- ===================================================== --}}
-{{-- MODAL SAVE --}}
-{{-- ===================================================== --}}
-<div
-    id="saveModal"
-    class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        {{-- ===================================================== --}}
+        {{-- CONTENT --}}
+        {{-- ===================================================== --}}
+        <section class="flex-1 bg-gray-50 px-4 md:px-12 py-12">
 
-    <div
-        class="bg-white rounded-2xl p-6 w-[90%] max-w-md">
+            <div class="max-w-4xl mx-auto">
 
-        <h3
-            class="text-xl font-bold text-blue-900 mb-3">
+                {{-- TITLE --}}
+                <div class="mb-12">
 
-            Xác nhận cập nhật địa chỉ
+                    <h1 class="text-3xl font-bold text-blue-900">
 
-        </h3>
+                        Cập nhật địa chỉ
 
-        <p
-            class="text-gray-500 mb-6">
+                    </h1>
 
-            Bạn có chắc muốn cập nhật địa chỉ không?
+                    <p class="text-gray-500 mt-2">
 
-        </p>
+                        Cập nhật địa chỉ giao hàng cho tài khoản của bạn
 
-        <div class="flex justify-end gap-3">
+                    </p>
 
-            <button
-                onclick="closeSaveModal()"
-                class="px-5 py-2 rounded-xl border">
+                </div>
 
-                Không
 
-            </button>
 
-            <button
-                onclick="submitAddressForm()"
-                class="bg-blue-900 text-white px-5 py-2 rounded-xl">
 
-                Có
 
-            </button>
+                {{-- ERROR --}}
+                @if(session('error'))
 
-        </div>
+                    <div class="bg-red-100 border border-red-300 text-red-600 px-5 py-4 rounded-2xl mb-8">
+
+                        {{ session('error') }}
+
+                    </div>
+
+                @endif
+
+
+
+
+
+                {{-- CARD --}}
+                <div class="bg-white rounded-2xl shadow-sm p-8">
+
+                    <form id="addressForm" action="{{ route('addresses.update', $address->address_id) }}" method="POST"
+                        class="space-y-6">
+
+                        @csrf
+
+
+                        <input type="hidden" name="old_updated_at" value="{{ $address->updated_at }}">
+
+
+                        {{-- FULL NAME --}}
+                        <div>
+
+                            <label class="block text-xs font-bold uppercase tracking-widest text-blue-900 mb-2">
+
+                                Họ và tên
+
+                            </label>
+
+                            <input type="text" name="full_name" maxlength="100" value="{{ $address->full_name }}" class="w-full border-0 border-b-2 rounded-md transition border-gray-200
+            focus:border-blue-900 focus:ring-0 py-3 px-0">
+
+
+
+                            @error('full_name')
+
+                                <p class="text-red-500 text-sm mt-2">
+
+                                    {{ $message }}
+
+                                </p>
+
+                            @enderror
+
+                        </div>
+
+
+
+
+
+                        {{-- PHONE --}}
+                        <div>
+
+                            <label class="block text-xs font-bold uppercase tracking-widest text-blue-900 mb-2">
+
+                                Số điện thoại
+
+                            </label>
+                            <input type="text" id="phone" name="phone" maxlength="10" inputmode="numeric"
+                                value="{{ $address->phone }}" class="w-full border-0 border-b-2 rounded-md transition border-gray-200
+            focus:border-blue-900 focus:ring-0 py-3 px-0">
+
+                            <p id="phoneError" class="text-red-500 text-sm mt-2 hidden">
+                            </p>
+
+                            @error('phone')
+
+                                <p class="text-red-500 text-sm mt-2">
+
+                                    {{ $message }}
+
+                                </p>
+
+                            @enderror
+
+                        </div>
+
+
+
+
+
+                        {{-- ADDRESS --}}
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                            {{-- province --}}
+                            <div>
+
+                                <label class="block text-xs font-bold uppercase tracking-widest text-blue-900 mb-2">
+
+                                    Tỉnh / Thành phố
+
+                                </label>
+
+                                <select id="province" name="province" data-old="{{ old('province', $address->province) }}"
+                                    class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:border-blue-900 focus:ring-0">
+
+                                    <option value="">
+
+                                        Chọn tỉnh/thành
+
+                                    </option>
+
+                                </select>
+
+
+
+                                @error('province')
+
+                                    <p class="text-red-500 text-sm mt-2">
+
+                                        {{ $message }}
+
+                                    </p>
+
+                                @enderror
+
+                            </div>
+
+
+
+
+
+                            {{-- district --}}
+                            <div>
+
+                                <label class="block text-xs font-bold uppercase tracking-widest text-blue-900 mb-2">
+
+                                    Quận / Huyện
+
+                                </label>
+
+                                <select id="district" name="district" data-old="{{ old('district', $address->district) }}"
+                                    class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:border-blue-900 focus:ring-0">
+
+                                    <option value="">
+
+                                        Chọn quận/huyện
+
+                                    </option>
+
+                                </select>
+
+
+
+                                @error('district')
+
+                                    <p class="text-red-500 text-sm mt-2">
+
+                                        {{ $message }}
+
+                                    </p>
+
+                                @enderror
+
+                            </div>
+
+
+
+
+
+                            {{-- ward --}}
+                            <div>
+
+                                <label class="block text-xs font-bold uppercase tracking-widest text-blue-900 mb-2">
+
+                                    Phường / Xã
+
+                                </label>
+
+                                <select id="ward" name="ward" data-old="{{ old('ward', $address->ward) }}"
+                                    class="w-full border border-gray-200 rounded-xl px-4 py-3 focus:border-blue-900 focus:ring-0">
+
+                                    <option value="">
+
+                                        Chọn phường/xã
+
+                                    </option>
+
+                                </select>
+
+
+
+                                @error('ward')
+
+                                    <p class="text-red-500 text-sm mt-2">
+
+                                        {{ $message }}
+
+                                    </p>
+
+                                @enderror
+
+                            </div>
+
+                        </div>
+
+
+
+
+
+                        {{-- STREET --}}
+                        <div>
+
+                            <label class="block text-xs font-bold uppercase tracking-widest text-blue-900 mb-2">
+
+                                Địa chỉ cụ thể
+
+                            </label>
+
+                            <textarea name="street_address" rows="4"
+                                class="w-full border border-gray-200 rounded-2xl focus:border-blue-900 focus:ring-0 p-4 resize-none">{{  old('street_address', $address->street_address) }}</textarea>
+
+
+
+                            @error('street_address')
+
+                                <p class="text-red-500 text-sm mt-2">
+
+                                    {{ $message }}
+
+                                </p>
+
+                            @enderror
+
+                        </div>
+
+
+
+
+
+                        {{-- BUTTON --}}
+                        <div class="pt-8 flex gap-3">
+                            <button type="button" onclick="goBack()"
+                                class="border border-gray-300 px-8 py-3 rounded-xl font-bold uppercase tracking-widest hover:bg-gray-100 transition">
+
+                                Quay lại
+
+                            </button>
+
+                            <button type="button" id="saveButton" onclick="openSaveModal()"
+                                class="bg-gradient-to-r from-blue-900 to-blue-700 text-white py-3 px-12 rounded-xl font-bold uppercase tracking-widest hover:brightness-110 transition">
+
+                                <span id="saveButtonText">
+
+                                    Cập nhật địa chỉ
+
+                                </span>
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </section>
 
     </div>
 
-</div>
 
 
 
 
+    {{-- ===================================================== --}}
+    {{-- MODAL SAVE --}}
+    {{-- ===================================================== --}}
+    <div id="saveModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
 
-{{-- ===================================================== --}}
-{{-- SUCCESS MODAL --}}
-{{-- ===================================================== --}}
-@if(session('success'))
+        <div class="bg-white rounded-2xl p-6 w-[90%] max-w-md">
 
-    <div
-        id="successModal"
-        class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <h3 class="text-xl font-bold text-blue-900 mb-3">
 
-        <div
-            class="bg-white rounded-3xl p-8 w-[90%] max-w-md text-center">
-
-            <div
-                class="w-20 h-20 rounded-full bg-green-100 mx-auto flex items-center justify-center mb-5">
-
-                <span
-                    class="material-symbols-outlined text-green-600 text-5xl">
-
-                    check_circle
-
-                </span>
-
-            </div>
-
-            <h3
-                class="text-2xl font-bold text-green-600 mb-3">
-
-                Thành công
+                Xác nhận cập nhật địa chỉ
 
             </h3>
 
-            <p
-                class="text-gray-500 leading-relaxed">
+            <p class="text-gray-500 mb-6">
 
-                {{ session('success') }}
+                Bạn có chắc muốn cập nhật địa chỉ không?
 
             </p>
 
-            <button
-                onclick="closeSuccessModal()"
-                class="mt-8 bg-green-600 hover:bg-green-700 transition text-white px-8 py-3 rounded-2xl font-bold">
+            <div class="flex justify-end gap-3">
 
-                OK
+                <button onclick="closeSaveModal()" class="px-5 py-2 rounded-xl border">
 
-            </button>
+                    Không
+
+                </button>
+
+                <button onclick="submitAddressForm()" class="bg-blue-900 text-white px-5 py-2 rounded-xl">
+
+                    Có
+
+                </button>
+
+            </div>
 
         </div>
 
     </div>
 
-@endif
+
+    <div id="backModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+
+        <div class="bg-white rounded-2xl p-6 w-[90%] max-w-md">
+
+            <h3 class="text-xl font-bold text-red-600 mb-3">
+
+                Xác nhận quay lại
+
+            </h3>
+
+            <p class="text-gray-500 mb-6">
+
+                Bạn đã thay đổi dữ liệu. Bạn có chắc muốn quay lại không?
+
+            </p>
+
+            <div class="flex justify-end gap-3">
+
+                <button onclick="closeBackModal()" class="px-5 py-2 rounded-xl border">
+
+                    Không
+
+                </button>
+
+                <button onclick="confirmBack()" class="bg-red-600 text-white px-5 py-2 rounded-xl">
+
+                    Có
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    {{-- ===================================================== --}}
+    {{-- SUCCESS MODAL --}}
+    {{-- ===================================================== --}}
+    @if(session('success'))
+
+        <div id="successModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+
+            <div class="bg-white rounded-3xl p-8 w-[90%] max-w-md text-center">
+
+                <div class="w-20 h-20 rounded-full bg-green-100 mx-auto flex items-center justify-center mb-5">
+
+                    <span class="material-symbols-outlined text-green-600 text-5xl">
+
+                        check_circle
+
+                    </span>
+
+                </div>
+
+                <h3 class="text-2xl font-bold text-green-600 mb-3">
+
+                    Thành công
+
+                </h3>
+
+                <p class="text-gray-500 leading-relaxed">
+
+                    {{ session('success') }}
+
+                </p>
+
+                <button onclick="closeSuccessModal()"
+                    class="mt-8 bg-green-600 hover:bg-green-700 transition text-white px-8 py-3 rounded-2xl font-bold">
+
+                    OK
+
+                </button>
+
+            </div>
+
+        </div>
+
+    @endif
 
 
 
 
 
-<script>
-
-    // =====================================================
-    // SELECT
-    // =====================================================
-    const province =
-        document.getElementById('province');
-
-    const district =
-        document.getElementById('district');
-
-    const ward =
-        document.getElementById('ward');
+    <script>
 
 
 
-    // =====================================================
-    // OLD VALUE
-    // =====================================================
-    const oldProvince =
-        province.dataset.old;
+        // =====================================================
+        // SELECT
+        // =====================================================
+        const province =
+            document.getElementById('province');
 
-    const oldDistrict =
-        district.dataset.old;
+        const district =
+            document.getElementById('district');
 
-    const oldWard =
-        ward.dataset.old;
+        const ward =
+            document.getElementById('ward');
 
-
-
-
-
-    // =====================================================
-    // LOAD PROVINCES
-    // =====================================================
-    async function loadProvinces() {
-
-        const response =
-            await fetch(
-                'https://provinces.open-api.vn/api/p/'
+        const fullName =
+            document.querySelector(
+                'input[name="full_name"]'
+            );
+        const phoneInput =
+            document.querySelector(
+                'input[name="phone"]'
             );
 
+        const phoneError =
+            document.getElementById(
+                'phoneError'
+            );
+        // =============================
+        // FULL NAME
+        // =============================
+        fullName.addEventListener('input', function () {
+
+            this.value = this.value.replace(
+                /[0-9!@#$%^&*()_+=\[\]{};:'"\\|,.<>/?`~-]/g,
+                ''
+            );
+
+            if (this.value.length > 100) {
+                this.value = this.value.slice(0, 100);
+            }
+
+        });
+
+        // =============================
+        // PHONE
+        // =============================
+        phoneInput.addEventListener('input', function () {
+
+            this.value =
+                this.value.replace(/\D/g, '');
+
+            if (this.value.length > 10) {
+                this.value =
+                    this.value.slice(0, 10);
+            }
+
+            if (
+                this.value.length >= 2 &&
+                !/^(02|03|07|08|09)/.test(this.value)
+            ) {
+
+                phoneError.textContent =
+                    'Đầu số phải là 02, 03, 07, 08 hoặc 09';
+
+                phoneError.classList.remove(
+                    'hidden'
+                );
+
+            } else {
+
+                phoneError.classList.add(
+                    'hidden'
+                );
+
+            }
+
+        });
+        // =====================================================
+        // OLD VALUE
+        // =====================================================
+        const oldProvince =
+            province.dataset.old;
+
+        const oldDistrict =
+            district.dataset.old;
+
+        const oldWard =
+            ward.dataset.old;
 
 
-        const data =
-            await response.json();
 
 
 
-        data.forEach(function(item) {
+        // =====================================================
+        // LOAD PROVINCES
+        // =====================================================
+        async function loadProvinces() {
 
-            const option =
-                new Option(
-                    item.name,
-                    item.name
+            const response =
+                await fetch(
+                    'https://provinces.open-api.vn/api/p/'
                 );
 
 
 
-            if (item.name == oldProvince) {
+            const data =
+                await response.json();
 
-                option.selected = true;
+
+
+            data.forEach(function (item) {
+
+                const option =
+                    new Option(
+                        item.name,
+                        item.name
+                    );
+
+
+
+                if (item.name == oldProvince) {
+
+                    option.selected = true;
+
+                }
+
+
+
+                province.options[
+                    province.options.length
+                ] = option;
+
+            });
+
+
+
+            if (oldProvince) {
+
+                await loadDistricts(oldProvince);
 
             }
-
-
-
-            province.options[
-                province.options.length
-            ] = option;
-
-        });
-
-
-
-        if (oldProvince) {
-
-            await loadDistricts(oldProvince);
 
         }
 
-    }
 
 
 
 
+        // =====================================================
+        // LOAD DISTRICTS
+        // =====================================================
+        async function loadDistricts(provinceName) {
 
-    // =====================================================
-    // LOAD DISTRICTS
-    // =====================================================
-    async function loadDistricts(provinceName) {
+            district.length = 1;
 
-        district.length = 1;
-
-        ward.length = 1;
-
-
-
-        const response =
-            await fetch(
-                'https://provinces.open-api.vn/api/p/'
-            );
+            ward.length = 1;
 
 
 
-        const provinces =
-            await response.json();
-
-
-
-        const provinceData =
-            provinces.find(
-                p => p.name == provinceName
-            );
-
-
-
-        if (!provinceData) return;
-
-
-
-        const districtResponse =
-            await fetch(
-                `https://provinces.open-api.vn/api/p/${provinceData.code}?depth=2`
-            );
-
-
-
-        const data =
-            await districtResponse.json();
-
-
-
-        data.districts.forEach(function(item) {
-
-            const option =
-                new Option(
-                    item.name,
-                    item.name
+            const response =
+                await fetch(
+                    'https://provinces.open-api.vn/api/p/'
                 );
 
 
 
-            if (item.name == oldDistrict) {
+            const provinces =
+                await response.json();
 
-                option.selected = true;
+
+
+            const provinceData =
+                provinces.find(
+                    p => p.name == provinceName
+                );
+
+
+
+            if (!provinceData) return;
+
+
+
+            const districtResponse =
+                await fetch(
+                    `https://provinces.open-api.vn/api/p/${provinceData.code}?depth=2`
+                );
+
+
+
+            const data =
+                await districtResponse.json();
+
+
+
+            data.districts.forEach(function (item) {
+
+                const option =
+                    new Option(
+                        item.name,
+                        item.name
+                    );
+
+
+
+                if (item.name == oldDistrict) {
+
+                    option.selected = true;
+
+                }
+
+
+
+                district.options[
+                    district.options.length
+                ] = option;
+
+            });
+
+
+
+            if (oldDistrict) {
+
+                await loadWards(oldDistrict);
 
             }
-
-
-
-            district.options[
-                district.options.length
-            ] = option;
-
-        });
-
-
-
-        if (oldDistrict) {
-
-            await loadWards(oldDistrict);
 
         }
 
-    }
 
 
 
 
+        // =====================================================
+        // LOAD WARDS
+        // =====================================================
+        async function loadWards(districtName) {
 
-    // =====================================================
-    // LOAD WARDS
-    // =====================================================
-    async function loadWards(districtName) {
-
-        ward.length = 1;
-
-
-
-        const response =
-            await fetch(
-                'https://provinces.open-api.vn/api/d/'
-            );
+            ward.length = 1;
 
 
 
-        const districts =
-            await response.json();
-
-
-
-        const districtData =
-            districts.find(
-                d => d.name == districtName
-            );
-
-
-
-        if (!districtData) return;
-
-
-
-        const wardResponse =
-            await fetch(
-                `https://provinces.open-api.vn/api/d/${districtData.code}?depth=2`
-            );
-
-
-
-        const data =
-            await wardResponse.json();
-
-
-
-        data.wards.forEach(function(item) {
-
-            const option =
-                new Option(
-                    item.name,
-                    item.name
+            const response =
+                await fetch(
+                    'https://provinces.open-api.vn/api/d/'
                 );
 
 
 
-            if (item.name == oldWard) {
+            const districts =
+                await response.json();
 
-                option.selected = true;
 
+
+            const districtData =
+                districts.find(
+                    d => d.name == districtName
+                );
+
+
+
+            if (!districtData) return;
+
+
+
+            const wardResponse =
+                await fetch(
+                    `https://provinces.open-api.vn/api/d/${districtData.code}?depth=2`
+                );
+
+
+
+            const data =
+                await wardResponse.json();
+
+
+
+            data.wards.forEach(function (item) {
+
+                const option =
+                    new Option(
+                        item.name,
+                        item.name
+                    );
+
+
+
+                if (item.name == oldWard) {
+
+                    option.selected = true;
+
+                }
+
+
+
+                ward.options[
+                    ward.options.length
+                ] = option;
+
+            });
+
+        }
+
+
+
+
+
+        // =====================================================
+        // CHANGE
+        // =====================================================
+        province.onchange = function () {
+
+            loadDistricts(this.value);
+
+        };
+
+
+
+        district.onchange = function () {
+
+            loadWards(this.value);
+
+        };
+
+
+
+        loadProvinces();
+
+
+
+
+
+        // =====================================================
+        // MODAL
+        // =====================================================
+        function openSaveModal() {
+            if (
+                fullName.value.trim() === ''
+            ) {
+
+                alert('Vui lòng nhập họ tên');
+                fullName.focus();
+                return;
             }
 
+            if (
+                fullName.value.trim().length > 100
+            ) {
 
+                alert('Họ tên tối đa 100 ký tự');
+                fullName.focus();
+                return;
+            }
+            const regex =
+                /^(03|07|08|09|02)[0-9]{8}$/;
 
-            ward.options[
-                ward.options.length
-            ] = option;
+            if (
+                !regex.test(
+                    phoneInput.value.trim()
+                )
+            ) {
 
-        });
+                phoneInput.focus();
 
-    }
-
-
-
-
-
-    // =====================================================
-    // CHANGE
-    // =====================================================
-    province.onchange = function() {
-
-        loadDistricts(this.value);
-
-    };
-
-
-
-    district.onchange = function() {
-
-        loadWards(this.value);
-
-    };
-
-
-
-    loadProvinces();
-
-
-
-
-
-    // =====================================================
-    // MODAL
-    // =====================================================
-    function openSaveModal() {
-
-        document
-            .getElementById(
-                'saveModal'
-            )
-            .classList.remove(
-                'hidden'
-            );
-
-
-
-        document
-            .getElementById(
-                'saveModal'
-            )
-            .classList.add(
-                'flex'
-            );
-
-    }
-
-
-
-
-
-    function closeSaveModal() {
-
-        document
-            .getElementById(
-                'saveModal'
-            )
-            .classList.add(
-                'hidden'
-            );
-
-
-
-        document
-            .getElementById(
-                'saveModal'
-            )
-            .classList.remove(
-                'flex'
-            );
-
-    }
-
-
-
-
-
-    // =====================================================
-    // SUBMIT
-    // =====================================================
-    function submitAddressForm() {
-
-        const button =
-            document.getElementById(
-                'saveButton'
-            );
-
-
-
-        const text =
-            document.getElementById(
-                'saveButtonText'
-            );
-
-
-
-        text.innerHTML =
-            'ĐANG LƯU... ⏳';
-
-
-
-        button.disabled = true;
-
-
-
-        setTimeout(() => {
+                return;
+            }
 
             document
                 .getElementById(
-                    'addressForm'
+                    'saveModal'
                 )
-                .submit();
+                .classList.remove(
+                    'hidden'
+                );
 
-        }, 1000);
+            document
+                .getElementById(
+                    'saveModal'
+                )
+                .classList.add(
+                    'flex'
+                );
 
-    }
+        }
 
 
 
 
 
-    // =====================================================
-    // SUCCESS
-    // =====================================================
-    function closeSuccessModal() {
+        function closeSaveModal() {
 
-        window.location.href =
-            "{{ route('addresses.index') }}";
+            document
+                .getElementById(
+                    'saveModal'
+                )
+                .classList.add(
+                    'hidden'
+                );
 
-    }
 
-</script>
+
+            document
+                .getElementById(
+                    'saveModal'
+                )
+                .classList.remove(
+                    'flex'
+                );
+
+        }
+
+
+
+
+
+        // =====================================================
+        // SUBMIT
+        // =====================================================
+        function submitAddressForm() {
+
+            const button =
+                document.getElementById(
+                    'saveButton'
+                );
+
+
+
+            const text =
+                document.getElementById(
+                    'saveButtonText'
+                );
+
+
+
+            text.innerHTML =
+                'ĐANG LƯU... ⏳';
+
+
+
+            button.disabled = true;
+
+
+
+            setTimeout(() => {
+
+                document
+                    .getElementById(
+                        'addressForm'
+                    )
+                    .submit();
+
+            }, 1000);
+
+        }
+
+
+
+
+
+        // =====================================================
+        // SUCCESS
+        // =====================================================
+        function closeSuccessModal() {
+
+            window.location.href =
+                "{{ route('addresses.index') }}";
+
+        }
+        // =====================================================
+        // THEO DÕI THAY ĐỔI FORM
+        // =====================================================
+        let isChanged = false;
+
+        const form =
+            document.getElementById(
+                'addressForm'
+            );
+
+
+
+        form.addEventListener(
+            'input',
+            function () {
+
+                isChanged = true;
+
+            }
+        );
+
+        form.addEventListener(
+            'change',
+            function () {
+
+                isChanged = true;
+
+            }
+        );
+
+
+        // =====================================================
+        // QUAY LẠI
+        // =====================================================
+        function goBack() {
+
+            // chưa thay đổi dữ liệu
+            if (!isChanged) {
+
+                window.location.href =
+                    "{{ route('addresses.index') }}";
+
+                return;
+            }
+
+            // đã thay đổi dữ liệu
+            openBackModal();
+        }
+
+
+
+        function openBackModal() {
+
+            document
+                .getElementById(
+                    'backModal'
+                )
+                .classList.remove(
+                    'hidden'
+                );
+
+            document
+                .getElementById(
+                    'backModal'
+                )
+                .classList.add(
+                    'flex'
+                );
+
+        }
+
+
+
+        function closeBackModal() {
+
+            document
+                .getElementById(
+                    'backModal'
+                )
+                .classList.add(
+                    'hidden'
+                );
+
+            document
+                .getElementById(
+                    'backModal'
+                )
+                .classList.remove(
+                    'flex'
+                );
+
+        }
+
+
+
+        function confirmBack() {
+
+            window.location.href =
+                "{{ route('addresses.index') }}";
+
+        }
+    </script>
 
 @endsection
