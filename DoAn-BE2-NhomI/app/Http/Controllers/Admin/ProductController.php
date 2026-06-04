@@ -86,14 +86,14 @@ class ProductController extends Controller
             'slug'        => 'required|string|max:191|unique:products,slug',
             'category_id' => 'required|integer|exists:categories,category_id',
             'brand_id'    => 'required|integer|exists:brands,brand_id',
-            'base_price'  => 'required|numeric|min:0',
+            'base_price'  => 'required|numeric|min:0|max:999999999999999',
             'description' => 'nullable|string',
             'specs'       => 'nullable|string',
             'images.*.url'    => 'nullable|string',
             'upload_images.*'       => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'variants.*.sku'        => 'nullable|string|max:100',
-            'variants.*.price'      => 'nullable|numeric|min:0',
-            'variants.*.sale_price' => 'nullable|numeric|min:0',
+            'variants.*.price'      => 'nullable|numeric|min:0|max:999999999999999',
+            'variants.*.sale_price' => 'nullable|numeric|min:0|max:999999999999999',
             'variants.*.stock'      => 'nullable|integer|min:0',
         ], [
             'name.required'        => 'Vui lòng nhập tên sản phẩm.',
@@ -108,6 +108,7 @@ class ProductController extends Controller
             'base_price.required'  => 'Vui lòng nhập giá niêm yết.',
             'base_price.numeric'   => 'Giá niêm yết phải là số hợp lệ.',
             'base_price.min'       => 'Giá niêm yết không được nhỏ hơn 0.',
+            'base_price.max'       => 'Giá niêm yết không được vượt quá 999.999.999.999.999 ₫.',
             'images.*.url.url'     => 'Một hoặc nhiều URL hình ảnh không hợp lệ.',
             'upload_images.*.image' => 'File tải lên phải là định dạng hình ảnh.',
             'upload_images.*.mimes' => 'Hình ảnh phải có định dạng: jpeg, png, jpg, gif, webp.',
@@ -115,8 +116,10 @@ class ProductController extends Controller
             'variants.*.sku.max'   => 'Mã SKU không được vượt quá 100 ký tự.',
             'variants.*.price.numeric'      => 'Giá biến thể phải là số hợp lệ.',
             'variants.*.price.min'          => 'Giá biến thể không được nhỏ hơn 0.',
+            'variants.*.price.max'          => 'Giá biến thể không được vượt quá 999.999.999.999.999 ₫.',
             'variants.*.sale_price.numeric' => 'Giá khuyến mãi phải là số hợp lệ.',
             'variants.*.sale_price.min'     => 'Giá khuyến mãi không được nhỏ hơn 0.',
+            'variants.*.sale_price.max'     => 'Giá khuyến mãi không được vượt quá 999.999.999.999.999 ₫.',
             'variants.*.stock.integer'      => 'Số lượng tồn kho phải là số nguyên.',
             'variants.*.stock.min'          => 'Số lượng tồn kho không được nhỏ hơn 0.',
         ]);
@@ -133,7 +136,7 @@ class ProductController extends Controller
             'slug'        => $request->slug,
             'category_id' => $request->category_id,
             'brand_id'    => $request->brand_id,
-            'base_price'  => (float) str_replace(['.', ','], ['', '.'], $request->base_price),
+            'base_price'  => (float) $request->base_price,
             'description' => $request->description,
             'specs'       => $specs,
             'is_active'   => $request->boolean('is_active', true),
@@ -236,7 +239,24 @@ class ProductController extends Controller
     // ─────────────────────────────────────────────
     public function update(Request $request, string $id)
     {
-        $product = Product::where('product_id', $id)->firstOrFail();
+        $product = Product::where('product_id', $id)->first();
+        
+        if (!$product) {
+            return redirect()->route('admin.products.index')
+                ->withErrors(['concurrency_error' => 'Sản phẩm này đã bị xóa bởi một người dùng khác.']);
+        }
+
+        // Kiểm tra xung đột sửa đổi đồng thời (Optimistic Concurrency Control)
+        if ($request->has('last_updated_at')) {
+            $clientUpdatedAt = $request->input('last_updated_at');
+            $dbUpdatedAt = $product->updated_at ? $product->updated_at->toIso8601String() : ($product->created_at ? $product->created_at->toIso8601String() : '');
+            
+            if ($clientUpdatedAt !== $dbUpdatedAt) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['concurrency_error' => 'Sản phẩm này đã được một người dùng khác cập nhật trong khi bạn đang chỉnh sửa. Vui lòng lưu lại các thay đổi của bạn ở nơi khác, tải lại trang và thực hiện lại.']);
+            }
+        }
 
         // Không còn logic lọc ảnh từ JSON (do form UI đã đổi)
 
@@ -245,13 +265,13 @@ class ProductController extends Controller
             'slug'        => 'required|string|max:191|unique:products,slug,' . $id . ',product_id',
             'category_id' => 'required|integer|exists:categories,category_id',
             'brand_id'    => 'required|integer|exists:brands,brand_id',
-            'base_price'  => 'required|numeric|min:0',
+            'base_price'  => 'required|numeric|min:0|max:999999999999999',
             'description' => 'nullable|string',
             'specs'       => 'nullable|string',
             'upload_images.*'       => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'variants.*.sku'        => 'nullable|string|max:100',
-            'variants.*.price'      => 'nullable|numeric|min:0',
-            'variants.*.sale_price' => 'nullable|numeric|min:0',
+            'variants.*.price'      => 'nullable|numeric|min:0|max:999999999999999',
+            'variants.*.sale_price' => 'nullable|numeric|min:0|max:999999999999999',
             'variants.*.stock'      => 'nullable|integer|min:0',
         ], [
             'name.required'        => 'Vui lòng nhập tên sản phẩm.',
@@ -266,14 +286,17 @@ class ProductController extends Controller
             'base_price.required'  => 'Vui lòng nhập giá niêm yết.',
             'base_price.numeric'   => 'Giá niêm yết phải là số hợp lệ.',
             'base_price.min'       => 'Giá niêm yết không được nhỏ hơn 0.',
+            'base_price.max'       => 'Giá niêm yết không được vượt quá 999.999.999.999.999 ₫.',
             'upload_images.*.image' => 'File tải lên phải là định dạng hình ảnh.',
             'upload_images.*.mimes' => 'Hình ảnh phải có định dạng: jpeg, png, jpg, gif, webp.',
             'upload_images.*.max'   => 'Kích thước mỗi ảnh không được vượt quá 5MB.',
             'variants.*.sku.max'   => 'Mã SKU không được vượt quá 100 ký tự.',
             'variants.*.price.numeric'      => 'Giá biến thể phải là số hợp lệ.',
             'variants.*.price.min'          => 'Giá biến thể không được nhỏ hơn 0.',
+            'variants.*.price.max'          => 'Giá biến thể không được vượt quá 999.999.999.999.999 ₫.',
             'variants.*.sale_price.numeric' => 'Giá khuyến mãi phải là số hợp lệ.',
             'variants.*.sale_price.min'     => 'Giá khuyến mãi không được nhỏ hơn 0.',
+            'variants.*.sale_price.max'     => 'Giá khuyến mãi không được vượt quá 999.999.999.999.999 ₫.',
             'variants.*.stock.integer'      => 'Số lượng tồn kho phải là số nguyên.',
             'variants.*.stock.min'          => 'Số lượng tồn kho không được nhỏ hơn 0.',
         ]);
@@ -289,7 +312,7 @@ class ProductController extends Controller
             'slug'        => $request->slug,
             'category_id' => $request->category_id,
             'brand_id'    => $request->brand_id,
-            'base_price'  => (float) str_replace(['.', ','], ['', '.'], $request->base_price),
+            'base_price'  => (float) $request->base_price,
             'description' => $request->description,
             'specs'       => $specs,
             'is_active'   => $request->boolean('is_active', true),
