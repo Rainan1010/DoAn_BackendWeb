@@ -16,6 +16,25 @@
 </div>
 @endif
 
+@if(session('error') || $errors->any())
+<div class="mb-4 px-5 py-3 bg-red-50 text-red-600 text-sm font-bold rounded-lg border border-red-200 flex flex-col gap-1.5">
+    @if(session('error'))
+        <div class="flex items-center gap-2">
+            <i data-lucide="alert-circle" class="w-4 h-4"></i>
+            <span>{{ session('error') }}</span>
+        </div>
+    @endif
+    @if($errors->any())
+        @foreach($errors->all() as $error)
+            <div class="flex items-center gap-2">
+                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                <span>{{ $error }}</span>
+            </div>
+        @endforeach
+    @endif
+</div>
+@endif
+
 <!-- Header Section -->
 <div class="mb-6 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
     <div>
@@ -28,9 +47,9 @@
         <p class="text-gray-500 text-sm mt-2 max-w-2xl font-medium">Quản lý thông số kỹ thuật, giá niêm yết và trạng thái kho hàng cho hệ thống B-Tris.</p>
     </div>
     <div class="flex items-center gap-3 shrink-0">
-        <button class="px-5 py-2.5 bg-white border-2 border-gray-200 text-[#0A2540] text-sm font-bold rounded-lg hover:border-[#0A2540] hover:bg-gray-50 transition-all flex items-center gap-2 uppercase tracking-wider">
+        <!-- <button class="px-5 py-2.5 bg-white border-2 border-gray-200 text-[#0A2540] text-sm font-bold rounded-lg hover:border-[#0A2540] hover:bg-gray-50 transition-all flex items-center gap-2 uppercase tracking-wider">
             <i data-lucide="download" class="w-4 h-4"></i> XUẤT EXCEL
-        </button>
+        </button> -->
         <a href="{{ route('admin.products.create') }}" class="px-5 py-2.5 bg-[#0A2540] text-white text-sm font-bold rounded-lg hover:bg-[#0A2540]/90 transition-all shadow-lg shadow-[#0A2540]/20 flex items-center gap-2 uppercase tracking-wider border border-[#0A2540]">
             <i data-lucide="plus" class="w-4 h-4"></i> THÊM SẢN PHẨM MỚI
         </a>
@@ -189,7 +208,7 @@
                     </td>
                     <td class="p-5 align-top">
                         <span class="text-sm font-black text-[#0A2540] pt-1 block">
-                            {{ number_format($product->base_price, 0, ',', '.') }} <span class="text-xs">₫</span>
+                            <span data-realtime-price data-product-id="{{ $product->product_id }}">{{ number_format($product->base_price, 0, ',', '.') }}₫</span>
                         </span>
                     </td>
                     <td class="p-5 align-top">

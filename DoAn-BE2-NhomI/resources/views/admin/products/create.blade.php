@@ -17,10 +17,47 @@
     isNew: false,
     isHot: false,
     isTrending: false,
+    uploadPreviews: [],
+    selectedFiles: [],
     formatPrice(val) {
         const n = Number(val);
         if (!val || isNaN(n)) return '0 ₫';
         return n.toLocaleString('vi-VN') + ' ₫';
+    },
+    handleFile(e) {
+        const files = Array.from(e.target.files);
+        let hasInvalidFile = false;
+        files.forEach(file => {
+            if (!file.type.startsWith('image/')) {
+                hasInvalidFile = true;
+                return;
+            }
+            this.selectedFiles.push(file);
+            const previewUrl = URL.createObjectURL(file);
+            this.uploadPreviews.push(previewUrl);
+        });
+        if (hasInvalidFile) {
+            alert('Vui lòng chỉ chọn các file hình ảnh (jpeg, png, jpg, gif, webp...). Các file không hợp lệ đã bị bỏ qua.');
+        }
+        if (this.uploadPreviews.length > 0) {
+            this.imageUrl = this.uploadPreviews[0];
+        }
+        this.updateInput();
+    },
+    removeFile(idx) {
+        this.selectedFiles.splice(idx, 1);
+        this.uploadPreviews.splice(idx, 1);
+        if (this.uploadPreviews.length > 0) {
+            this.imageUrl = this.uploadPreviews[0];
+        } else {
+            this.imageUrl = '';
+        }
+        this.updateInput();
+    },
+    updateInput() {
+        const dt = new DataTransfer();
+        this.selectedFiles.forEach(file => dt.items.add(file));
+        this.$refs.fileInput.files = dt.files;
     }
 }" class="pb-20">
 
@@ -36,7 +73,7 @@
     </div>
     @endif
 
-    <form action="{{ route('admin.products.store') }}" method="POST" class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+    <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 xl:grid-cols-3 gap-8">
         @csrf
         
         <!-- Left Column -->
@@ -126,39 +163,33 @@
                 </div>
             </div>
 
-            <!-- 2. Hình ảnh (URL) -->
-            <div x-data="{ images: {{ json_encode($old_images) }} }" class="bg-white rounded-xl shadow-sm border border-orange-100 overflow-hidden relative">
-                <div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-400"></div>
-                <div class="p-6 border-b border-gray-50 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-500">
-                            <i data-lucide="image" class="w-4 h-4"></i>
-                        </div>
-                        <h2 class="text-[13px] font-black text-[#0A2540] uppercase tracking-widest">QUẢN LÝ HÌNH ẢNH (URL)</h2>
+            <!-- 2. Hình ảnh Sản phẩm -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative">
+                <div class="p-6 border-b border-gray-50 flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-600">
+                        <i data-lucide="image" class="w-4 h-4"></i>
                     </div>
-                    <button type="button" @click="images.push({url:'', is_primary: false})"
-                        class="text-xs font-bold text-gray-500 hover:text-[#0A2540] transition-colors flex items-center gap-1">
-                        + Thêm URL ảnh
-                    </button>
+                    <h2 class="text-[13px] font-black text-[#0A2540] uppercase tracking-widest">Hình ảnh Sản phẩm</h2>
                 </div>
-                <div class="p-6 space-y-3">
-                    <template x-for="(img, index) in images" :key="index">
-                        <div class="flex items-center gap-3">
-                            <input type="text" :name="'images['+index+'][url]'" x-model="img.url"
-                                @input="index === 0 && (imageUrl = img.url)"
-                                placeholder="https://example.com/image.jpg"
-                                class="flex-1 px-4 py-2.5 bg-gray-50/80 border border-gray-200 rounded-lg text-sm font-medium text-[#0A2540] focus:outline-none focus:border-[#0A2540] transition-all">
-                            <label class="flex items-center gap-2 cursor-pointer shrink-0">
-                                <input type="checkbox" :name="'images['+index+'][is_primary]'" value="1"
-                                    x-model="img.is_primary" class="w-4 h-4 rounded border-gray-300 text-[#0A2540]">
-                                <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Ảnh chính</span>
-                            </label>
-                            <button type="button" @click="images.splice(index,1); imageUrl = images[0]?.url || ''" x-show="images.length > 1"
-                                class="p-2 text-gray-300 hover:text-red-500 transition-colors">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                    </template>
+                <div class="p-6">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">TẢI LÊN TỪ THIẾT BỊ</p>
+                    <div class="flex flex-wrap items-center gap-4">
+                        <label class="cursor-pointer px-4 py-2 border-2 border-dashed border-gray-300 rounded-xl hover:border-[#0A2540] hover:bg-gray-50 transition-colors flex flex-col items-center justify-center text-gray-400 gap-1.5 h-28 w-28 group">
+                            <i data-lucide="upload-cloud" class="w-6 h-6 group-hover:text-[#0A2540] transition-colors"></i>
+                            <span class="text-[9px] font-bold uppercase mt-1 text-center group-hover:text-[#0A2540] transition-colors">Chọn ảnh<br>từ máy</span>
+                            <input type="file" name="upload_images[]" x-ref="fileInput" multiple accept="image/*" class="hidden" @change="handleFile">
+                        </label>
+                        <!-- Render Preview các ảnh được chọn -->
+                        <template x-for="(url, idx) in uploadPreviews" :key="idx">
+                            <div class="w-28 h-28 rounded-xl border-2 border-green-200 relative bg-green-50/50 flex items-center justify-center group mt-2 mr-2">
+                                <img :src="url" class="w-full h-full object-contain p-1 rounded-xl">
+                                <div class="absolute top-1 left-1 px-1.5 py-0.5 bg-green-500 text-white text-[8px] font-black rounded shadow">MỚI</div>
+                                <button type="button" @click.stop.prevent="removeFile(idx)" class="absolute -top-2.5 -right-2.5 w-6 h-6 bg-white hover:bg-red-50 text-gray-600 hover:text-red-500 rounded-full shadow border border-gray-200 flex items-center justify-center transition-colors z-10 cursor-pointer">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
                 </div>
             </div>
 
@@ -278,8 +309,8 @@
                 </div>
             </div>
 
-            <!-- Preview + Actions (Sticky) -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden sticky top-6">
+            <!-- Preview + Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative">
                 <div class="p-5 border-b border-gray-50 flex items-center justify-between bg-gray-50/40">
                     <div class="flex items-center gap-3">
                         <div class="w-8 h-8 rounded-full bg-[#0A2540] flex items-center justify-center text-white">

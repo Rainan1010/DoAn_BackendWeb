@@ -9,6 +9,24 @@
 
 @section('content')
 <div class="space-y-6">
+    @if(session('error') || $errors->any())
+        <div class="px-5 py-3 bg-red-50 text-red-600 text-sm font-bold rounded-lg border border-red-200 flex flex-col gap-1.5 animate-fadeIn">
+            @if(session('error'))
+                <div class="flex items-center gap-2">
+                    <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                    <span>{{ session('error') }}</span>
+                </div>
+            @endif
+            @if($errors->any())
+                @foreach($errors->all() as $error)
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                        <span>{{ $error }}</span>
+                    </div>
+                @endforeach
+            @endif
+        </div>
+    @endif
     
     <!-- Breadcrumb & Header section -->
     <div class="flex flex-col gap-2">
@@ -23,9 +41,9 @@
             </div>
             
             <div class="flex items-center gap-3">
-                <button class="flex items-center gap-2 px-5 py-2.5 border border-gray-300 bg-white text-gray-700 rounded-lg hover:bg-gray-50 font-bold transition-colors text-sm shadow-sm">
+                <!-- <button class="flex items-center gap-2 px-5 py-2.5 border border-gray-300 bg-white text-gray-700 rounded-lg hover:bg-gray-50 font-bold transition-colors text-sm shadow-sm">
                     <i data-lucide="download" class="w-4 h-4"></i> Xuất Excel
-                </button>
+                </button> -->
                 <a href="{{ route('admin.brands.create') }}" class="flex items-center gap-2 px-5 py-2.5 bg-[#0A2540] hover:bg-[#113255] text-white rounded-lg font-bold transition-colors text-sm shadow-sm">
                     <i data-lucide="plus" class="w-4 h-4"></i> Thêm thương hiệu mới
                 </a>

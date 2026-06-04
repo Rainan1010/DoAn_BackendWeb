@@ -347,7 +347,7 @@
         == 'saved'
         ? 'checked'
         : ''
-               }} onchange="toggleAddressType()">
+                   }} onchange="toggleAddressType()">
 
                                     <div>
 
@@ -372,7 +372,7 @@
         == 'new'
         ? 'checked'
         : ''
-           }} onchange="toggleAddressType()">
+               }} onchange="toggleAddressType()">
 
                                     <div>
 
@@ -410,7 +410,7 @@
 
                                 ? 'checked'
                                 : ''
-                                                                                       }}>
+                                                                                                               }}>
 
                                                     <div class="flex-1 min-w-0">
 
@@ -637,13 +637,49 @@
                             </span>
 
                             <span class="font-black text-[#001e40] text-[18px]">
+                                <span id="shipping_fee_text">
 
-                                {{ number_format($shippingFee) }}đ
+                                    {{-- FREE SHIP --}}
+                                    @if($shippingFee <= 0)
+
+                                        FREE SHIP
+
+                                        {{-- CÓ TÍNH PHÍ --}}
+                                    @else
+
+                                        {{ number_format($shippingFee) }}đ
+
+                                    @endif
+
+                                </span>
+
+                            </span>
+
+                        </div>
+ <div class="flex items-center justify-between gap-3">
+
+                            <span class="text-gray-500 text-lg">
+                                VAT (10%)
+                            </span>
+
+                            <span class="font-black text-[#001e40] text-[18px] text-right break-words">
+
+                                {{ number_format($vat) }}đ
 
                             </span>
 
                         </div>
 
+                        @if($discount > 0)
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-gray-500 text-lg">
+                                Giảm giá
+                            </span>
+                            <span class="font-black text-red-500 text-[18px] text-right break-words">
+                                -{{ number_format($discount) }}đ
+                            </span>
+                        </div>
+                        @endif
                     </div>
 
                     {{-- TOTAL --}}
@@ -665,7 +701,11 @@
 
                             <div class="text-[38px] font-black leading-none whitespace-nowrap">
 
-                                {{ number_format($total) }}đ
+                                <span id="total_text">
+
+                                    {{ number_format($total) }}đ
+
+                                </span>
 
                             </div>
 
@@ -681,7 +721,6 @@
 
     </div>
 
-    ```html
     <script>
 
         function toggleAddressType() {
@@ -956,6 +995,173 @@
 
             }
         );
+
+        /*
+        |--------------------------------------------------------------------------
+        | KHI USER ĐỔI TỈNH / THÀNH
+        |--------------------------------------------------------------------------
+        */
+        document
+
+            .getElementById('province')
+
+            .addEventListener(
+
+                'change',
+
+                function () {
+                    /*
+                    |--------------------------------------------------------------------------
+                    | LẤY TỈNH ĐANG CHỌN
+                    |--------------------------------------------------------------------------
+                    */
+                    let province = this.value;
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | GỌI AJAX SANG LARAVEL
+                    |--------------------------------------------------------------------------
+                    */
+                    fetch(
+
+                        "{{ route('shipping.fee') }}",
+
+                        {
+                            method: "POST",
+
+                            headers: {
+
+                                /*
+                                |--------------------------------------------------------------------------
+                                | KIỂU JSON
+                                |--------------------------------------------------------------------------
+                                */
+                                "Content-Type":
+                                    "application/json",
+
+                                /*
+                                |--------------------------------------------------------------------------
+                                | CSRF TOKEN
+                                |--------------------------------------------------------------------------
+                                */
+                                "X-CSRF-TOKEN":
+                                    "{{ csrf_token() }}"
+                            },
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | DATA GỬI ĐI
+                            |--------------------------------------------------------------------------
+                            */
+                            body: JSON.stringify({
+
+                                province: province
+                            })
+                        }
+                    )
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | CHUYỂN RESPONSE SANG JSON
+                        |--------------------------------------------------------------------------
+                        */
+                        .then(res => res.json())
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | NHẬN DATA
+                        |--------------------------------------------------------------------------
+                        */
+                        .then(data => {
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | ELEMENT PHÍ SHIP
+                            |--------------------------------------------------------------------------
+                            */
+                            let shippingText =
+
+                                document.getElementById(
+                                    'shipping_fee_text'
+                                );
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | FREE SHIP
+                            |--------------------------------------------------------------------------
+                            */
+                            if (data.fee <= 0) {
+
+                                shippingText.innerHTML =
+                                    'FREE SHIP';
+                            }
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | CÓ PHÍ SHIP
+                            |--------------------------------------------------------------------------
+                            */
+                            else {
+
+                                shippingText.innerHTML =
+
+                                    new Intl.NumberFormat(
+                                        'vi-VN'
+                                    ).format(data.fee)
+
+                                    + 'đ';
+                            }
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | TẠM TÍNH
+                            |--------------------------------------------------------------------------
+                            */
+                            let subtotal =
+
+                        {{ $subtotal }};
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | VAT 10%
+                            |--------------------------------------------------------------------------
+                            */
+                            let vat =
+
+                                subtotal * 0.1;
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | TỔNG TIỀN
+                            |--------------------------------------------------------------------------
+                            */
+                            let total =
+
+                                subtotal
+                                + vat
+                                + data.fee;
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | UPDATE TỔNG TIỀN
+                            |--------------------------------------------------------------------------
+                            */
+                            document
+
+                                .getElementById(
+                                    'total_text'
+                                )
+
+                                .innerHTML =
+
+                                new Intl.NumberFormat(
+                                    'vi-VN'
+                                ).format(total)
+
+                                + 'đ';
+                        });
+                }
+            );
 
     </script>
 @endsection
