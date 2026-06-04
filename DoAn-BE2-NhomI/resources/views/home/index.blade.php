@@ -94,6 +94,15 @@
                                     </span>
                                 </button>
                             </form>
+
+                            <form action="{{ route('compare.add') }}" method="POST" onclick="event.stopPropagation();">
+                                @csrf
+                                <input type="hidden" name="product_id" value="{{ $product->product_id }}">
+                                <button type="submit" onclick="event.stopPropagation();" title="So sánh"
+                                    class="w-10 h-10 border border-white/30 text-white rounded flex items-center justify-center hover:bg-white/10 transition-colors">
+                                    <span class="material-symbols-outlined text-xl">compare_arrows</span>
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -358,6 +367,15 @@
                             <span class="material-symbols-outlined text-xl">
                                 add_shopping_cart
                             </span>
+                        </button>
+                    </form>
+
+                    <form action="{{ route('compare.add') }}" method="POST" onclick="event.stopPropagation();" class="ml-2">
+                        @csrf
+                        <input type="hidden" name="product_id" value="{{ $product->product_id }}">
+                        <button type="submit" onclick="event.stopPropagation();" title="So sánh"
+                            class="w-10 h-10 border border-slate-100 text-brand-blue rounded-xl flex items-center justify-center hover:bg-brand-blue hover:text-white transition-all">
+                            <span class="material-symbols-outlined text-xl">compare_arrows</span>
                         </button>
                     </form>
                 </div>
