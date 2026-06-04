@@ -57,11 +57,11 @@
             </div>
 
             <div class="flex items-center gap-3">
-                <button type="button"
+                <!-- <button type="button"
                     class="flex items-center gap-2 px-5 py-2.5 border border-gray-300 bg-white text-gray-700 rounded-lg hover:bg-gray-50 font-bold transition-colors text-sm shadow-sm">
                     <i data-lucide="download" class="w-4 h-4"></i>
                     Xuất Excel
-                </button>
+                </button> -->
 
                 <a href="{{ route('admin.attributes.create') }}"
                     class="flex items-center gap-2 px-5 py-2.5 bg-[#0A2540] hover:bg-[#113255] text-white rounded-lg font-bold transition-colors text-sm shadow-sm">
