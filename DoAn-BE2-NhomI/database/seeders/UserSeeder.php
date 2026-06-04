@@ -62,6 +62,7 @@ class UserSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
+        
         // 20 user thường
         for ($i = 1; $i <= 20; $i++) {
             DB::table('users')->insert([
