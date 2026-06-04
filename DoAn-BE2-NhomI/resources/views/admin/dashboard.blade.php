@@ -13,14 +13,14 @@
     <!-- Welcome Header -->
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-2xl font-black text-[#0A2540] tracking-tight">Dashboard Overview</h1>
-            <p class="text-sm font-medium text-gray-500 mt-1">Real-time performance metrics for B-Tris Tech ecosystem.</p>
+            <h1 class="text-2xl font-black text-[#0A2540] tracking-tight">Tổng quan Dashboard</h1>
+            <p class="text-sm font-medium text-gray-500 mt-1">Các chỉ số hiệu suất thời gian thực cho hệ sinh thái B-Tris Tech.</p>
         </div>
         <div class="flex items-center gap-1 bg-white p-1 rounded-lg border border-gray-100 shadow-sm">
             @foreach(['24h', '7d', '30d'] as $r)
                 <a href="{{ route('admin.dashboard', ['range' => $r]) }}" 
                    class="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-md transition-all {{ request('range', '24h') == $r ? 'bg-[#0A2540] text-white shadow-lg shadow-[#0A2540]/20' : 'text-gray-400 hover:bg-gray-50' }}">
-                    {{ $r }}
+                    {{ $r === '24h' ? '24 Giờ' : ($r === '7d' ? '7 Ngày' : '30 Ngày') }}
                 </a>
             @endforeach
         </div>
@@ -40,7 +40,7 @@
                         {{ $stats['revenue']['growth'] }}%
                     </span>
                 </div>
-                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Revenue</p>
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Tổng Doanh Thu</p>
                 <h3 class="text-2xl font-black text-[#0A2540]">{{ number_format($stats['revenue']['total']) }} <span class="text-xs font-bold text-gray-400">VNĐ</span></h3>
             </div>
             <div class="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500">
@@ -56,10 +56,10 @@
                         <i data-lucide="shopping-bag" class="w-5 h-5"></i>
                     </div>
                     <span class="flex items-center gap-1 text-[10px] font-black text-[#0FAF62] bg-opacity-10 px-2 py-1 rounded-full uppercase tracking-widest">
-                        {{ $stats['orders']['fulfillment_rate'] }}% Rate
+                        Tỷ lệ hoàn thành {{ $stats['orders']['fulfillment_rate'] }}%
                     </span>
                 </div>
-                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Orders</p>
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Tổng Đơn Hàng</p>
                 <h3 class="text-2xl font-black text-[#0A2540]">{{ number_format($stats['orders']['total']) }}</h3>
             </div>
             <div class="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500">
@@ -80,7 +80,7 @@
                         <div class="w-6 h-6 rounded-full border-2 border-white bg-gray-400 flex items-center justify-center text-[8px] text-white font-bold">+</div>
                     </div>
                 </div>
-                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Active Customers</p>
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Khách Hàng Hoạt Động</p>
                 <h3 class="text-2xl font-black text-[#0A2540]">{{ number_format($stats['customers']['total']) }}</h3>
             </div>
             <div class="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500">
@@ -96,10 +96,10 @@
                         <i data-lucide="package" class="w-5 h-5"></i>
                     </div>
                     <span class="text-[10px] font-black text-red-500 bg-red-50 px-2 py-1 rounded-full uppercase tracking-widest">
-                        {{ $stats['products']['out_of_stock'] }} Low
+                        Hết hàng: {{ $stats['products']['out_of_stock'] }}
                     </span>
                 </div>
-                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Active Products</p>
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Sản phẩm hoạt động</p>
                 <h3 class="text-2xl font-black text-[#0A2540]">{{ $stats['products']['total'] }}</h3>
             </div>
             <div class="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500">
@@ -110,44 +110,31 @@
 
     <!-- Charts and Secondary Data -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Revenue Chart (Visual Mockup) -->
-        <div class="lg:col-span-2 bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-            <div class="flex items-center justify-between mb-8">
+        <!-- Revenue Chart -->
+        <div class="lg:col-span-2 bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h3 class="text-sm font-black text-[#0A2540] uppercase tracking-widest">Revenue Trends</h3>
-                    <p class="text-xs text-gray-400 font-medium mt-1">Monthly growth analysis for current fiscal year</p>
+                    <h3 class="text-sm font-black text-[#0A2540] uppercase tracking-widest">Xu Hướng Doanh Thu</h3>
+                    <p class="text-xs text-gray-400 font-medium mt-1">Phân tích tăng trưởng hàng tháng cho năm tài chính hiện tại</p>
                 </div>
                 <button class="text-gray-400 hover:text-[#0A2540] transition-colors"><i data-lucide="more-vertical" class="w-5 h-5"></i></button>
             </div>
-            <div class="h-64 flex items-end justify-between gap-4">
-                @foreach($revenueTrends as $month => $value)
-                <div class="flex-1 flex flex-col items-center gap-4 group">
-                    <div class="w-full bg-gray-50 rounded-lg relative overflow-hidden h-full flex items-end">
-                        <div class="w-full bg-[#0A2540]/10 group-hover:bg-[#0A2540]/20 transition-all rounded-t-lg" style="height: {{ ($value / $maxRevenue) * 100 }}%"></div>
-                        @if($month === 'Apr' || $month === 'Jul')
-                        <div class="absolute bottom-0 w-full bg-[#0A2540] rounded-t-lg shadow-lg shadow-[#0A2540]/20" style="height: {{ ($value / $maxRevenue) * 70 }}%"></div>
-                        @endif
-                    </div>
-                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">{{ $month }}</span>
-                </div>
-                @endforeach
+            <div class="h-64 relative w-full">
+                <canvas id="revenueChart"></canvas>
             </div>
         </div>
 
-        <!-- Order Status Chart (Visual Mockup) -->
+        <!-- Order Status Chart -->
         <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full">
-            <h3 class="text-sm font-black text-[#0A2540] uppercase tracking-widest">Order Status</h3>
-            <p class="text-xs text-gray-400 font-medium mt-1">Current order lifecycle breakdown</p>
+            <h3 class="text-sm font-black text-[#0A2540] uppercase tracking-widest">Trạng Thái Đơn Hàng</h3>
+            <p class="text-xs text-gray-400 font-medium mt-1">Phân tích chu kỳ hoạt động của đơn hàng</p>
             
-            <div class="flex-1 flex flex-col items-center justify-center py-8">
-                <div class="relative w-48 h-48 flex items-center justify-center">
-                    <svg class="w-full h-full transform -rotate-90">
-                        <circle cx="96" cy="96" r="88" stroke="currentColor" stroke-width="16" fill="transparent" class="text-gray-100" />
-                        <circle cx="96" cy="96" r="88" stroke="currentColor" stroke-width="16" fill="transparent" stroke-dasharray="552.92" stroke-dashoffset="{{ 552.92 * (1 - $orderStatus['success_rate']/100) }}" class="text-[#0A2540]" />
-                    </svg>
-                    <div class="absolute inset-0 flex flex-col items-center justify-center">
-                        <p class="text-4xl font-black text-[#0A2540]">{{ $orderStatus['success_rate'] }}%</p>
-                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Success Rate</p>
+            <div class="flex-1 flex flex-col items-center justify-center py-6 relative">
+                <div class="relative w-44 h-44 flex items-center justify-center">
+                    <canvas id="orderStatusChart"></canvas>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <p class="text-3xl font-black text-[#0A2540]">{{ $orderStatus['success_rate'] }}%</p>
+                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Thành công</p>
                     </div>
                 </div>
             </div>
@@ -156,21 +143,21 @@
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-[#0A2540]"></span>
-                        <span class="text-xs font-bold text-gray-500 uppercase">Delivered</span>
+                        <span class="text-xs font-bold text-gray-500 uppercase">Đã giao hàng</span>
                     </div>
                     <span class="text-xs font-black text-[#0A2540]">{{ number_format($orderStatus['delivered']) }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-blue-200"></span>
-                        <span class="text-xs font-bold text-gray-500 uppercase">Processing</span>
+                        <span class="w-2 h-2 rounded-full bg-blue-300"></span>
+                        <span class="text-xs font-bold text-gray-500 uppercase">Đang xử lý</span>
                     </div>
                     <span class="text-xs font-black text-[#0A2540]">{{ number_format($orderStatus['processing']) }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-red-100"></span>
-                        <span class="text-xs font-bold text-gray-500 uppercase">Returned</span>
+                        <span class="w-2 h-2 rounded-full bg-red-200"></span>
+                        <span class="text-xs font-bold text-gray-500 uppercase">Bị trả lại</span>
                     </div>
                     <span class="text-xs font-black text-[#0A2540]">{{ number_format($orderStatus['returned']) }}</span>
                 </div>
@@ -184,10 +171,10 @@
         <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div class="p-8 border-b border-gray-50 flex items-center justify-between">
                 <div>
-                    <h3 class="text-sm font-black text-[#0A2540] uppercase tracking-widest">Top Selling Products</h3>
-                    <p class="text-xs text-gray-400 font-medium mt-1">Best performing items by revenue</p>
+                    <h3 class="text-sm font-black text-[#0A2540] uppercase tracking-widest">Sản Phẩm Bán Chạy Nhất</h3>
+                    <p class="text-xs text-gray-400 font-medium mt-1">Các sản phẩm mang lại doanh thu cao nhất</p>
                 </div>
-                <a href="{{ route('admin.products.index') }}" class="text-[10px] font-black text-blue-500 uppercase tracking-widest hover:text-blue-600 transition-colors">View All</a>
+                <a href="{{ route('admin.products.index') }}" class="text-[10px] font-black text-blue-500 uppercase tracking-widest hover:text-blue-600 transition-colors">Xem tất cả</a>
             </div>
             <div class="p-0">
                 @foreach($topSellingProducts as $product)
@@ -203,7 +190,7 @@
                     </div>
                     <div class="text-right">
                         <p class="text-sm font-black text-[#0A2540]">{{ number_format($product['revenue']) }} <span class="text-[10px] font-bold text-gray-400">VNĐ</span></p>
-                        <p class="text-[10px] font-black text-[#0FAF62] uppercase tracking-widest">{{ $product['sold'] }} sold</p>
+                        <p class="text-[10px] font-black text-[#0FAF62] uppercase tracking-widest">Đã bán: {{ $product['sold'] }}</p>
                     </div>
                 </div>
                 @endforeach
@@ -212,7 +199,7 @@
 
         <!-- Recent Activities -->
         <div class="bg-[#0A2540] rounded-2xl shadow-xl p-8 text-white relative overflow-hidden">
-            <h3 class="text-sm font-black uppercase tracking-widest mb-8 relative z-10">Recent Activities</h3>
+            <h3 class="text-sm font-black uppercase tracking-widest mb-8 relative z-10">Hoạt Động Gần Đây</h3>
             <div class="space-y-8 relative z-10">
                 @foreach($recentActivities as $activity)
                 <div class="flex gap-4 relative">
@@ -231,7 +218,7 @@
             
             <div class="mt-12 pt-8 border-t border-white/10 relative z-10">
                 <button class="w-full py-4 bg-white text-[#0A2540] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-50 transition-all shadow-xl shadow-black/20">
-                    Generate Full Report
+                    Xuất báo cáo đầy đủ
                 </button>
             </div>
             
@@ -243,13 +230,153 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Tự động làm mới trang sau mỗi 5 giây
-    // Chỉ làm mới nếu người dùng không đang nhập liệu
-    setInterval(function() {
-        if (!document.activeElement || (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA')) {
-            window.location.reload();
-        }
-    }, 5000);
+    document.addEventListener('DOMContentLoaded', function () {
+        // Tự động làm mới trang sau mỗi 30 giây để tránh gián đoạn tương tác biểu đồ
+        setInterval(function() {
+            if (!document.activeElement || (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA')) {
+                window.location.reload();
+            }
+        }, 30000);
+
+        // Map tháng viết tắt sang Tiếng Việt
+        const monthTranslations = {
+            'Jan': 'Thg 1', 'Feb': 'Thg 2', 'Mar': 'Thg 3', 'Apr': 'Thg 4',
+            'May': 'Thg 5', 'Jun': 'Thg 6', 'Jul': 'Thg 7', 'Aug': 'Thg 8',
+            'Sep': 'Thg 9', 'Oct': 'Thg 10', 'Nov': 'Thg 11', 'Dec': 'Thg 12'
+        };
+
+        // --- 1. BIỂU ĐỒ DOANH THU (LINE CHART) ---
+        const ctxRevenue = document.getElementById('revenueChart').getContext('2d');
+        const rawTrends = {!! json_encode($revenueTrends) !!};
+        const revenueLabels = Object.keys(rawTrends).map(m => monthTranslations[m] ?? m);
+        const revenueData = Object.values(rawTrends);
+
+        // Tạo gradient màu nền cho đường biểu diễn
+        const revenueGradient = ctxRevenue.createLinearGradient(0, 0, 0, 240);
+        revenueGradient.addColorStop(0, 'rgba(10, 37, 64, 0.15)');
+        revenueGradient.addColorStop(1, 'rgba(10, 37, 64, 0.00)');
+
+        new Chart(ctxRevenue, {
+            type: 'line',
+            data: {
+                labels: revenueLabels,
+                datasets: [{
+                    label: 'Doanh thu (VNĐ)',
+                    data: revenueData,
+                    borderColor: '#0A2540',
+                    borderWidth: 2.5,
+                    backgroundColor: revenueGradient,
+                    fill: true,
+                    tension: 0.35,
+                    pointBackgroundColor: '#0A2540',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: '#0A2540',
+                        titleFont: { family: 'Inter', size: 12, weight: 'bold' },
+                        bodyFont: { family: 'Inter', size: 12 },
+                        padding: 10,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            label: function (context) {
+                                return ' Doanh thu: ' + new Intl.NumberFormat('vi-VN').format(context.raw) + ' ₫';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        border: { dash: [5, 5] },
+                        grid: {
+                            color: '#E5E7EB',
+                            tickBorderDash: [5, 5]
+                        },
+                        ticks: {
+                            font: { family: 'Inter', size: 10, weight: '600' },
+                            color: '#9CA3AF',
+                            callback: function(value) {
+                                if (value >= 1e6) {
+                                    return (value / 1e6) + ' triệu';
+                                }
+                                return new Intl.NumberFormat('vi-VN').format(value) + ' ₫';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: { family: 'Inter', size: 10, weight: '600' },
+                            color: '#9CA3AF'
+                        }
+                    }
+                }
+            }
+        });
+
+        // --- 2. BIỂU ĐỒ TRẠNG THÁI ĐƠN HÀNG (DOUGHNUT) ---
+        const ctxOrder = document.getElementById('orderStatusChart').getContext('2d');
+        const orderData = [
+            {{ $orderStatus['delivered'] }},
+            {{ $orderStatus['processing'] }},
+            {{ $orderStatus['returned'] }}
+        ];
+
+        const isAllZero = orderData.every(val => val === 0);
+        const chartData = isAllZero ? [1, 0, 0] : orderData; 
+
+        new Chart(ctxOrder, {
+            type: 'doughnut',
+            data: {
+                labels: ['Đã giao hàng', 'Đang xử lý', 'Bị trả lại'],
+                datasets: [{
+                    data: chartData,
+                    backgroundColor: ['#0A2540', '#93C5FD', '#FEE2E2'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff',
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '80%',
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: '#0A2540',
+                        titleFont: { family: 'Inter', size: 12, weight: 'bold' },
+                        bodyFont: { family: 'Inter', size: 12 },
+                        padding: 10,
+                        cornerRadius: 8,
+                        displayColors: true,
+                        callbacks: {
+                            label: function (context) {
+                                const val = isAllZero && context.dataIndex === 0 ? 0 : orderData[context.dataIndex];
+                                return ' ' + context.label + ': ' + val + ' đơn';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
 </script>
 @endpush

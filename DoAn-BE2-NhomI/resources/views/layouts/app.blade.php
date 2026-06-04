@@ -78,53 +78,53 @@ use Illuminate\Support\Facades\DB;
                 </a>
                 <div class="hidden md:flex gap-8 items-center">
                     @php
-                        $dienThoai = isset($categories) ? $categories->firstWhere('slug', 'dien-thoai') : null;
-                        $laptop = isset($categories) ? $categories->firstWhere('slug', 'laptop') : null;
-                        $otherCategories = isset($categories) ? $categories->filter(function($cat) {
-                            return !in_array($cat->slug, ['dien-thoai', 'laptop']);
-                        }) : collect();
+                    $dienThoai = isset($categories) ? $categories->firstWhere('slug', 'dien-thoai') : null;
+                    $laptop = isset($categories) ? $categories->firstWhere('slug', 'laptop') : null;
+                    $otherCategories = isset($categories) ? $categories->filter(function($cat) {
+                    return !in_array($cat->slug, ['dien-thoai', 'laptop']);
+                    }) : collect();
                     @endphp
 
                     {{-- 1. Điện thoại --}}
                     @if($dienThoai)
-                        <a class="text-white hover:text-slate-300 transition-colors font-semibold {{ request()->is('category/' . $dienThoai->slug) ? 'underline decoration-2 underline-offset-8 font-bold text-slate-200' : '' }}" 
-                           href="{{ route('category.show', $dienThoai->slug) }}">
-                            {{ $dienThoai->name }}
-                        </a>
+                    <a class="text-white hover:text-slate-300 transition-colors font-semibold {{ request()->is('category/' . $dienThoai->slug) ? 'underline decoration-2 underline-offset-8 font-bold text-slate-200' : '' }}"
+                        href="{{ route('category.show', $dienThoai->slug) }}">
+                        {{ $dienThoai->name }}
+                    </a>
                     @endif
 
                     {{-- 2. Laptop --}}
                     @if($laptop)
-                        <a class="text-white hover:text-slate-300 transition-colors font-semibold {{ request()->is('category/' . $laptop->slug) ? 'underline decoration-2 underline-offset-8 font-bold text-slate-200' : '' }}" 
-                           href="{{ route('category.show', $laptop->slug) }}">
-                            {{ $laptop->name }}
-                        </a>
+                    <a class="text-white hover:text-slate-300 transition-colors font-semibold {{ request()->is('category/' . $laptop->slug) ? 'underline decoration-2 underline-offset-8 font-bold text-slate-200' : '' }}"
+                        href="{{ route('category.show', $laptop->slug) }}">
+                        {{ $laptop->name }}
+                    </a>
                     @endif
 
                     {{-- 3. Khuyến mãi --}}
-                    <a class="text-white hover:text-slate-300 transition-colors font-semibold {{ request()->is('promotions') ? 'underline decoration-2 underline-offset-8 font-bold text-slate-200' : '' }}" 
-                       href="{{ route('promotions.index') }}">
+                    <a class="text-white hover:text-slate-300 transition-colors font-semibold {{ request()->is('promotions') ? 'underline decoration-2 underline-offset-8 font-bold text-slate-200' : '' }}"
+                        href="{{ route('promotions.index') }}">
                         Khuyến mãi
                     </a>
 
                     {{-- 4. Các sản phẩm khác (Dropdown) --}}
                     @if($otherCategories->count() > 0)
-                        <div class="relative group py-2">
-                            <button class="flex items-center gap-0.5 text-white hover:text-slate-300 transition-colors font-semibold outline-none">
-                                Các sản phẩm khác
-                                <span class="material-symbols-outlined text-lg transition-transform group-hover:rotate-180 duration-300">keyboard_arrow_down</span>
-                            </button>
+                    <div class="relative group py-2">
+                        <button class="flex items-center gap-0.5 text-white hover:text-slate-300 transition-colors font-semibold outline-none">
+                            Các sản phẩm khác
+                            <span class="material-symbols-outlined text-lg transition-transform group-hover:rotate-180 duration-300">keyboard_arrow_down</span>
+                        </button>
 
-                            {{-- Dropdown Menu --}}
-                            <div class="absolute left-0 mt-2 w-48 bg-white text-[#0A2540] rounded-xl shadow-2xl p-2 font-semibold text-sm opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[100] border border-gray-100 transform origin-top scale-95 group-hover:scale-100">
-                                @foreach($otherCategories as $cat)
-                                    <a href="{{ route('category.show', $cat->slug) }}" 
-                                       class="block px-4 py-2.5 hover:bg-slate-50 hover:text-brand-blue rounded-lg transition-all {{ request()->is('category/' . $cat->slug) ? 'bg-slate-50 text-brand-blue font-bold' : '' }}">
-                                        {{ $cat->name }}
-                                    </a>
-                                @endforeach
-                            </div>
+                        {{-- Dropdown Menu --}}
+                        <div class="absolute left-0 mt-2 w-48 bg-white text-[#0A2540] rounded-xl shadow-2xl p-2 font-semibold text-sm opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[100] border border-gray-100 transform origin-top scale-95 group-hover:scale-100">
+                            @foreach($otherCategories as $cat)
+                            <a href="{{ route('category.show', $cat->slug) }}"
+                                class="block px-4 py-2.5 hover:bg-slate-50 hover:text-brand-blue rounded-lg transition-all {{ request()->is('category/' . $cat->slug) ? 'bg-slate-50 text-brand-blue font-bold' : '' }}">
+                                {{ $cat->name }}
+                            </a>
+                            @endforeach
                         </div>
+                    </div>
                     @endif
                 </div>
             </div>
@@ -223,18 +223,24 @@ use Illuminate\Support\Facades\DB;
                         </span>
                     </div>
 
-                    <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white text-[#0A2540] rounded-xl shadow-2xl p-2 font-bold text-sm">
+                    <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-56 bg-white text-[#0A2540] rounded-xl shadow-2xl p-2 font-bold text-sm z-[999]">
                         <a href="{{ route('profile') }}" class="block px-4 py-2 hover:bg-gray-100 rounded-lg">
                             Hồ sơ cá nhân
                         </a>
 
-                        <a href="{{ route('orders.history') }}" class="block px-4 py-2 hover:bg-gray-100 rounded-lg border-b border-gray-50 mb-1">
+                        <a href="{{ route('orders.history') }}" class="block px-4 py-2 hover:bg-gray-100 rounded-lg">
                             Đơn mua của tôi
                         </a>
 
-                        <form action="{{ route('logout') }}" method="POST">
+                        @if(Auth::user()->role === 'admin')
+                        <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 hover:bg-blue-50 text-[#0A2540] rounded-lg border-t border-gray-100 mt-1 pt-2">
+                            Quản lý Admin
+                        </a>
+                        @endif
+
+                        <form action="{{ route('logout') }}" method="POST" class="border-t border-gray-100 mt-1 pt-1">
                             @csrf
-                            <button class="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 rounded-lg">
+                            <button type="submit" class="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 rounded-lg">
                                 Đăng xuất
                             </button>
                         </form>

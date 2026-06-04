@@ -365,13 +365,57 @@ class CrudUserController extends Controller
     // HIỂN THỊ LOGIN HISTORY
     // =====================================================
 
-    public function loginHistory()
+    public function loginHistory(Request $request)
     {
+        $request->validate([
+            'from_date' => [
+                'nullable',
+                'date',
+                'before_or_equal:today'
+            ],
+
+            'to_date' => [
+                'nullable',
+                'date',
+                'after_or_equal:from_date',
+                'before_or_equal:today'
+            ]
+        ], [
+            'from_date.before_or_equal' =>
+                'Ngày bắt đầu không được lớn hơn ngày hiện tại.',
+
+            'to_date.after_or_equal' =>
+                'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.',
+
+            'to_date.before_or_equal' =>
+                'Ngày kết thúc không được lớn hơn ngày hiện tại.'
+        ]);
         $query = LoginHistory::with('user');
 
-        // FILTER STATUS
-        if (request('status')) {
-            $query->where('status', request('status'));
+        $fromDate = $request->input(
+            'from_date',
+            now()->toDateString()
+        );
+
+        $toDate = $request->input(
+            'to_date',
+            now()->toDateString()
+        );
+
+        $query->whereDate(
+            'login_time',
+            '>=',
+            $fromDate
+        );
+
+        $query->whereDate(
+            'login_time',
+            '<=',
+            $toDate
+        );
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
 
         $logs = $query
