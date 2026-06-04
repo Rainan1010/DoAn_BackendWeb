@@ -63,11 +63,11 @@
 
                 <!-- Action Buttons -->
                 <div class="flex items-center gap-2 flex-shrink-0">
-                    <a href="{{ route('admin.brands.edit', $brand->brand_id) }}" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-bold transition-colors text-sm">
+                    <a href="{{ route('admin.brands.edit', $brand->brand_id) }}" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-bold transition-all text-sm">
                         CHỈNH SỬA
                     </a>
-                    <button onclick="navigator.clipboard.writeText('{{ $brand->brand_id }}')" class="px-4 py-2 bg-[#0A2540] hover:bg-[#113255] text-white rounded-lg font-bold transition-colors text-sm">
-                        SAO CHÉP ID
+                    <button onclick="copyBrandId('{{ $brand->brand_id }}', this)" class="px-4 py-2 bg-[#0A2540] hover:bg-[#113255] text-white rounded-lg font-bold transition-all text-sm flex items-center gap-1.5 min-w-[130px] justify-center">
+                        <i data-lucide="copy" class="w-4 h-4"></i> SAO CHÉP ID
                     </button>
                 </div>
             </div>
@@ -80,10 +80,14 @@
             </div>
             <div>
                 <p class="text-[11px] font-bold text-blue-300 uppercase tracking-widest mb-2">Tổng sản phẩm</p>
-                <p class="text-5xl font-black text-white">0</p>
+                <p class="text-5xl font-black text-white">{{ number_format($totalProducts) }}</p>
             </div>
             <div class="mt-4 flex items-center gap-1.5">
-                <span class="text-[#0FAF62] text-xs font-bold">↑ 0%</span>
+                @if($growth >= 0)
+                    <span class="text-[#0FAF62] text-xs font-bold">↑ {{ $growth }}%</span>
+                @else
+                    <span class="text-red-500 text-xs font-bold">↓ {{ abs($growth) }}%</span>
+                @endif
                 <span class="text-gray-400 text-xs">so với tháng trước</span>
             </div>
         </div>
@@ -104,27 +108,48 @@
             <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">Hiệu suất bán hàng</p>
             <div class="flex items-center justify-between mb-2">
                 <span class="text-sm font-semibold text-gray-600">Tháng này</span>
-                <span class="text-base font-black text-[#0A2540]">$0</span>
+                <span class="text-base font-black text-[#0A2540]">{{ number_format($thisMonthRevenue) }} đ</span>
             </div>
             <div class="w-full bg-gray-100 rounded-full h-2 mb-2">
-                <div class="bg-[#0A2540] h-2 rounded-full" style="width: 0%"></div>
+                <div class="bg-[#0A2540] h-2 rounded-full" style="width: {{ $performancePercent }}%"></div>
             </div>
             <div class="flex items-center justify-between text-[11px] text-gray-400 font-medium">
-                <span>Mục tiêu: $50,000</span>
-                <span>0%</span>
+                <span>Mục tiêu: {{ number_format($monthlyGoal) }} đ</span>
+                <span>{{ $performancePercent }}%</span>
             </div>
         </div>
     </div>
 
-    <!-- Products Table -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <!-- Products Section -->
+    <div x-data="{ activeFilter: 'all', openFilter: false }" class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 class="font-bold text-[#0A2540]">Sản phẩm thuộc thương hiệu</h2>
+            <div>
+                <h2 class="font-bold text-[#0A2540]">Sản phẩm thuộc thương hiệu</h2>
+                <p class="text-xs text-gray-400 mt-0.5">Danh sách các sản phẩm đang liên kết với thương hiệu này.</p>
+            </div>
             <div class="flex items-center gap-3">
-                <button class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 font-medium transition-colors">
-                    <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Bộ lọc
-                </button>
-                <button class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 font-medium transition-colors">
+                <!-- Filter Dropdown -->
+                <div class="relative">
+                    <button @click="openFilter = !openFilter" @click.away="openFilter = false" class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 font-medium transition-colors">
+                        <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                        <span>Bộ lọc: <strong class="text-[#0A2540]" x-text="activeFilter === 'all' ? 'Tất cả' : (activeFilter === 'active' ? 'Đang bán' : 'Tạm ẩn')"></strong></span>
+                    </button>
+                    <div x-show="openFilter" x-transition class="absolute right-0 mt-1 w-40 rounded-xl bg-white border border-gray-100 shadow-xl z-20 overflow-hidden" style="display: none;">
+                        <div class="py-1">
+                            <button @click="activeFilter = 'all'; openFilter = false" class="w-full text-left px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-blue-500"></span> Tất cả
+                            </button>
+                            <button @click="activeFilter = 'active'; openFilter = false" class="w-full text-left px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-[#0FAF62]"></span> Đang bán
+                            </button>
+                            <button @click="activeFilter = 'inactive'; openFilter = false" class="w-full text-left px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-gray-400"></span> Tạm ẩn
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 font-medium transition-colors opacity-50 cursor-not-allowed" disabled title="Xuất dữ liệu đã bị vô hiệu hóa">
                     <i data-lucide="download" class="w-4 h-4"></i> Xuất dữ liệu
                 </button>
             </div>
@@ -143,45 +168,59 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-50">
-                    @php
-                        $mockProducts = [
-                            ['id' => 'PRD-001', 'name' => $brand->name . ' - Sản phẩm 1', 'category' => 'Electronics', 'price' => '$299.00', 'status' => 'con_hang', 'img' => null],
-                            ['id' => 'PRD-002', 'name' => $brand->name . ' - Sản phẩm 2', 'category' => 'Accessories', 'price' => '$149.00', 'status' => 'sap_het', 'img' => null],
-                        ];
-                    @endphp
-                    @if(count($mockProducts) > 0)
-                        @foreach($mockProducts as $product)
-                        <tr class="hover:bg-gray-50/50 transition-colors">
+                    @forelse($products as $product)
+                        <tr x-show="activeFilter === 'all' || (activeFilter === 'active' && {{ $product->is_active ? 'true' : 'false' }}) || (activeFilter === 'inactive' && {{ !$product->is_active ? 'true' : 'false' }})" class="hover:bg-gray-50/50 transition-colors">
                             <td class="py-4 px-6">
-                                <span class="text-sm font-bold text-blue-600">{{ $product['id'] }}</span>
+                                <span class="text-sm font-bold text-blue-600">PRD-{{ str_pad($product->product_id, 3, '0', STR_PAD_LEFT) }}</span>
                             </td>
                             <td class="py-4 px-4">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-lg bg-[#F4F5F7] border border-gray-200 flex items-center justify-center flex-shrink-0">
-                                        <i data-lucide="package" class="w-5 h-5 text-gray-400"></i>
+                                    @php
+                                        $imageUrl = $product->primaryImage ? $product->primaryImage->image_url : ($product->images->first() ? $product->images->first()->image_url : null);
+                                    @endphp
+                                    <div class="w-10 h-10 rounded-lg bg-[#F4F5F7] border border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                        @if($imageUrl)
+                                            <img src="{{ $imageUrl }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
+                                        @else
+                                            <i data-lucide="package" class="w-5 h-5 text-gray-400"></i>
+                                        @endif
                                     </div>
-                                    <span class="font-semibold text-[#0A2540] text-sm">{{ $product['name'] }}</span>
+                                    <span class="font-semibold text-[#0A2540] text-sm">{{ $product->name }}</span>
                                 </div>
                             </td>
-                            <td class="py-4 px-4 text-sm text-gray-600">{{ $product['category'] }}</td>
-                            <td class="py-4 px-4 text-sm font-bold text-[#0A2540]">{{ $product['price'] }}</td>
+                            <td class="py-4 px-4 text-sm text-gray-600">
+                                {{ $product->category ? $product->category->name : 'Không có danh mục' }}
+                            </td>
+                            <td class="py-4 px-4 text-sm font-bold text-[#0A2540]">
+                                {{ number_format($product->base_price) }} đ
+                            </td>
                             <td class="py-4 px-4">
-                                @if($product['status'] === 'con_hang')
-                                    <span class="text-[11px] font-black text-[#0FAF62] uppercase tracking-wide">Còn hàng</span>
-                                @elseif($product['status'] === 'sap_het')
-                                    <span class="text-[11px] font-black text-orange-500 uppercase tracking-wide">Sắp hết</span>
+                                @if($product->is_active)
+                                    <span class="text-[11px] font-black text-[#0FAF62] bg-[#E2F6EA] px-2.5 py-1 rounded uppercase tracking-wide">Đang bán</span>
                                 @else
-                                    <span class="text-[11px] font-black text-red-500 uppercase tracking-wide">Ngừng KD</span>
+                                    <span class="text-[11px] font-black text-gray-500 bg-[#F0F2F5] px-2.5 py-1 rounded uppercase tracking-wide">Tạm ẩn</span>
                                 @endif
                             </td>
                             <td class="py-4 px-4 text-right">
-                                <button class="text-gray-400 hover:text-[#0A2540] transition-colors">
-                                    <i data-lucide="more-vertical" class="w-5 h-5"></i>
-                                </button>
+                                <!-- Action menu using Alpine.js -->
+                                <div x-data="{ openMenu: false }" class="relative inline-block text-left">
+                                    <button @click="openMenu = !openMenu" @click.away="openMenu = false" class="text-gray-400 hover:text-[#0A2540] p-1 rounded hover:bg-gray-100 transition-colors">
+                                        <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                                    </button>
+                                    <div x-show="openMenu" x-transition class="absolute right-0 mt-1 w-36 rounded-xl bg-white border border-gray-100 shadow-xl z-20 overflow-hidden" style="display: none;">
+                                        <div class="py-1">
+                                            <a href="{{ route('admin.products.show', $product->product_id) }}" class="flex items-center gap-2 px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                                                <i data-lucide="eye" class="w-4 h-4 text-gray-400"></i> Xem chi tiết
+                                            </a>
+                                            <a href="{{ route('admin.products.edit', $product->product_id) }}" class="flex items-center gap-2 px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                                                <i data-lucide="edit-3" class="w-4 h-4 text-gray-400"></i> Chỉnh sửa
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
-                        @endforeach
-                    @else
+                    @empty
                         <tr>
                             <td colspan="6" class="py-12 text-center">
                                 <div class="flex flex-col items-center text-gray-400">
@@ -190,25 +229,102 @@
                                 </div>
                             </td>
                         </tr>
-                    @endif
+                    @endforelse
                 </tbody>
             </table>
         </div>
 
-        <!-- Pagination Footer -->
-        <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between text-sm">
-            <p class="text-gray-500 font-medium">Hiển thị 1–{{ count($mockProducts) }} trên {{ count($mockProducts) }} sản phẩm</p>
-            <div class="flex items-center gap-1">
-                <button class="w-8 h-8 rounded border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 disabled:opacity-40" disabled>
-                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
-                </button>
-                <button class="w-8 h-8 rounded bg-[#0A2540] text-white text-sm font-bold">1</button>
-                <button class="w-8 h-8 rounded border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50" disabled>
-                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                </button>
+        <!-- Custom Pagination Footer -->
+        @if($products->hasPages())
+            <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between text-sm">
+                <p class="text-gray-500 font-medium">Hiển thị {{ $products->firstItem() }}–{{ $products->lastItem() }} trên {{ $products->total() }} sản phẩm</p>
+                <div class="flex items-center gap-1">
+                    {{-- Previous Page Link --}}
+                    @if ($products->onFirstPage())
+                        <button class="w-8 h-8 rounded border border-gray-200 flex items-center justify-center text-gray-400 opacity-40 cursor-not-allowed" disabled>
+                            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                        </button>
+                    @else
+                        <a href="{{ $products->previousPageUrl() }}" class="w-8 h-8 rounded border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors">
+                            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                        </a>
+                    @endif
+
+                    {{-- Page Numbers --}}
+                    @foreach ($products->getUrlRange(1, $products->lastPage()) as $page => $url)
+                        @if ($page == $products->currentPage())
+                            <span class="w-8 h-8 rounded bg-[#0A2540] text-white text-sm font-bold flex items-center justify-center">{{ $page }}</span>
+                        @else
+                            <a href="{{ $url }}" class="w-8 h-8 rounded border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 text-sm font-bold transition-colors">{{ $page }}</a>
+                        @endif
+                    @endforeach
+
+                    {{-- Next Page Link --}}
+                    @if ($products->hasMorePages())
+                        <a href="{{ $products->nextPageUrl() }}" class="w-8 h-8 rounded border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors">
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </a>
+                    @else
+                        <button class="w-8 h-8 rounded border border-gray-200 flex items-center justify-center text-gray-400 opacity-40 cursor-not-allowed" disabled>
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    @endif
+                </div>
             </div>
-        </div>
+        @else
+            <div class="px-6 py-4 border-t border-gray-100 text-sm text-gray-500 font-medium">
+                Hiển thị {{ $products->count() }} sản phẩm
+            </div>
+        @endif
     </div>
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function copyBrandId(id, button) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(id).then(function() {
+            showCopyFeedback(button);
+        }, function() {
+            fallbackCopy(id, button);
+        });
+    } else {
+        fallbackCopy(id, button);
+    }
+}
+
+function fallbackCopy(id, button) {
+    var textArea = document.createElement("textarea");
+    textArea.value = id;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        showCopyFeedback(button);
+    } catch (err) {
+        console.error('Không thể sao chép ID', err);
+    }
+    document.body.removeChild(textArea);
+}
+
+function showCopyFeedback(button) {
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> ĐÃ SAO CHÉP!';
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+    button.classList.remove('bg-[#0A2540]', 'hover:bg-[#113255]');
+    button.classList.add('bg-green-600', 'text-white');
+    setTimeout(() => {
+        button.innerHTML = originalHTML;
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        button.classList.remove('bg-green-600');
+        button.classList.add('bg-[#0A2540]', 'hover:bg-[#113255]');
+    }, 2000);
+}
+</script>
+@endpush

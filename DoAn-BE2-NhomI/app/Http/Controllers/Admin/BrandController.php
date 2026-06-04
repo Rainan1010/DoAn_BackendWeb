@@ -9,104 +9,35 @@ use Illuminate\Support\Carbon;
 
 class BrandController extends Controller
 {
+    // =====================================================
+    // 1. DANH SÁCH THƯƠNG HIỆU
+    // =====================================================
     public function index(Request $request)
     {
-
         $query = Brand::query();
         
-        if ($request->has('search') && $request->search != '') {
+        // Tìm kiếm
+        if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%')
                   ->orWhere('brand_id', $request->search);
         }
 
-        $brands = $query->paginate(10);
+        $brands = $query->orderBy('created_at', 'desc')->paginate(10);
         
-        // KPI statistics
+        // Thống kê KPI cho giao diện Admin
         $stats = [
             'total' => Brand::count(),
             'active' => Brand::where('is_active', 1)->count(),
             'inactive' => Brand::where('is_active', 0)->count(),
+            'new' => Brand::whereMonth('created_at', Carbon::now()->month)->count(),
         ];
 
         return view('admin.brands.index', compact('brands', 'stats'));
-        try {
-            $query = Brand::query();
-            
-            if ($request->has('search') && $request->search != '') {
-                $query->where('name', 'like', '%' . $request->search . '%')
-                      ->orWhere('brand_id', $request->search);
-            }
-            
-            $brands = $query->orderBy('created_at', 'desc')->paginate(10);
-            
-            $totalBrands = Brand::count();
-            $activeBrands = Brand::where('is_active', 1)->count();
-            $hiddenBrands = Brand::where('is_active', 0)->count();
-            $newBrands = Brand::whereMonth('created_at', Carbon::now()->month)->count();
-            
-        } catch (\Exception $e) {
-            // Fallback mock data if table doesn't exist
-            $mockBrands = collect([
-                (object)[
-                    'id' => 1,
-                    'name' => 'Samsung',
-                    'country' => 'Hàn Quốc',
-                    'slug' => 'samsung-electronics',
-                    'logo_url' => 'https://upload.wikimedia.org/wikipedia/commons/2/24/Samsung_Logo.svg',
-                    'description' => 'Tập đoàn điện tử đa quốc gia hàng đầu...',
-                    'is_active' => true,
-                    'created_at' => Carbon::create(2023, 5, 12),
-                ],
-                (object)[
-                    'id' => 2,
-                    'name' => 'Apple',
-                    'country' => 'Hoa Kỳ',
-                    'slug' => 'apple-inc',
-                    'logo_url' => 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg',
-                    'description' => 'Tập đoàn công nghệ tập trung vào thiết...',
-                    'is_active' => true,
-                    'created_at' => Carbon::create(2023, 5, 15),
-                ],
-                (object)[
-                    'id' => 3,
-                    'name' => 'Huawei',
-                    'country' => 'Trung Quốc',
-                    'slug' => 'huawei-tech',
-                    'logo_url' => 'https://upload.wikimedia.org/wikipedia/commons/e/e4/Huawei_logo_icon.svg',
-                    'description' => 'Nhà cung cấp cơ sở hạ tầng CNTT và t...',
-                    'is_active' => false,
-                    'created_at' => Carbon::create(2023, 6, 20),
-                ],
-                (object)[
-                    'id' => 4,
-                    'name' => 'Sony',
-                    'country' => 'Nhật Bản',
-                    'slug' => 'sony-entertainment',
-                    'logo_url' => 'https://upload.wikimedia.org/wikipedia/commons/c/ca/Sony_logo.svg',
-                    'description' => 'Tập đoàn đa quốc gia nổi tiếng về điện...',
-                    'is_active' => true,
-                    'created_at' => Carbon::create(2023, 7, 5),
-                ]
-            ]);
-
-            // Create a fake paginator
-            $brands = new \Illuminate\Pagination\LengthAwarePaginator(
-                $mockBrands,
-                24, // Total items
-                10, // Per page
-                1,  // Current page
-                ['path' => route('admin.brands.index')]
-            );
-            
-            $totalBrands = 24;
-            $activeBrands = 22;
-            $hiddenBrands = 2;
-            $newBrands = 3;
-        }
-
-        return view('admin.brands.index', compact('brands', 'totalBrands', 'activeBrands', 'hiddenBrands', 'newBrands'));
     }
 
+    // =====================================================
+    // 2. THÊM MỚI THƯƠNG HIỆU
+    // =====================================================
     public function create()
     {
         return view('admin.brands.create');
@@ -114,11 +45,19 @@ class BrandController extends Controller
 
     public function store(Request $request)
     {
+        // Validate dữ liệu
         $request->validate([
-
-            'name' => 'required|max:255',
-            'slug' => 'required|unique:brands,slug',
+            'name' => 'required|max:100',
+            'slug' => 'required|unique:brands,slug|max:100',
             'logo_url' => 'nullable|url',
+            'description' => 'nullable|string',
+        ], [
+            'name.required' => 'Vui lòng nhập tên thương hiệu.',
+            'name.max' => 'Tên thương hiệu không được vượt quá 100 ký tự.',
+            'slug.required' => 'Vui lòng nhập đường dẫn thân thiện.',
+            'slug.unique' => 'Đường dẫn này đã tồn tại trong hệ thống.',
+            'slug.max' => 'Đường dẫn không được vượt quá 100 ký tự.',
+            'logo_url.url' => 'URL logo không hợp lệ.'
         ]);
 
         Brand::create([
@@ -127,43 +66,74 @@ class BrandController extends Controller
             'logo_url' => $request->logo_url,
             'description' => $request->description,
             'is_active' => $request->has('is_active') ? 1 : 0,
-            'created_at' => Carbon::now(),
         ]);
 
         return redirect()->route('admin.brands.index')->with('success', 'Thêm thương hiệu mới thành công!');
-
-            'name' => 'required|max:100',
-            'slug' => 'required|unique:brands,slug|max:100',
-            'logo_url' => 'nullable|url',
-            'description' => 'nullable|string',
-        ], [
-            'name.required' => 'Vui lòng nhập tên thương hiệu.',
-            'slug.required' => 'Vui lòng nhập đường dẫn thân thiện.',
-            'slug.unique' => 'Đường dẫn này đã tồn tại trong hệ thống.',
-            'logo_url.url' => 'URL logo không hợp lệ.'
-        ]);
-
-        try {
-            Brand::create([
-                'name' => $request->name,
-                'slug' => $request->slug,
-                'logo_url' => $request->logo_url,
-                'description' => $request->description,
-                'is_active' => $request->has('is_active') ? 1 : 0,
-            ]);
-            
-            return redirect()->route('admin.brands.index')->with('success', 'Thêm thương hiệu mới thành công!');
-        } catch (\Exception $e) {
-            // Fallback just in case table doesn't exist so it doesn't crash entirely for the UI demo
-            return redirect()->route('admin.brands.index')->with('success', 'Đã mô phỏng việc thêm thương hiệu (Lưu ý: Database chưa có table brands)');
-        }
-
     }
 
+    // =====================================================
+    // 3. CHI TIẾT & CHỈNH SỬA
+    // =====================================================
     public function show(string $id)
     {
         $brand = Brand::findOrFail($id);
-        return view('admin.brands.show', compact('brand'));
+
+        // Fetch real products of this brand with pagination
+        $products = \App\Models\Product::where('brand_id', $brand->brand_id)
+            ->with(['category', 'primaryImage'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        // Count real products
+        $totalProducts = \App\Models\Product::where('brand_id', $brand->brand_id)->count();
+
+        // Calculate real revenue for this brand (sum of order item subtotals where order is paid)
+        $revenue = \DB::table('order_items')
+            ->join('product_variants', 'order_items.variant_id', '=', 'product_variants.variant_id')
+            ->join('products', 'product_variants.product_id', '=', 'products.product_id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.order_id')
+            ->where('products.brand_id', $brand->brand_id)
+            ->where('orders.payment_status', 'paid')
+            ->sum('order_items.subtotal');
+
+        // Growth calculation compared to last month
+        $lastMonthRevenue = \DB::table('order_items')
+            ->join('product_variants', 'order_items.variant_id', '=', 'product_variants.variant_id')
+            ->join('products', 'product_variants.product_id', '=', 'products.product_id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.order_id')
+            ->where('products.brand_id', $brand->brand_id)
+            ->where('orders.payment_status', 'paid')
+            ->whereBetween('orders.created_at', [Carbon::now()->subMonth()->startOfMonth(), Carbon::now()->subMonth()->endOfMonth()])
+            ->sum('order_items.subtotal');
+
+        $growth = 0;
+        if ($lastMonthRevenue > 0) {
+            $growth = round((($revenue - $lastMonthRevenue) / $lastMonthRevenue) * 100);
+        }
+
+        // Monthly target (e.g. 50,000,000 VND)
+        $monthlyGoal = 50000000;
+        $thisMonthRevenue = \DB::table('order_items')
+            ->join('product_variants', 'order_items.variant_id', '=', 'product_variants.variant_id')
+            ->join('products', 'product_variants.product_id', '=', 'products.product_id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.order_id')
+            ->where('products.brand_id', $brand->brand_id)
+            ->where('orders.payment_status', 'paid')
+            ->whereBetween('orders.created_at', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()])
+            ->sum('order_items.subtotal');
+
+        $performancePercent = $monthlyGoal > 0 ? min(100, round(($thisMonthRevenue / $monthlyGoal) * 100)) : 0;
+
+        return view('admin.brands.show', compact(
+            'brand',
+            'products',
+            'totalProducts',
+            'revenue',
+            'growth',
+            'thisMonthRevenue',
+            'monthlyGoal',
+            'performancePercent'
+        ));
     }
 
     public function edit(string $id)
@@ -174,22 +144,36 @@ class BrandController extends Controller
 
     public function update(Request $request, string $id)
     {
-        $brand = Brand::findOrFail($id);
+        $brand = Brand::find($id);
+
+        if (!$brand) {
+            return redirect()->route('admin.brands.index')
+                ->withErrors(['concurrency_error' => 'Thương hiệu này đã bị xóa bởi một người dùng khác.']);
+        }
+
+        // Kiểm tra xung đột sửa đổi đồng thời (Optimistic Concurrency Control)
+        if ($request->has('last_updated_at')) {
+            $clientUpdatedAt = $request->input('last_updated_at');
+            $dbUpdatedAt = $brand->updated_at ? $brand->updated_at->toIso8601String() : ($brand->created_at ? $brand->created_at->toIso8601String() : '');
+            
+            if ($clientUpdatedAt !== $dbUpdatedAt) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['concurrency_error' => 'Thương hiệu này đã được một người dùng khác cập nhật trong khi bạn đang chỉnh sửa. Vui lòng lưu lại các thay đổi của bạn ở nơi khác, tải lại trang và thực hiện lại.']);
+            }
+        }
 
         $request->validate([
-
-            'name' => 'required|max:255',
-            'slug' => 'required|unique:brands,slug,' . $id . ',brand_id',
-            'logo_url' => 'nullable|url',
-
             'name' => 'required|max:100',
-            'slug' => 'required|max:100|unique:brands,slug,' . $brand->brand_id . ',brand_id',
+            'slug' => 'required|max:100|unique:brands,slug,' . $id . ',brand_id',
             'logo_url' => 'nullable|url',
             'description' => 'nullable|string',
         ], [
             'name.required' => 'Vui lòng nhập tên thương hiệu.',
+            'name.max' => 'Tên thương hiệu không được vượt quá 100 ký tự.',
             'slug.required' => 'Vui lòng nhập đường dẫn thân thiện.',
-            'slug.unique' => 'Đường dẫn này đã tồn tại trong hệ thống.',
+            'slug.unique' => 'Đường dẫn này đã tồn tại.',
+            'slug.max' => 'Đường dẫn không được vượt quá 100 ký tự.',
             'logo_url.url' => 'URL logo không hợp lệ.'
         ]);
 
@@ -204,6 +188,9 @@ class BrandController extends Controller
         return redirect()->route('admin.brands.index')->with('success', 'Cập nhật thương hiệu thành công!');
     }
 
+    // =====================================================
+    // 4. XÓA & ĐỔI TRẠNG THÁI
+    // =====================================================
     public function destroy(string $id)
     {
         $brand = Brand::findOrFail($id);

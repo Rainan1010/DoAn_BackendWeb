@@ -1,56 +1,235 @@
 <?php
+
 namespace App\Http\Controllers;
+
 use App\Models\User;
-use Illuminate\Http\Request; // dùng để lấy dữ liệu từ form
-use Illuminate\Support\Facades\Auth; // dùng cho login/logout
-use Illuminate\Support\Facades\Hash; // đổi mật khẩu 
+use App\Models\Cart;
+use App\Models\CartItem;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\VerifyOTPMail;
-
+use App\Models\LoginHistory;
 class CrudUserController extends Controller
 {
-    // hiển thị form login
+    // =====================================================
+    // 1. ĐĂNG NHẬP (LOGIN)
+    // =====================================================
     public function showLogin()
     {
-        return view('auth.login'); // trả về file giao diện login
+        return view('auth.login');
     }
 
-    // xử lý login
     public function login(Request $request)
     {
-        // lấy dữ liệu người dùng nhập
-        $login = $request->identifier; // email hoặc username
-        $password = $request->password; // mật khẩu
+        $request->validate([
+            'email' => 'required|email|max:100',
+            'password' => 'required|min:6|max:50',
+        ], [
+            'email.required' => 'Vui lòng nhập email.',
+            'email.email' => 'Định dạng email không hợp lệ.',
+            'email.max' => 'Email tối đa 100 ký tự.',
 
-        // thử đăng nhập bằng email
-        if (
-            Auth::attempt([
-                'email' => $login,
-                'password' => $password, // mật khẩu người dùng nhập
-                'is_active' => 1      // chỉ cho login nếu active = 1
-            ])
-        ) {
+            'password.required' => 'Vui lòng nhập mật khẩu.',
+            'password.min' => 'Mật khẩu tối thiểu 6 ký tự.',
+            'password.max' => 'Mật khẩu tối đa 50 ký tự.',
+        ]);
+
+        $credentials = $request->only('email', 'password');
+        $remember = $request->has('remember');
+
+        if (Auth::attempt($credentials, $remember)) {
+            $request->session()->regenerate();
+
             $user = Auth::user();
+            LoginHistory::create([
+                'user_id' => $user->user_id,
+                'email' => $user->email,
+                'login_time' => now(),
+                'ip_address' => $request->ip(),
+                'status' => 'success',
+            ]);
+            // Kiểm tra tài khoản bị khóa
+            if ($user->is_active == 0) {
+                Auth::logout();
 
-            // Nếu là admin -> vào trang quản trị
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return back()->with('error', 'Tài khoản của bạn đã bị khóa.');
+            }
+
+            // Kiểm tra xác thực OTP
+            if ($user->is_verified == 0) {
+                $userId = $user->user_id;
+
+                Auth::logout();
+
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                session(['otp_user_id' => $userId]);
+
+                $otpCode = rand(100000, 999999);
+
+                DB::table('otp_verifications')->updateOrInsert(
+                    [
+                        'user_id' => $userId,
+                        'purpose' => 'register',
+                    ],
+                    [
+                        'otp_code' => $otpCode,
+                        'expires_at' => now()->addMinutes(10),
+                        'used' => 0,
+                    ]
+                );
+
+                Mail::to($user->email)->send(new VerifyOTPMail($otpCode));
+
+                return redirect()
+                    ->route('otp.view')
+                    ->with('error', 'Tài khoản chưa xác thực. Mã OTP mới đã được gửi qua email.');
+            }
+
+            // Chuyển giỏ hàng session sang database sau khi đăng nhập thành công
+            $this->mergeSessionCartToDatabase();
+
+            // Load database cart into session immediately so user has cart in session after login
+            (new \App\Http\Controllers\CartController())->syncCartSession();
+
+            // Chuyển hướng theo vai trò
             if ($user->role === 'admin') {
-                return redirect('/admin/categories');
+                return redirect('/admin/categories')
+                    ->with('success', 'Chào mừng Admin quay trở lại!');
             }
 
-            // kiểm tra role, nếu là admin thì chuyển đến trang quản lý danh mục
-            if (Auth::user()->role === 'admin') {
-                return redirect('/admin/categories');
-            }
-
-            // nếu đúng → chuyển về trang chủ
-            return redirect('/');
+            return redirect('/')
+                ->with('success', 'Đăng nhập thành công!');
         }
+        LoginHistory::create([
+            'user_id' => null,
+            'email' => $request->email,
+            'login_time' => now(),
+            'ip_address' => $request->ip(),
+            'status' => 'failed',
+        ]);
 
-        // nếu sai → quay lại form + báo lỗi
-        return back()->with('error', 'Sai tài khoản hoặc mật khẩu');
+        return back()
+            ->with('error', 'Tài khoản hoặc mật khẩu không chính xác.')
+            ->withInput();
     }
 
+    /**
+     * Chuyển giỏ hàng lưu trong session sang database sau khi user đăng nhập.
+     *
+     * Lưu ý:
+     * - cart_items của bạn chỉ lưu: cart_id, variant_id, quantity, price
+     * - Nếu session cart thiếu variant_id, hàm sẽ tự lấy variant đầu tiên theo product_id
+     */
+    private function mergeSessionCartToDatabase()
+    {
+        if (!auth()->check()) {
+            return;
+        }
+
+        $sessionCart = session()->get('cart', []);
+
+        if (empty($sessionCart)) {
+            return;
+        }
+
+        $userCart = Cart::firstOrCreate(
+            ['user_id' => auth()->id()],
+            [
+                'session_id' => null,
+                'updated_at' => now(),
+            ]
+        );
+
+        $mergedCount = 0;
+
+        foreach ($sessionCart as $cartKey => $details) {
+            $variantId = $details['variant_id'] ?? null;
+
+            /*
+        |--------------------------------------------------------------------------
+        | Trường hợp session cart không có variant_id
+        | Thử lấy variant_id từ product_id
+        |--------------------------------------------------------------------------
+        */
+            if (empty($variantId) && !empty($details['product_id'])) {
+                $variantId = DB::table('product_variants')
+                    ->where('product_id', $details['product_id'])
+                    ->where('is_active', 1)
+                    ->orderBy('variant_id', 'asc')
+                    ->value('variant_id');
+            }
+
+            /*
+        |--------------------------------------------------------------------------
+        | Nếu vẫn không có variant_id thì bỏ qua item này,
+        | nhưng KHÔNG xoá session cart để tránh mất giỏ hàng.
+        |--------------------------------------------------------------------------
+        */
+            if (empty($variantId)) {
+                continue;
+            }
+
+            $variant = DB::table('product_variants')
+                ->where('variant_id', $variantId)
+                ->first();
+
+            if (!$variant) {
+                continue;
+            }
+
+            $quantity = max(1, (int) ($details['quantity'] ?? 1));
+
+            $price = $details['price'] ?? null;
+
+            if (empty($price)) {
+                $price = $variant->sale_price ?? $variant->price ?? 0;
+            }
+
+            $cartItem = CartItem::where('cart_id', $userCart->cart_id)
+                ->where('variant_id', $variantId)
+                ->first();
+
+            if ($cartItem) {
+                $cartItem->quantity += $quantity;
+                $cartItem->price = $price;
+                $cartItem->save();
+            } else {
+                CartItem::create([
+                    'cart_id' => $userCart->cart_id,
+                    'variant_id' => $variantId,
+                    'quantity' => $quantity,
+                    'price' => $price,
+                ]);
+            }
+
+            $mergedCount++;
+        }
+
+        $userCart->update([
+            'updated_at' => now(),
+        ]);
+
+        /*
+    |--------------------------------------------------------------------------
+    | Chỉ xoá session cart nếu đã merge được ít nhất 1 sản phẩm
+    |--------------------------------------------------------------------------
+    */
+        if ($mergedCount > 0) {
+            session()->forget('cart');
+        }
+    }
+
+    // =====================================================
+    // 2. ĐĂNG KÝ (REGISTER)
+    // =====================================================
     public function showRegister()
     {
         return view('auth.register');
@@ -61,20 +240,15 @@ class CrudUserController extends Controller
         $request->validate([
             'full_name' => 'required|string|max:100',
             'email' => 'required|string|email|max:100|unique:users',
-            'phone' => 'required|string|max:20',
+            'phone' => 'required|string|digits:10',
             'password' => 'required|string|min:6|confirmed',
         ], [
             'full_name.required' => 'Vui lòng nhập họ và tên.',
-            'email.required' => 'Vui lòng nhập email.',
-            'email.email' => 'Email không hợp lệ.',
             'email.unique' => 'Email này đã được đăng ký.',
-            'phone.required' => 'Vui lòng nhập số điện thoại.',
-            'password.required' => 'Vui lòng nhập mật khẩu.',
-            'password.min' => 'Mật khẩu phải có ít nhất 6 ký tự.',
+            'phone.digits' => 'Số điện thoại phải gồm đúng 10 số.',
             'password.confirmed' => 'Xác nhận mật khẩu không khớp.',
         ]);
 
-        // 1. Tạo User
         $user = User::create([
             'full_name' => $request->full_name,
             'email' => $request->email,
@@ -82,10 +256,9 @@ class CrudUserController extends Controller
             'password_hash' => Hash::make($request->password),
             'role' => 'user',
             'is_active' => 1,
-            'is_verified' => 0, // Chưa xác thực
+            'is_verified' => 0,
         ]);
 
-        // 2. Tạo mã OTP 6 số
         $otpCode = rand(100000, 999999);
 
         DB::table('otp_verifications')->insert([
@@ -95,14 +268,67 @@ class CrudUserController extends Controller
             'expires_at' => now()->addMinutes(10),
         ]);
 
-        // 3. Gửi Mail qua Mailpit
         Mail::to($user->email)->send(new VerifyOTPMail($otpCode));
 
-        // 4. Lưu ID vào session để biết đang xác thực cho ai
         session(['otp_user_id' => $user->user_id]);
 
-        return redirect()->route('otp.view');
+        return redirect()
+            ->route('otp.view')
+            ->with('success', 'Đăng ký thành công! Vui lòng nhập mã OTP gửi tới email.');
     }
+
+    // =====================================================
+    // 3. QUẢN LÝ THÔNG TIN (PROFILE & AVATAR)
+    // =====================================================
+    public function profile()
+    {
+        return view('auth.profile');
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'full_name' => ['required', 'max:50', 'regex:/^[\pL\s]+$/u'],
+            'phone' => ['required', 'digits:10', 'regex:/^0[0-9]{9}$/'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ], [
+            'full_name.required' => 'Vui lòng nhập Họ và tên.',
+            'phone.digits' => 'Số điện thoại phải gồm đúng 10 số.',
+            'avatar.image' => 'File tải lên phải là hình ảnh.',
+            'avatar.max' => 'Dung lượng ảnh tối đa là 2MB.',
+        ]);
+
+        $user->full_name = trim($request->full_name);
+        $user->phone = $request->phone;
+
+        if ($request->hasFile('avatar')) {
+            $file = $request->file('avatar');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $path = public_path('images/users');
+
+            if (!file_exists($path)) {
+                mkdir($path, 0777, true);
+            }
+
+            if ($user->avatar_url && file_exists(public_path($user->avatar_url))) {
+                unlink(public_path($user->avatar_url));
+            }
+
+            $file->move($path, $fileName);
+
+            $user->avatar_url = 'images/users/' . $fileName;
+        }
+
+        $user->save();
+
+        return back()->with('success', 'Cập nhật thông tin tài khoản thành công.');
+    }
+
+    // =====================================================
+    // 4. ĐỔI MẬT KHẨU (CHANGE PASSWORD)
+    // =====================================================
     public function showChangePassword()
     {
         return view('auth.change_password');
@@ -115,230 +341,188 @@ class CrudUserController extends Controller
             'new_password' => 'required|min:6|confirmed',
         ], [
             'current_password.required' => 'Vui lòng nhập mật khẩu hiện tại.',
-            'new_password.required' => 'Vui lòng nhập mật khẩu mới.',
-            'new_password.min' => 'Mật khẩu mới phải có ít nhất 6 ký tự.',
+            'new_password.min' => 'Mật khẩu mới tối thiểu 6 ký tự.',
             'new_password.confirmed' => 'Xác nhận mật khẩu mới không khớp.',
         ]);
 
         $user = Auth::user();
 
-        // kiểm tra mật khẩu hiện tại
         if (!Hash::check($request->current_password, $user->password_hash)) {
-            return back()->withErrors(['current_password' => 'Mật khẩu hiện tại không đúng.']);
+            return back()->withErrors([
+                'current_password' => 'Mật khẩu hiện tại không chính xác.',
+            ]);
         }
 
-        // cập nhật mật khẩu mới
         $user->password_hash = Hash::make($request->new_password);
         $user->save();
 
-        // đăng xuất session cũ để tránh lỗi
         Auth::logout();
 
-        // chuyển về trang login
-        return redirect('/login')->with('success', 'Đổi mật khẩu thành công! Vui lòng đăng nhập lại.');
+        return redirect('/login')
+            ->with('success', 'Đổi mật khẩu thành công! Vui lòng đăng nhập lại.');
     }
     // =====================================================
-// TRANG PROFILE
-// =====================================================
-    public function profile()
-    {
-        return view('auth.profile');
-    }
-
-
+    // HIỂN THỊ LOGIN HISTORY
     // =====================================================
-// UPDATE PROFILE
-// =====================================================
-// =====================================================
-// UPDATE PROFILE
-// =====================================================
-    // =====================================================
-// UPDATE PROFILE
-// =====================================================
-public function updateProfile(Request $request)
-{
 
-    // =================================================
-    // LẤY USER HIỆN TẠI
-    // =================================================
-    $user = Auth::user();
-
-
-
-    // =================================================
-    // VALIDATE
-    // =================================================
-    $request->validate([
-
-        // họ tên
-        'full_name' => [
-            'required',
-            'max:50',
-            'regex:/^[\pL\s]+$/u'
-        ],
-
-        // số điện thoại
-        'phone' => [
-            'required',
-            'digits:10',
-            'regex:/^0[0-9]{9}$/'
-        ],
-
-        // avatar
-        'avatar' => [
-
-            // có thể null
-            'nullable',
-
-            // phải là file upload thật
-            'file',
-
-            // phải là ảnh thật
-            'image',
-
-            // mime type thật
-            'mimetypes:image/jpeg,image/png,image/webp',
-
-            // đuôi file
-            'mimes:jpg,jpeg,png,webp',
-
-            // > 0KB
-            'min:1',
-
-            // <= 2MB
-            'max:2048'
-        ],
-
-    ], [
-
-        // ================= FULL NAME =================
-        'full_name.required'
-            => 'Vui lòng nhập Họ và tên.',
-
-        'full_name.max'
-            => 'Họ tên tối đa 50 ký tự.',
-
-        'full_name.regex'
-            => 'Họ tên chứa ký tự không hợp lệ.',
-
-
-
-        // ================= PHONE =================
-        'phone.required'
-            => 'Vui lòng nhập số điện thoại.',
-
-        'phone.digits'
-            => 'Số điện thoại phải gồm đúng 10 số.',
-
-        'phone.regex'
-            => 'Số điện thoại phải bắt đầu bằng số 0 và chỉ được chứa số.',
-
-
-
-        // ================= AVATAR =================
-        'avatar.file'
-            => 'File tải lên không hợp lệ.',
-
-        'avatar.image'
-            => 'File tải lên phải là hình ảnh thật.',
-
-        'avatar.mimetypes'
-            => 'Định dạng ảnh không hợp lệ.',
-
-        'avatar.mimes'
-            => 'Chỉ hỗ trợ file JPG, JPEG, PNG, WEBP.',
-
-        'avatar.min'
-            => 'Dung lượng ảnh phải lớn hơn 0KB.',
-
-        'avatar.max'
-            => 'Dung lượng ảnh vượt quá 2MB.',
-    ]);
-
-
-
-    // =================================================
-    // UPDATE THÔNG TIN
-    // =================================================
-    $user->full_name = trim($request->full_name);
-
-    $user->phone = $request->phone;
-
-
-
-    // =================================================
-    // UPLOAD AVATAR
-    // =================================================
-    if ($request->hasFile('avatar'))
+    public function loginHistory(Request $request)
     {
+        $request->validate([
+            'from_date' => [
+                'nullable',
+                'date',
+                'before_or_equal:today'
+            ],
 
-        // lấy file
-        $file = $request->file('avatar');
+            'to_date' => [
+                'nullable',
+                'date',
+                'after_or_equal:from_date',
+                'before_or_equal:today'
+            ]
+        ], [
+            'from_date.before_or_equal' =>
+                'Ngày bắt đầu không được lớn hơn ngày hiện tại.',
 
+            'to_date.after_or_equal' =>
+                'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.',
 
+            'to_date.before_or_equal' =>
+                'Ngày kết thúc không được lớn hơn ngày hiện tại.'
+        ]);
+        $query = LoginHistory::with('user');
 
-        // tạo tên file
-        $fileName =
-            time() . '_' .
-            $file->getClientOriginalName();
+        $fromDate = $request->input(
+            'from_date',
+            now()->toDateString()
+        );
 
+        $toDate = $request->input(
+            'to_date',
+            now()->toDateString()
+        );
 
+        $query->whereDate(
+            'login_time',
+            '>=',
+            $fromDate
+        );
 
-        // folder upload
-        $path = public_path('images/users');
+        $query->whereDate(
+            'login_time',
+            '<=',
+            $toDate
+        );
 
-
-
-        // nếu folder chưa có thì tạo
-        if (!file_exists($path))
-        {
-            mkdir($path, 0777, true);
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
 
+        $logs = $query
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
+        return view(
+            'admin.login_history.index',
+            compact('logs')
+        );
+    }
+    public function logout(Request $request)
+    {
+        $user = Auth::user();
 
-        // =================================================
-        // XOÁ ẢNH CŨ
-        // =================================================
-        if (
-            $user->avatar_url &&
-            file_exists(public_path($user->avatar_url))
-        ) {
+        // Capture login history logout_time if available
+        if ($user) {
+            $history = LoginHistory::where(
+                'user_id',
+                $user->user_id
+            )
+                ->whereNull('logout_time')
+                ->latest()
+                ->first();
 
-            unlink(public_path($user->avatar_url));
+            if ($history) {
+                $history->update([
+                    'logout_time' => now(),
+                ]);
+            }
         }
 
+        // Preserve cart/session data before invalidating session
+        $cart = session()->get('cart', []);
+        $cartCount = session()->get('cart_count', 0);
+        $selectedCartIds = session()->get('selected_cart_ids', []);
+        $appliedVoucher = session()->get('applied_voucher', null);
 
+        // If session cart empty but user has DB cart, load it to restore for guest session
+        if (empty($cart) && $user) {
+            $userCart = DB::table('carts')->where('user_id', $user->user_id)->first();
 
-        // =================================================
-        // UPLOAD FILE MỚI
-        // =================================================
-        $file->move($path, $fileName);
+            if ($userCart) {
+                $items = DB::table('cart_items')
+                    ->join('product_variants', 'cart_items.variant_id', '=', 'product_variants.variant_id')
+                    ->join('products', 'product_variants.product_id', '=', 'products.product_id')
+                    ->leftJoin('product_images', function ($join) {
+                        $join->on('products.product_id', '=', 'product_images.product_id')
+                            ->where('product_images.is_primary', 1);
+                    })
+                    ->where('cart_items.cart_id', $userCart->cart_id)
+                    ->select(
+                        'cart_items.item_id',
+                        'cart_items.variant_id',
+                        'cart_items.quantity',
+                        'cart_items.price',
+                        'product_variants.product_id',
+                        'product_variants.attribute_values',
+                        'product_variants.stock_quantity',
+                        'products.name',
+                        'product_images.image_url'
+                    )
+                    ->get();
 
+                $cart = [];
+                $cartCount = 0;
+                $selectedCartIds = [];
 
+                foreach ($items as $item) {
+                    $cartKey = $item->product_id . '_variant_' . $item->variant_id;
 
-        // =================================================
-        // SAVE DATABASE
-        // =================================================
-        $user->avatar_url =
-            'images/users/' . $fileName;
+                    $cart[$cartKey] = [
+                        'product_id' => $item->product_id,
+                        'variant_id' => $item->variant_id,
+                        'name' => $item->name,
+                        'variant_name' => is_string($item->attribute_values) ? (is_array(json_decode($item->attribute_values, true)) ? implode(' - ', json_decode($item->attribute_values, true)) : $item->attribute_values) : $item->attribute_values,
+                        'quantity' => (int) $item->quantity,
+                        'price' => (float) $item->price,
+                        'stock_quantity' => (int) $item->stock_quantity,
+                        'image' => $item->image_url ?? 'images/default-product.png',
+                    ];
+
+                    $cartCount += (int) $item->quantity;
+                    $selectedCartIds[] = $cartKey;
+                }
+            }
+        }
+
+        // Perform logout and invalidate session
+        Auth::logout();
+
+        $request->session()->invalidate();
+
+        $request->session()->regenerateToken();
+
+        // Restore cart as guest session so user sees their cart after logout
+        if (!empty($cart)) {
+            session()->put('cart', $cart);
+            session()->put('cart_count', $cartCount);
+            session()->put('selected_cart_ids', $selectedCartIds);
+
+            if (!empty($appliedVoucher)) {
+                session()->put('applied_voucher', $appliedVoucher);
+            }
+        }
+
+        return redirect('/');
     }
-
-
-
-    // =================================================
-    // SAVE DATABASE
-    // =================================================
-    $user->save();
-
-
-
-    // =================================================
-    // SUCCESS
-    // =================================================
-    return back()->with(
-        'success',
-        'Cập nhật thông tin tài khoản thành công.'
-    );
-}
 }
