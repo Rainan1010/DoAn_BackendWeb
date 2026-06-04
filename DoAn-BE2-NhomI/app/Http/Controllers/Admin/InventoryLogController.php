@@ -45,12 +45,39 @@ class InventoryLogController extends Controller
                 'users.full_name as user_name'
             );
 
-        if ($request->filled('action_type')) {
+        $allowedActions = ['import', 'export', 'adjust', 'return'];
+
+        if ($request->filled('action_type') && in_array($request->action_type, $allowedActions)) {
             $logsQuery->where('inventory_logs.action_type', $request->action_type);
         }
 
+        if ($request->filled('time_filter')) {
+            switch ($request->time_filter) {
+                case 'today':
+                    $logsQuery->whereDate('inventory_logs.created_at', today());
+                    break;
+
+                case 'yesterday':
+                    $logsQuery->whereDate('inventory_logs.created_at', today()->subDay());
+                    break;
+
+                case '7days':
+                    $logsQuery->whereDate('inventory_logs.created_at', '>=', today()->subDays(6));
+                    break;
+
+                case 'month':
+                    $logsQuery->whereMonth('inventory_logs.created_at', now()->month)
+                        ->whereYear('inventory_logs.created_at', now()->year);
+                    break;
+
+                case 'all':
+                default:
+                    break;
+            }
+        }
+
         if ($request->filled('search')) {
-            $keyword = $this->normalizeText($request->search);
+            $keyword = trim($request->search);
 
             $logsQuery->where(function ($query) use ($keyword) {
                 $query->where('product_variants.sku', 'like', '%' . $keyword . '%')
