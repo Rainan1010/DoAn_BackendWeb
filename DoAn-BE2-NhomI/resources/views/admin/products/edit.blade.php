@@ -32,6 +32,7 @@
     <form action="{{ route('admin.products.update', $product->product_id) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
+        <input type="hidden" name="last_updated_at" value="{{ $product->updated_at ? $product->updated_at->toIso8601String() : ($product->created_at ? $product->created_at->toIso8601String() : '') }}">
 
         <!-- Header -->
         <div class="mb-8 flex flex-col md:flex-row md:items-start justify-between gap-4 border-b border-gray-200 pb-6">
@@ -309,8 +310,8 @@
             <!-- Right: Sidebar -->
             <div class="space-y-6">
 
-                <!-- Preview + Actions (Sticky) -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden sticky top-6 z-10">
+                <!-- Preview + Actions -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative">
                     <div class="p-5 border-b border-gray-50 flex items-center justify-between bg-gray-50/40">
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 rounded-full bg-[#0A2540] flex items-center justify-center text-white">
