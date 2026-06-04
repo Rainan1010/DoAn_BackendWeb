@@ -16,6 +16,25 @@
 </div>
 @endif
 
+@if(session('error') || $errors->any())
+<div class="mb-4 px-5 py-3 bg-red-50 text-red-600 text-sm font-bold rounded-lg border border-red-200 flex flex-col gap-1.5">
+    @if(session('error'))
+        <div class="flex items-center gap-2">
+            <i data-lucide="alert-circle" class="w-4 h-4"></i>
+            <span>{{ session('error') }}</span>
+        </div>
+    @endif
+    @if($errors->any())
+        @foreach($errors->all() as $error)
+            <div class="flex items-center gap-2">
+                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                <span>{{ $error }}</span>
+            </div>
+        @endforeach
+    @endif
+</div>
+@endif
+
 <!-- Header Section -->
 <div class="mb-6 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
     <div>

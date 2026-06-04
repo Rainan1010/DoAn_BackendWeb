@@ -11,7 +11,7 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // user admin
+        // Admin
         $adminId = DB::table('users')->insertGetId([
             'email' => 'admin@gmail.com',
             'password_hash' => Hash::make('12345678'),
@@ -28,8 +28,8 @@ class UserSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        // user staff
-        $staffId = DB::table('users')->insertGetId([
+        // Staff
+        DB::table('users')->insert([
             'email' => 'staff@gmail.com',
             'password_hash' => Hash::make('12345678'),
             'full_name' => 'Staff User',
@@ -45,8 +45,8 @@ class UserSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        // user thường
-        $userId = DB::table('users')->insertGetId([
+        // User mẫu
+        DB::table('users')->insert([
             'email' => 'user@gmail.com',
             'password_hash' => Hash::make('12345678'),
             'full_name' => 'Normal User',
@@ -61,6 +61,25 @@ class UserSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        // 20 user thường
+        for ($i = 1; $i <= 20; $i++) {
+            DB::table('users')->insert([
+                'email' => "user{$i}@gmail.com",
+                'password_hash' => Hash::make('12345678'),
+                'full_name' => "User {$i}",
+                'phone' => '09' . str_pad((string)($i + 3), 8, '0', STR_PAD_LEFT),
+                'avatar_url' => null,
+                'role' => 'user',
+                'provider' => null,
+                'provider_id' => null,
+                'is_active' => 1,
+                'is_verified' => 1,
+                'email_verified_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         // 2FA cho admin
         DB::table('user_2fa')->insert([

@@ -3,7 +3,7 @@
 @section('title', 'Nhật ký Kho hàng')
 
 @section('header_search')
-<form action="{{ route('admin.stock-logs.index') }}" method="GET" class="relative">
+<form action="{{ route('admin.inventory-logs.index') }}" method="GET" class="relative">
     <i data-lucide="search" class="absolute left-4 top-2.5 text-gray-400 w-5 h-5"></i>
 
     <input
@@ -14,31 +14,41 @@
         class="w-full bg-[#F4F5F7] border border-transparent rounded-full py-2.5 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A2540] focus:bg-white transition-colors text-[#0A2540] font-medium placeholder-gray-400" />
 
     @if(request('action_type'))
-    <input type="hidden" name="action_type" value="{{ request('action_type') }}">
+        <input type="hidden" name="action_type" value="{{ request('action_type') }}">
+    @endif
+
+    @if(request('time_filter'))
+        <input type="hidden" name="time_filter" value="{{ request('time_filter') }}">
+    @endif
+
+    @if(request('per_page'))
+        <input type="hidden" name="per_page" value="{{ request('per_page') }}">
     @endif
 </form>
 @endsection
 
 @section('content')
 @php
-$actionMap = [
-'import' => [
-'text' => 'IMPORT',
-'class' => 'bg-green-100 text-green-700',
-],
-'export' => [
-'text' => 'EXPORT',
-'class' => 'bg-red-100 text-red-700',
-],
-'adjust' => [
-'text' => 'ADJUST',
-'class' => 'bg-amber-100 text-amber-700',
-],
-'return' => [
-'text' => 'RETURN',
-'class' => 'bg-blue-100 text-blue-700',
-],
-];
+    $actionMap = [
+        'import' => [
+            'text' => 'IMPORT',
+            'class' => 'bg-green-100 text-green-700',
+        ],
+        'export' => [
+            'text' => 'EXPORT',
+            'class' => 'bg-red-100 text-red-700',
+        ],
+        'adjust' => [
+            'text' => 'ADJUST',
+            'class' => 'bg-amber-100 text-amber-700',
+        ],
+        'return' => [
+            'text' => 'RETURN',
+            'class' => 'bg-blue-100 text-blue-700',
+        ],
+    ];
+
+    $currentPerPage = (int) request('per_page', 10);
 @endphp
 
 <div class="space-y-8">
@@ -62,12 +72,6 @@ $actionMap = [
         </div>
 
         <div class="flex gap-3">
-            <!-- <button type="button"
-                class="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-[#001e40] rounded-md font-bold text-sm shadow-sm hover:bg-slate-50 transition-all">
-                <i data-lucide="download" class="w-5 h-5"></i>
-                XUẤT FILE EXCEL
-            </button> -->
-
             <a href="{{ route('admin.inventory-logs.create') }}"
                 class="flex items-center gap-2 px-6 py-3 bg-[#003366] text-white rounded-md font-bold text-sm shadow-lg shadow-[#003366]/20 hover:opacity-90 transition-all active:scale-95">
                 <i data-lucide="plus-square" class="w-5 h-5"></i>
@@ -160,56 +164,100 @@ $actionMap = [
 
         {{-- Filters --}}
         <div class="p-6 border-b border-gray-100 flex flex-wrap items-center justify-between gap-4 bg-[#f2f4f6]/70">
-            <form action="{{ route('admin.stock-logs.index') }}" method="GET" class="flex items-center gap-4">
+            <form action="{{ route('admin.inventory-logs.index') }}" method="GET" class="flex items-center gap-4 flex-wrap">
+
+                {{-- Giữ keyword tìm kiếm nếu có --}}
+                @if(request('search'))
+                    <input type="hidden" name="search" value="{{ request('search') }}">
+                @endif
+
+                {{-- Giữ số lượng hiển thị nếu có --}}
+                @if(request('per_page'))
+                    <input type="hidden" name="per_page" value="{{ request('per_page') }}">
+                @endif
+
+                {{-- Dropdown hành động --}}
                 <div class="flex items-center gap-2 px-4 py-2 bg-white rounded-md border border-gray-200 text-sm">
                     <span class="text-gray-500 font-medium">Hành động:</span>
 
                     <select name="action_type"
                         onchange="this.form.submit()"
-                        class="border-none bg-transparent p-0 focus:ring-0 text-[#003366] font-black text-sm">
+                        class="border-none bg-transparent p-0 focus:ring-0 text-[#003366] font-black text-sm cursor-pointer">
                         <option value="">Tất cả</option>
+
                         <option value="import" {{ request('action_type') === 'import' ? 'selected' : '' }}>
                             Nhập kho
                         </option>
+
                         <option value="export" {{ request('action_type') === 'export' ? 'selected' : '' }}>
                             Xuất kho
                         </option>
+
                         <option value="adjust" {{ request('action_type') === 'adjust' ? 'selected' : '' }}>
                             Điều chỉnh
                         </option>
+
                         <option value="return" {{ request('action_type') === 'return' ? 'selected' : '' }}>
                             Hoàn hàng
                         </option>
                     </select>
-
-                    @if(request('search'))
-                    <input type="hidden" name="search" value="{{ request('search') }}">
-                    @endif
                 </div>
 
+                {{-- Dropdown thời gian --}}
                 <div class="flex items-center gap-2 px-4 py-2 bg-white rounded-md border border-gray-200 text-sm">
                     <span class="text-gray-500 font-medium">Thời gian:</span>
-                    <span class="text-[#003366] font-black">Hôm nay</span>
+
+                    <select name="time_filter"
+                        onchange="this.form.submit()"
+                        class="border-none bg-transparent p-0 focus:ring-0 text-[#003366] font-black text-sm cursor-pointer">
+                        <option value="all" {{ request('time_filter', 'all') === 'all' ? 'selected' : '' }}>
+                            Tất cả
+                        </option>
+
+                        <option value="today" {{ request('time_filter') === 'today' ? 'selected' : '' }}>
+                            Hôm nay
+                        </option>
+
+                        <option value="yesterday" {{ request('time_filter') === 'yesterday' ? 'selected' : '' }}>
+                            Hôm qua
+                        </option>
+
+                        <option value="7days" {{ request('time_filter') === '7days' ? 'selected' : '' }}>
+                            7 ngày gần nhất
+                        </option>
+
+                        <option value="month" {{ request('time_filter') === 'month' ? 'selected' : '' }}>
+                            Tháng này
+                        </option>
+                    </select>
+
                     <i data-lucide="calendar-days" class="w-4 h-4 text-gray-500"></i>
                 </div>
+
+                {{-- Nút xóa lọc --}}
+                @if(request('search') || request('action_type') || request('time_filter') || request('per_page'))
+                    <a href="{{ route('admin.inventory-logs.index') }}"
+                        class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-md text-sm font-bold transition">
+                        Xóa lọc
+                    </a>
+                @endif
             </form>
 
+            {{-- Per page --}}
             <div class="flex items-center gap-2">
                 <span class="text-xs font-bold text-gray-500 uppercase tracking-tighter">
                     Hiển thị:
                 </span>
 
-                <button class="w-8 h-8 flex items-center justify-center rounded bg-[#003366] text-white text-xs font-bold">
-                    10
-                </button>
-
-                <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-xs font-bold hover:bg-slate-100 transition-colors">
-                    25
-                </button>
-
-                <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-xs font-bold hover:bg-slate-100 transition-colors">
-                    50
-                </button>
+                @foreach([10, 25, 50] as $perPage)
+                    <a href="{{ route('admin.inventory-logs.index', array_merge(request()->query(), ['per_page' => $perPage])) }}"
+                        class="w-8 h-8 flex items-center justify-center rounded text-xs font-bold transition-colors
+                            {{ $currentPerPage === $perPage
+                                ? 'bg-[#003366] text-white'
+                                : 'border border-gray-200 text-gray-700 hover:bg-slate-100' }}">
+                        {{ $perPage }}
+                    </a>
+                @endforeach
             </div>
         </div>
 
@@ -227,26 +275,27 @@ $actionMap = [
                         <th class="px-6 py-4">Ghi chú</th>
                         <th class="px-6 py-4">Người thực hiện</th>
                         <th class="px-6 py-4">Thời gian</th>
-                        <th class="px-6 py-4">HÀNH ĐỘNG</th>
+                        <th class="px-6 py-4">Hành động</th>
                     </tr>
                 </thead>
 
                 <tbody class="divide-y divide-gray-100">
                     @forelse($logs as $log)
-                    @php
-                    $action = $actionMap[$log->action_type] ?? [
-                    'text' => strtoupper($log->action_type ?? 'LOG'),
-                    'class' => 'bg-slate-100 text-slate-700',
-                    ];
+                        @php
+                            $action = $actionMap[$log->action_type] ?? [
+                                'text' => strtoupper($log->action_type ?? 'LOG'),
+                                'class' => 'bg-slate-100 text-slate-700',
+                            ];
 
-                    $quantityChange = $log->quantity_change ?? 0;
-                    $quantityClass = $quantityChange > 0
-                    ? 'text-green-600'
-                    : ($quantityChange < 0 ? 'text-red-600' : 'text-gray-600' );
+                            $quantityChange = $log->quantity_change ?? 0;
 
-                        $quantityText=$quantityChange> 0
-                        ? '+' . $quantityChange
-                        : $quantityChange;
+                            $quantityClass = $quantityChange > 0
+                                ? 'text-green-600'
+                                : ($quantityChange < 0 ? 'text-red-600' : 'text-gray-600');
+
+                            $quantityText = $quantityChange > 0
+                                ? '+' . $quantityChange
+                                : $quantityChange;
                         @endphp
 
                         <tr class="hover:bg-slate-50 transition-colors group">
@@ -320,13 +369,13 @@ $actionMap = [
                                 </div>
                             </td>
                         </tr>
-                        @empty
+                    @empty
                         <tr>
                             <td colspan="10" class="px-6 py-12 text-center text-gray-500">
                                 Chưa có nhật ký kho hàng nào.
                             </td>
                         </tr>
-                        @endforelse
+                    @endforelse
                 </tbody>
             </table>
         </div>

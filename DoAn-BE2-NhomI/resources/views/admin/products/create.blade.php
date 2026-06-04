@@ -309,8 +309,8 @@
                 </div>
             </div>
 
-            <!-- Preview + Actions (Sticky) -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden sticky top-6">
+            <!-- Preview + Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative">
                 <div class="p-5 border-b border-gray-50 flex items-center justify-between bg-gray-50/40">
                     <div class="flex items-center gap-3">
                         <div class="w-8 h-8 rounded-full bg-[#0A2540] flex items-center justify-center text-white">
