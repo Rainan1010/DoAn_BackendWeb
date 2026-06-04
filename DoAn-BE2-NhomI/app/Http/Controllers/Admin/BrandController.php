@@ -53,8 +53,10 @@ class BrandController extends Controller
             'description' => 'nullable|string',
         ], [
             'name.required' => 'Vui lòng nhập tên thương hiệu.',
+            'name.max' => 'Tên thương hiệu không được vượt quá 100 ký tự.',
             'slug.required' => 'Vui lòng nhập đường dẫn thân thiện.',
             'slug.unique' => 'Đường dẫn này đã tồn tại trong hệ thống.',
+            'slug.max' => 'Đường dẫn không được vượt quá 100 ký tự.',
             'logo_url.url' => 'URL logo không hợp lệ.'
         ]);
 
@@ -75,7 +77,63 @@ class BrandController extends Controller
     public function show(string $id)
     {
         $brand = Brand::findOrFail($id);
-        return view('admin.brands.show', compact('brand'));
+
+        // Fetch real products of this brand with pagination
+        $products = \App\Models\Product::where('brand_id', $brand->brand_id)
+            ->with(['category', 'primaryImage'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        // Count real products
+        $totalProducts = \App\Models\Product::where('brand_id', $brand->brand_id)->count();
+
+        // Calculate real revenue for this brand (sum of order item subtotals where order is paid)
+        $revenue = \DB::table('order_items')
+            ->join('product_variants', 'order_items.variant_id', '=', 'product_variants.variant_id')
+            ->join('products', 'product_variants.product_id', '=', 'products.product_id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.order_id')
+            ->where('products.brand_id', $brand->brand_id)
+            ->where('orders.payment_status', 'paid')
+            ->sum('order_items.subtotal');
+
+        // Growth calculation compared to last month
+        $lastMonthRevenue = \DB::table('order_items')
+            ->join('product_variants', 'order_items.variant_id', '=', 'product_variants.variant_id')
+            ->join('products', 'product_variants.product_id', '=', 'products.product_id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.order_id')
+            ->where('products.brand_id', $brand->brand_id)
+            ->where('orders.payment_status', 'paid')
+            ->whereBetween('orders.created_at', [Carbon::now()->subMonth()->startOfMonth(), Carbon::now()->subMonth()->endOfMonth()])
+            ->sum('order_items.subtotal');
+
+        $growth = 0;
+        if ($lastMonthRevenue > 0) {
+            $growth = round((($revenue - $lastMonthRevenue) / $lastMonthRevenue) * 100);
+        }
+
+        // Monthly target (e.g. 50,000,000 VND)
+        $monthlyGoal = 50000000;
+        $thisMonthRevenue = \DB::table('order_items')
+            ->join('product_variants', 'order_items.variant_id', '=', 'product_variants.variant_id')
+            ->join('products', 'product_variants.product_id', '=', 'products.product_id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.order_id')
+            ->where('products.brand_id', $brand->brand_id)
+            ->where('orders.payment_status', 'paid')
+            ->whereBetween('orders.created_at', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()])
+            ->sum('order_items.subtotal');
+
+        $performancePercent = $monthlyGoal > 0 ? min(100, round(($thisMonthRevenue / $monthlyGoal) * 100)) : 0;
+
+        return view('admin.brands.show', compact(
+            'brand',
+            'products',
+            'totalProducts',
+            'revenue',
+            'growth',
+            'thisMonthRevenue',
+            'monthlyGoal',
+            'performancePercent'
+        ));
     }
 
     public function edit(string $id)
@@ -86,7 +144,24 @@ class BrandController extends Controller
 
     public function update(Request $request, string $id)
     {
-        $brand = Brand::findOrFail($id);
+        $brand = Brand::find($id);
+
+        if (!$brand) {
+            return redirect()->route('admin.brands.index')
+                ->withErrors(['concurrency_error' => 'Thương hiệu này đã bị xóa bởi một người dùng khác.']);
+        }
+
+        // Kiểm tra xung đột sửa đổi đồng thời (Optimistic Concurrency Control)
+        if ($request->has('last_updated_at')) {
+            $clientUpdatedAt = $request->input('last_updated_at');
+            $dbUpdatedAt = $brand->updated_at ? $brand->updated_at->toIso8601String() : ($brand->created_at ? $brand->created_at->toIso8601String() : '');
+            
+            if ($clientUpdatedAt !== $dbUpdatedAt) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['concurrency_error' => 'Thương hiệu này đã được một người dùng khác cập nhật trong khi bạn đang chỉnh sửa. Vui lòng lưu lại các thay đổi của bạn ở nơi khác, tải lại trang và thực hiện lại.']);
+            }
+        }
 
         $request->validate([
             'name' => 'required|max:100',
@@ -95,7 +170,10 @@ class BrandController extends Controller
             'description' => 'nullable|string',
         ], [
             'name.required' => 'Vui lòng nhập tên thương hiệu.',
+            'name.max' => 'Tên thương hiệu không được vượt quá 100 ký tự.',
+            'slug.required' => 'Vui lòng nhập đường dẫn thân thiện.',
             'slug.unique' => 'Đường dẫn này đã tồn tại.',
+            'slug.max' => 'Đường dẫn không được vượt quá 100 ký tự.',
             'logo_url.url' => 'URL logo không hợp lệ.'
         ]);
 

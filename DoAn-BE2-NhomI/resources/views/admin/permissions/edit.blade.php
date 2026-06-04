@@ -22,7 +22,7 @@
     </div>
 
     <!-- User Profile Card -->
-    <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+    <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden" x-data="{ selectedRole: '{{ $user->role }}' }">
         <div class="flex items-center gap-6 relative">
             <div class="relative">
                 <img src="{{ $user->avatar_url ?? 'https://ui-avatars.com/api/?name='.urlencode($user->full_name).'&background=0A2540&color=fff&size=128' }}" 
@@ -42,13 +42,13 @@
                         Email: <span class="text-gray-600 lowercase">{{ $user->email }}</span>
                     </p>
                 </div>
-                <!-- Role Select for Edit -->
+                <!-- Role Select for Edit (dùng x-model để đồng bộ với hidden input trong form) -->
                 <div class="mt-4 flex items-center gap-2">
                     <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Vai trò:</label>
-                    <select name="role" class="bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-black px-2 py-1 outline-none">
-                        <option value="user" {{ $user->role == 'user' ? 'selected' : '' }}>USER</option>
-                        <option value="staff" {{ $user->role == 'staff' ? 'selected' : '' }}>STAFF</option>
-                        <option value="admin" {{ $user->role == 'admin' ? 'selected' : '' }}>ADMIN</option>
+                    <select x-model="selectedRole" class="bg-gray-50 border border-gray-200 rounded-lg text-[10px] font-black px-2 py-1 outline-none">
+                        <option value="user">USER</option>
+                        <option value="staff">STAFF</option>
+                        <option value="admin">ADMIN</option>
                     </select>
                 </div>
             </div>
@@ -85,12 +85,31 @@
     }">
         @csrf
         @method('PUT')
+        <input type="hidden" name="last_updated_at" value="{{ $user->updated_at?->format('Y-m-d H:i:s') }}">
+        {{-- Đồng bộ giá trị role từ select bên ngoài form --}}
+        <input type="hidden" name="role" :value="selectedRole">
+        {{-- Thông báo lỗi session --}}
+        @if(session('error'))
+            <div class="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 px-5 py-4 rounded-2xl shadow-sm">
+                <svg class="w-5 h-5 mt-0.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <span class="text-sm font-semibold">{{ session('error') }}</span>
+            </div>
+        @endif
 
+        {{-- Danh sách lỗi validation --}}
         @if($errors->any())
-            <div class="bg-red-50 border border-red-100 p-4 rounded-xl">
-                <ul class="list-disc list-inside text-red-600 text-xs font-bold">
+            <div class="bg-red-50 border border-red-200 rounded-2xl px-5 py-4 shadow-sm">
+                <div class="flex items-center gap-2 mb-2">
+                    <svg class="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                    </svg>
+                    <p class="text-sm font-black text-red-700 uppercase tracking-widest">Vui lòng kiểm tra lại thông tin</p>
+                </div>
+                <ul class="list-disc list-inside space-y-1">
                     @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
+                        <li class="text-sm text-red-600 font-medium">{{ $error }}</li>
                     @endforeach
                 </ul>
             </div>
