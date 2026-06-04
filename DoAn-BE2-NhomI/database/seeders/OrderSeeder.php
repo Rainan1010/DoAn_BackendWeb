@@ -169,53 +169,7 @@ class OrderSeeder extends Seeder
                     'paid_at' => $paidAt,
                 ]);
 
-                /*
-                |--------------------------------------------------------------------------
-                | REVENUE REPORT
-                |--------------------------------------------------------------------------
-                */
-
-                if ($paymentStatus === 'paid') {
-
-                    $reportDate = $createdAt->toDateString();
-
-                    $report = DB::table('revenue_reports')
-                        ->where('report_date', $reportDate)
-                        ->first();
-
-                    if ($report) {
-
-                        $newRevenue = $report->total_revenue + $totalAmount;
-                        $newOrders  = $report->total_orders + 1;
-
-                        DB::table('revenue_reports')
-                            ->where('report_id', $report->report_id)
-                            ->update([
-
-                                'total_revenue' => $newRevenue,
-
-                                'total_orders' => $newOrders,
-
-                                'avg_order_value' => round(
-                                    $newRevenue / $newOrders
-                                ),
-                            ]);
-                    } else {
-
-                        DB::table('revenue_reports')->insert([
-
-                            'report_date' => $reportDate,
-
-                            'total_revenue' => $totalAmount,
-
-                            'total_orders' => 1,
-
-                            'total_items_sold' => 0,
-
-                            'avg_order_value' => $totalAmount,
-                        ]);
-                    }
-                }
+                DB::table('revenue_reports')->truncate();
             }
 
             // CHỈ TĂNG NGÀY SAU KHI TẠO XONG 10 ĐƠN
