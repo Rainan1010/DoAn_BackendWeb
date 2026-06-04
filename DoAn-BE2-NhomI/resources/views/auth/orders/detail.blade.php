@@ -153,8 +153,10 @@
             'pending' => 'Đang chờ xác nhận',
             'confirmed' => 'Đã xác nhận',
             'processing' => 'Đang chuẩn bị',
+            'shipped' => 'Đang giao hàng',
             'shipping' => 'Đang giao hàng',
             'delivered' => 'Đã giao thành công',
+            'completed' => 'Đã giao thành công',
             'cancelled' => 'Đã huỷ',
         ];
 
@@ -162,8 +164,10 @@
             'pending' => 'yellow',
             'confirmed' => 'blue',
             'processing' => 'orange',
+            'shipped' => 'indigo',
             'shipping' => 'indigo',
             'delivered' => 'emerald',
+            'completed' => 'emerald',
             'cancelled' => 'red',
         ];
 
@@ -175,8 +179,10 @@
             'pending' => 1,
             'confirmed' => 2,
             'processing' => 2,
+            'shipped' => 3,
             'shipping' => 3,
             'delivered' => 4,
+            'completed' => 4,
         ];
 
         $currentStep = $steps[$order->order_status] ?? 1;
@@ -192,12 +198,12 @@
 
         <div class="fixed bottom-0 right-0 w-[500px] h-[500px] bg-indigo-400/20 blur-3xl blob pointer-events-none"></div>
 
-        <div class="max-w-7xl mx-auto relative z-10">
+        <div class="max-w-5xl mx-auto relative z-10">
 
             {{-- BACK --}}
 
             <a href="{{ route('orders.history') }}"
-                class="inline-flex items-center gap-3 bg-white/70 backdrop-blur-xl border border-white/50 hover:border-blue-400 hover:bg-white px-6 py-4 rounded-2xl shadow-lg hover:shadow-blue-200/50 transition-all duration-500 font-bold text-slate-700 mb-8 group">
+                class="inline-flex items-center gap-3 bg-white/70 backdrop-blur-xl border border-white/50 hover:border-blue-400 hover:bg-white px-6 py-3.5 rounded-2xl shadow-lg hover:shadow-blue-200/50 transition-all duration-500 font-bold text-slate-700 mb-8 group">
 
                 <span class="material-symbols-outlined group-hover:-translate-x-1 transition-transform">
                     arrow_back
@@ -209,122 +215,141 @@
 
             {{-- HERO --}}
 
-            <div
-                class="relative rounded-[32px] overflow-hidden shadow-[0_20px_70px_rgba(37,99,235,.22)] mb-8 max-w-6xl mx-auto">
+            <div class="relative w-full rounded-3xl overflow-hidden
+            bg-gradient-to-br from-[#003366] via-[#0b427a] to-[#0F5BCC]
+            shadow-[0_20px_50px_rgba(15,23,42,.12)]
+            border border-white/10
+            mb-6">
 
-                {{-- GLOW --}}
+                {{-- glow --}}
+                <div class="absolute -top-20 -left-20 w-72 h-72 bg-cyan-300/10 rounded-full blur-3xl"></div>
 
-                <div class="relative w-full rounded-[30px] overflow-hidden
-                bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-500
-                shadow-[0_20px_60px_rgba(59,130,246,.25)]
-                mb-8">
+                <div class="absolute bottom-0 right-0 w-72 h-72 bg-violet-300/10 rounded-full blur-3xl"></div>
 
-                    {{-- glow --}}
-                    <div class="absolute -top-20 -left-20 w-72 h-72 bg-cyan-300/10 rounded-full blur-3xl"></div>
+                {{-- grid effect --}}
+                <div class="absolute inset-0 opacity-[0.06]" style="
+                    background-image:
+                    linear-gradient(to right, white 1px, transparent 1px),
+                    linear-gradient(to bottom, white 1px, transparent 1px);
+                    background-size: 32px 32px;
+                ">
+                </div>
 
-                    <div class="absolute bottom-0 right-0 w-72 h-72 bg-violet-300/10 rounded-full blur-3xl"></div>
+                <div class="relative px-8 md:px-10 py-7">
 
-                    {{-- grid effect --}}
-                    <div class="absolute inset-0 opacity-[0.06]" style="
-                        background-image:
-                        linear-gradient(to right, white 1px, transparent 1px),
-                        linear-gradient(to bottom, white 1px, transparent 1px);
-                        background-size: 32px 32px;
-                    ">
-                    </div>
+                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
 
-                    <div class="relative px-8 md:px-10 py-7">
+                        {{-- LEFT --}}
+                        <div>
 
-                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+                            <div class="inline-flex items-center gap-2
+                            bg-white/10 border border-white/20
+                            px-4 py-2 rounded-full mb-5 backdrop-blur-xl">
 
-                            {{-- LEFT --}}
-                            <div>
+                                <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
 
-                                <div class="inline-flex items-center gap-2
-                                bg-white/10 border border-white/20
-                                px-4 py-2 rounded-full mb-5 backdrop-blur-xl">
+                                <span class="uppercase tracking-[3px]
+                                text-[10px] font-semibold text-white/90">
+                                    Smart Order Tracking
+                                </span>
 
-                                    <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                            </div>
 
-                                    <span class="uppercase tracking-[3px]
-                                    text-[10px] font-semibold text-white/90">
-                                        Smart Order Tracking
-                                    </span>
+                            <h1 class="text-[44px] md:text-[54px]
+                            font-black leading-none tracking-tight text-white">
 
-                                </div>
+                                #{{ $order->order_code }}
 
-                                <h1 class="text-[52px] md:text-[64px]
-                                font-black leading-none tracking-tight text-white">
+                            </h1>
 
-                                    #{{ $order->order_code }}
+                            <div class="mt-4 flex flex-wrap items-center gap-3 text-white/80">
 
-                                </h1>
+                                <span class="text-sm font-medium">
+                                    {{ \Carbon\Carbon::parse($order->created_at)->format('d/m/Y H:i') }}
+                                </span>
 
-                                <div class="mt-4 flex flex-wrap items-center gap-3 text-white/80">
+                                <span class="w-1.5 h-1.5 rounded-full bg-white/50"></span>
 
-                                    <span class="text-sm font-medium">
-                                        {{ \Carbon\Carbon::parse($order->created_at)->format('d/m/Y H:i') }}
-                                    </span>
+                                {{-- payment --}}
+                                <div class="px-3 py-1 rounded-full
+                                bg-emerald-400/20 text-emerald-100
+                                border border-emerald-200/20
+                                text-xs font-semibold uppercase tracking-wide">
 
-                                    <span class="w-1.5 h-1.5 rounded-full bg-white/50"></span>
-
-                                    {{-- payment --}}
-                                    <div class="px-3 py-1 rounded-full
-                                    bg-emerald-400/20 text-emerald-100
-                                    border border-emerald-200/20
-                                    text-xs font-semibold uppercase tracking-wide">
-
-                                        {{ $order->payment_method }}
-
-                                    </div>
+                                    {{ $order->payment_method }}
 
                                 </div>
 
                             </div>
 
-                            {{-- RIGHT --}}
-                            <div class="lg:text-right">
+                        </div>
 
-                                {{-- status --}}
-                                <div class="inline-flex items-center gap-2
-                                px-5 py-2 rounded-2xl
-                                bg-white/12 border border-white/15
-                                backdrop-blur-xl
-                                shadow-lg mb-5">
+                        {{-- RIGHT --}}
+                        <div class="lg:text-right">
 
-                                    <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                            {{-- status --}}
+                            <div class="inline-flex items-center gap-2
+                            px-5 py-2 rounded-2xl
+                            bg-white/12 border border-white/15
+                            backdrop-blur-xl
+                            shadow-lg mb-5">
 
-                                    <span class="text-white text-sm font-semibold">
-                                        {{ $status }}
-                                    </span>
+                                <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
 
-                                </div>
-
-                                <p class="uppercase tracking-[4px]
-                                text-[11px] text-white/60 mb-2">
-
-                                    Tổng thanh toán
-
-                                </p>
-
-                                <h2 class="text-4xl md:text-5xl
-                                font-black text-white leading-none">
-
-                                    {{ number_format($order->total_amount, 0, ',', '.') }}₫
-
-                                </h2>
+                                <span class="text-white text-sm font-semibold">
+                                    {{ $status }}
+                                </span>
 
                             </div>
+
+                            <p class="uppercase tracking-[4px]
+                            text-[11px] text-white/60 mb-2">
+
+                                Tổng thanh toán
+
+                            </p>
+
+                            <h2 class="text-4xl md:text-5xl
+                            font-black text-white leading-none">
+
+                                {{ number_format($order->total_amount, 0, ',', '.') }}₫
+
+                            </h2>
 
                         </div>
 
                     </div>
 
                 </div>
-                {{-- TIMELINE --}}
 
+            </div>
+
+            {{-- TIMELINE HOẶC CHỮ ĐÃ HỦY MÀU ĐỎ --}}
+            @if($order->order_status === 'cancelled' || $order->order_status === 'canceled')
+                <div class="bg-red-50/70 border border-red-200/60 rounded-3xl p-6 md:p-8 shadow-[0_20px_80px_rgba(239,68,68,.05)] mb-6 text-center relative overflow-hidden">
+                    <div class="absolute inset-0 opacity-10 bg-gradient-to-tr from-red-500 to-rose-400"></div>
+                    <div class="relative z-10 flex flex-col items-center justify-center space-y-4">
+                        <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center shadow-lg shadow-red-200/40 animate-pulse">
+                            <span class="material-symbols-outlined text-[36px]">cancel</span>
+                        </div>
+                        <h2 class="text-2xl font-black text-red-600 tracking-tight uppercase">Đơn hàng đã hủy</h2>
+                        @if(!empty($order->cancel_reason))
+                            <p class="text-sm font-bold text-red-500 max-w-xl leading-relaxed bg-red-100/30 border border-red-200/50 px-6 py-3.5 rounded-2xl">
+                                Lý do hủy: <span class="font-medium text-slate-700">{{ $order->cancel_reason }}</span>
+                            </p>
+                        @else
+                            <p class="text-sm font-medium text-slate-500 max-w-md">Đơn hàng này đã bị hủy trên hệ thống.</p>
+                        @endif
+                        <p class="text-sm font-bold {{ $order->payment_status === 'refunded' ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-slate-600 bg-white/70 border-slate-200' }} max-w-xl leading-relaxed border px-6 py-3.5 rounded-2xl">
+                            {{ $order->payment_status === 'refunded'
+                                ? 'Trạng thái hoàn tiền: Đã ghi nhận hoàn tiền. Tiền sẽ về phương thức thanh toán ban đầu trong 3-7 ngày làm việc.'
+                                : 'Trạng thái hoàn tiền: Không phát sinh hoàn tiền vì đơn chưa thanh toán hoặc thanh toán COD.' }}
+                        </p>
+                    </div>
+                </div>
+            @else
                 <div
-                    class="bg-white/70 backdrop-blur-2xl rounded-[40px] p-8 md:p-10 shadow-[0_20px_80px_rgba(0,0,0,.06)] border border-white/50 mb-10 relative overflow-hidden">
+                    class="bg-white/80 backdrop-blur-2xl rounded-3xl p-6 md:p-8 shadow-[0_20px_50px_rgba(59,130,246,.04)] border border-white/50 mb-6 relative overflow-hidden">
 
                     <div class="absolute inset-0 opacity-50">
 
@@ -383,51 +408,59 @@
                             @endphp
 
                             @foreach($timeline as $time)
+                                @php
+                                    $isActive = $currentStep >= $time['step'];
+                                    $isCurrent = $currentStep == $time['step'];
+                                    
+                                    $stepBgColor = '';
+                                    if ($isActive) {
+                                        switch($time['color']) {
+                                            case 'blue': $stepBgColor = 'bg-blue-600 text-white shadow-blue-500/20'; break;
+                                            case 'emerald': $stepBgColor = 'bg-emerald-600 text-white shadow-emerald-500/20'; break;
+                                            case 'indigo': $stepBgColor = 'bg-indigo-600 text-white shadow-indigo-500/20'; break;
+                                            case 'amber': $stepBgColor = 'bg-amber-500 text-white shadow-amber-500/20'; break;
+                                            default: $stepBgColor = 'bg-blue-600 text-white shadow-blue-500/20';
+                                        }
+                                    } else {
+                                        $stepBgColor = 'bg-slate-100 text-slate-400 border border-slate-200/50';
+                                    }
+                                @endphp
 
-                                                <div class="flex flex-col items-center relative z-10">
+                                <div class="flex flex-col items-center relative z-10">
 
-                                                    <div class="relative">
+                                    <div class="relative">
 
-                                                        @if($currentStep == $time['step'])
+                                        @if($isCurrent)
 
-                                                            <div
-                                                                class="absolute inset-0 rounded-full border-2 border-cyan-400/40 animate-spin-slow">
-                                                            </div>
+                                            <div
+                                                class="absolute inset-0 rounded-full border-2 border-cyan-400/40 animate-spin-slow">
+                                            </div>
 
-                                                            <div class="absolute inset-[-8px] rounded-full border border-blue-400/20"></div>
+                                            <div class="absolute inset-[-6px] rounded-full border border-blue-400/10"></div>
 
-                                                        @endif
+                                        @endif
 
-                                                        <div class="
-                                                                                                            w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center
-                                                                                                            transition-all duration-500 shadow-2xl relative z-10
+                                        <div class="
+                                            w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center
+                                            transition-all duration-500 shadow-md relative z-10 {{ $stepBgColor }}
+                                            {{ $isCurrent ? 'scale-110 animate-breathe shadow-lg' : '' }}
+                                        ">
 
-                                                                                                            {{ $currentStep >= $time['step']
-                                ? 'bg-' . $time['color'] . '-500 text-white scale-110 animate-breathe'
-                                : 'bg-slate-200 text-slate-400'
-                                                                                                            }}
+                                            <span class="material-symbols-outlined text-2xl md:text-3xl">
+                                                {{ $time['icon'] }}
+                                            </span>
 
-                                                                                                            {{ $currentStep == $time['step']
-                                ? 'animate-floating'
-                                : ''
-                                                                                                            }}
-                                                                                                        ">
+                                        </div>
 
-                                                            <span class="material-symbols-outlined text-3xl">
-                                                                {{ $time['icon'] }}
-                                                            </span>
+                                    </div>
 
-                                                        </div>
+                                    <h3 class="mt-4 font-black text-slate-800 text-sm md:text-base text-center">
 
-                                                    </div>
+                                        {{ $time['title'] }}
 
-                                                    <h3 class="mt-5 font-black text-slate-800 text-center">
+                                    </h3>
 
-                                                        {{ $time['title'] }}
-
-                                                    </h3>
-
-                                                </div>
+                                </div>
 
                             @endforeach
 
@@ -436,337 +469,35 @@
                     </div>
 
                 </div>
-                {{-- SMART STATUS --}}
+            @endif
 
-                <div class="mb-8 grid md:grid-cols-3 gap-5">
+            {{-- SMART STATUS --}}
 
-                    <div class="rounded-[28px] bg-white/75 backdrop-blur-2xl
-                border border-white/50 shadow-lg p-6">
+            <div class="mb-6 grid md:grid-cols-3 gap-5">
 
-                        <div class="flex items-center gap-4">
+                <div class="rounded-3xl bg-white/80 backdrop-blur-2xl
+            border border-white/50 shadow-sm p-5 hover:border-blue-300 hover:shadow-[0_15px_30px_rgba(59,130,246,.04)] transition-all duration-300 flex items-center">
 
-                            <div class="w-14 h-14 rounded-2xl
-                        bg-blue-100 text-blue-600
-                        flex items-center justify-center">
+                    <div class="flex items-center gap-4">
 
-                                <span class="material-symbols-outlined">
-                                    package_2
-                                </span>
+                        <div class="w-12 h-12 rounded-2xl
+                    bg-blue-50 text-blue-600 border border-blue-100/50
+                    flex items-center justify-center flex-shrink-0">
 
-                            </div>
-
-                            <div>
-
-                                <p class="text-slate-400 text-sm mb-1">
-                                    Trạng thái hiện tại
-                                </p>
-
-                                <h3 class="font-black text-slate-800 text-lg">
-                                    {{ $status }}
-                                </h3>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <div class="rounded-[28px] bg-white/75 backdrop-blur-2xl
-                border border-white/50 shadow-lg p-6">
-
-                        <div class="flex items-center gap-4">
-
-                            <div class="w-14 h-14 rounded-2xl
-                        bg-emerald-100 text-emerald-600
-                        flex items-center justify-center">
-
-                                <span class="material-symbols-outlined">
-                                    schedule
-                                </span>
-
-                            </div>
-
-                            <div>
-
-                                <p class="text-slate-400 text-sm mb-1">
-                                    Dự kiến giao
-                                </p>
-
-                                <h3 class="font-black text-slate-800 text-lg">
-                                    2 - 3 ngày
-                                </h3>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <div class="rounded-[28px] bg-white/75 backdrop-blur-2xl
-                border border-white/50 shadow-lg p-6">
-
-                        <div class="flex items-center gap-4">
-
-                            <div class="w-14 h-14 rounded-2xl
-                        bg-violet-100 text-violet-600
-                        flex items-center justify-center">
-
-                                <span class="material-symbols-outlined">
-                                    verified_user
-                                </span>
-
-                            </div>
-
-                            <div>
-
-                                <p class="text-slate-400 text-sm mb-1">
-                                    Bảo mật
-                                </p>
-
-                                <h3 class="font-black text-slate-800 text-lg">
-                                    SSL Protected
-                                </h3>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-                {{-- PRODUCTS --}}
-
-                <div class="space-y-8 mb-10">
-
-                    @foreach($order->items as $item)
-
-                        <div
-                            class="group relative bg-white/75 backdrop-blur-2xl rounded-[40px] border border-white/50 overflow-hidden shadow-[0_20px_80px_rgba(0,0,0,.06)] hover:-translate-y-1 hover:shadow-[0_30px_100px_rgba(0,0,0,.1)] transition-all duration-500">
-
-                            {{-- LIGHT EFFECT --}}
-
-                            <div
-                                class="absolute inset-0 bg-gradient-to-r from-blue-500/[0.03] to-indigo-500/[0.03] opacity-0 group-hover:opacity-100 transition duration-500">
-                            </div>
-
-                            <div class="relative p-8 md:p-10 flex flex-col xl:flex-row gap-8 justify-between">
-
-                                {{-- LEFT --}}
-
-                                <div class="flex flex-col md:flex-row gap-8 flex-1">
-
-                                    {{-- IMAGE --}}
-
-                                    <div
-                                        class="w-full md:w-56 h-56 rounded-[30px] overflow-hidden bg-slate-100 shadow-2xl shrink-0 animate-floating">
-
-                                        @if($item->image_url)
-
-                                            <img src="{{ asset($item->image_url) }}" alt="{{ $item->product_name }}"
-                                                class="w-full h-full object-cover group-hover:scale-110 transition duration-700">
-
-                                        @else
-
-                                            <div class="w-full h-full flex items-center justify-center">
-
-                                                <span class="material-symbols-outlined text-8xl text-slate-300">
-                                                    inventory_2
-                                                </span>
-
-                                            </div>
-
-                                        @endif
-
-                                    </div>
-
-                                    {{-- INFO --}}
-
-                                    <div class="flex-1 flex flex-col justify-between">
-
-                                        <div>
-
-                                            <h2 class="text-3xl md:text-4xl font-black text-slate-800 leading-tight mb-5">
-
-                                                {{ $item->product_name }}
-
-                                            </h2>
-
-                                            @if($item->variant_info)
-
-                                                <div class="inline-flex flex-wrap gap-3 mb-6">
-
-                                                    <div
-                                                        class="px-4 py-3 rounded-2xl bg-slate-100/80 backdrop-blur text-slate-700 font-semibold shadow-sm">
-
-                                                        {{ $item->variant_info }}
-
-                                                    </div>
-
-                                                    @if($order->discount_amount > 0)
-
-                                                        <div
-                                                            class="px-4 py-3 rounded-2xl bg-red-50 text-red-500 font-bold flex items-center gap-2 shadow-sm">
-
-                                                            <span class="material-symbols-outlined text-lg">
-                                                                local_offer
-                                                            </span>
-
-                                                            Giảm giá
-
-                                                        </div>
-
-                                                    @endif
-
-                                                </div>
-
-                                            @endif
-
-                                        </div>
-
-                                        <div class="flex flex-wrap gap-4">
-
-                                            <div class="bg-blue-50 text-blue-700 px-5 py-4 rounded-2xl font-black shadow-sm">
-
-                                                SL: {{ $item->quantity }}
-
-                                            </div>
-
-                                            <div class="bg-slate-100 text-slate-700 px-5 py-4 rounded-2xl font-black shadow-sm">
-
-                                                {{ number_format($item->unit_price, 0, ',', '.') }}₫
-
-                                            </div>
-
-                                        </div>
-
-                                    </div>
-
-                                </div>
-
-                                {{-- PRICE --}}
-
-                                <div class="xl:w-80 rounded-[34px] overflow-hidden shadow-[0_25px_80px_rgba(15,23,42,.4)]">
-
-                                    <div
-                                        class="h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 flex flex-col justify-center relative overflow-hidden">
-
-                                        <div class="absolute -top-20 -right-20 w-56 h-56 bg-white/5 rounded-full blur-3xl">
-                                        </div>
-
-                                        <div class="relative z-10">
-
-                                            <p class="uppercase tracking-[5px] text-slate-400 text-sm mb-4">
-                                                Thành tiền
-                                            </p>
-
-                                            <h3 class="text-4xl md:text-5xl font-black text-white break-all leading-tight">
-
-                                                {{ number_format($item->subtotal, 0, ',', '.') }}₫
-
-                                            </h3>
-
-                                        </div>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    @endforeach
-
-                </div>
-                {{-- RECEIVER INFO --}}
-
-                <div class="rounded-[34px] bg-white/75 backdrop-blur-2xl
-    border border-white/50 shadow-lg p-7 mb-8">
-
-                    <div class="flex items-center gap-4 mb-6">
-
-                        <div class="w-14 h-14 rounded-2xl
-            bg-cyan-100 text-cyan-600
-            flex items-center justify-center">
-
-                            <span class="material-symbols-outlined">
-                                location_on
+                            <span class="material-symbols-outlined text-2xl">
+                                package_2
                             </span>
 
                         </div>
 
                         <div>
 
-                            <p class="text-slate-400 text-sm">
-                                Receiver Information
+                            <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-0.5">
+                                Trạng thái hiện tại
                             </p>
 
-                            <h2 class="text-2xl font-black text-slate-800">
-                                Thông tin nhận hàng
-                            </h2>
-
-                        </div>
-
-                    </div>
-
-                    <div class="grid md:grid-cols-3 gap-5">
-
-                        {{-- NAME --}}
-
-                        <div class="bg-slate-50 rounded-2xl p-5">
-
-                            <p class="text-slate-400 text-sm mb-2">
-                                Người nhận
-                            </p>
-
-                            <h3 class="font-black text-slate-800 text-lg">
-
-                                {{ $shippingAddress->full_name ?? 'Chưa cập nhật' }}
-
-                            </h3>
-
-                        </div>
-
-                        {{-- PHONE --}}
-
-                        <div class="bg-slate-50 rounded-2xl p-5">
-
-                            <p class="text-slate-400 text-sm mb-2">
-                                Số điện thoại
-                            </p>
-
-                            <h3 class="font-black text-slate-800 text-lg">
-
-                                {{ $shippingAddress->phone ?? 'Chưa cập nhật' }}
-
-                            </h3>
-
-                        </div>
-
-                        {{-- ADDRESS --}}
-
-                        <div class="bg-slate-50 rounded-2xl p-5">
-
-                            <p class="text-slate-400 text-sm mb-2">
-                                Địa chỉ
-                            </p>
-
-                            <h3 class="font-black text-slate-800 leading-7">
-
-                                {{ $shippingAddress->street_address ?? '' }}
-
-                                @if(!empty($shippingAddress->ward))
-                                    , {{ $shippingAddress->ward }}
-                                @endif
-
-                                @if(!empty($shippingAddress->district))
-                                    , {{ $shippingAddress->district }}
-                                @endif
-
-                                @if(!empty($shippingAddress->province))
-                                    , {{ $shippingAddress->province }}
-                                @endif
-
+                            <h3 class="font-black text-[#001e40] text-base leading-tight">
+                                {{ $status }}
                             </h3>
 
                         </div>
@@ -774,345 +505,408 @@
                     </div>
 
                 </div>
-                {{-- INFO + PAYMENT --}}
 
-                <div class="grid lg:grid-cols-2 gap-6 mb-10">
+                <div class="rounded-3xl bg-white/80 backdrop-blur-2xl
+            border border-white/50 shadow-sm p-5 hover:border-blue-300 hover:shadow-[0_15px_30px_rgba(59,130,246,.04)] transition-all duration-300 flex items-center">
 
-                    {{-- ORDER INFO --}}
+                    <div class="flex items-center gap-4">
 
-                    <div
-                        class="relative overflow-hidden rounded-[34px] bg-white/75 backdrop-blur-2xl border border-white/60 shadow-[0_15px_60px_rgba(15,23,42,.06)] p-7 hover:-translate-y-1 transition duration-500 group">
+                        <div class="w-12 h-12 rounded-2xl
+                    bg-emerald-50 text-emerald-600 border border-emerald-100/50
+                    flex items-center justify-center flex-shrink-0">
 
-                        {{-- SHINE --}}
-
-                        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-700">
-
-                            <div
-                                class="absolute -left-40 top-0 w-40 h-full bg-gradient-to-r from-transparent via-white/40 to-transparent rotate-12 animate-[energyFlow_2s_linear_infinite]">
-                            </div>
+                            <span class="material-symbols-outlined text-2xl">
+                                schedule
+                            </span>
 
                         </div>
 
-                        {{-- GLOW --}}
+                        <div>
 
-                        <div class="absolute -top-20 -right-20 w-56 h-56 bg-blue-200/30 rounded-full blur-3xl"></div>
+                            <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-0.5">
+                                Dự kiến giao
+                            </p>
 
-                        <div class="relative z-10">
-
-                            {{-- HEADER --}}
-
-                            <div class="flex items-center gap-4 mb-7">
-
-                                <div
-                                    class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 text-white flex items-center justify-center shadow-lg">
-
-                                    <span class="material-symbols-outlined text-2xl">
-                                        receipt_long
-                                    </span>
-
-                                </div>
-
-                                <div>
-
-                                    <p class="uppercase tracking-[3px] text-[11px] text-slate-400 mb-1">
-                                        ORDER INFO
-                                    </p>
-
-                                    <h2 class="text-2xl font-black text-slate-800">
-                                        Thông tin đơn hàng
-                                    </h2>
-
-                                </div>
-
-                            </div>
-
-                            {{-- CONTENT --}}
-
-                            <div class="space-y-4">
-
-                                <div class="flex justify-between items-center bg-slate-50/80 rounded-2xl px-5 py-4">
-
-                                    <span class="text-slate-500 text-sm">
-                                        Mã đơn
-                                    </span>
-
-                                    <span class="font-black text-slate-800">
-                                        #{{ $order->order_code }}
-                                    </span>
-
-                                </div>
-
-                                <div class="flex justify-between items-center bg-slate-50/80 rounded-2xl px-5 py-4">
-
-                                    <span class="text-slate-500 text-sm">
-                                        Ngày đặt
-                                    </span>
-
-                                    <span class="font-bold text-slate-800 text-sm">
-                                        {{ \Carbon\Carbon::parse($order->created_at)->format('d/m/Y H:i') }}
-                                    </span>
-
-                                </div>
-
-                                <div class="flex justify-between items-center bg-slate-50/80 rounded-2xl px-5 py-4">
-
-                                    <span class="text-slate-500 text-sm">
-                                        Thanh toán
-                                    </span>
-
-                                    <span class="uppercase font-black text-blue-600">
-                                        {{ $order->payment_method }}
-                                    </span>
-
-                                </div>
-
-                                <div class="flex justify-between items-center bg-slate-50/80 rounded-2xl px-5 py-4">
-
-                                    <span class="text-slate-500 text-sm">
-                                        Trạng thái
-                                    </span>
-
-                                    <div
-                                        class="px-4 py-2 rounded-xl bg-{{ $color }}-100 text-{{ $color }}-700 font-bold text-sm">
-
-                                        {{ $status }}
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-                            {{-- MINI STATS --}}
-
-                            <div class="grid grid-cols-3 gap-3 mt-6">
-
-                                <div class="rounded-2xl bg-blue-50 p-4 text-center">
-
-                                    <p class="text-xs text-slate-500 mb-1">
-                                        Sản phẩm
-                                    </p>
-
-                                    <h3 class="text-xl font-black text-blue-600">
-
-                                        {{ $order->items->count() }}
-
-                                    </h3>
-
-                                </div>
-
-                                <div class="rounded-2xl bg-emerald-50 p-4 text-center">
-
-                                    <p class="text-xs text-slate-500 mb-1">
-                                        Voucher
-                                    </p>
-
-                                    <h3 class="text-xl font-black text-emerald-600">
-
-                                        {{ $order->discount_amount > 0 ? 'Có' : 'Không' }}
-
-                                    </h3>
-
-                                </div>
-
-                                <div class="rounded-2xl bg-orange-50 p-4 text-center">
-
-                                    <p class="text-xs text-slate-500 mb-1">
-                                        Phí ship
-                                    </p>
-
-                                    <h3 class="text-lg font-black text-orange-500">
-
-                                        {{ number_format($order->shipping_fee, 0, ',', '.') }}₫
-
-                                    </h3>
-
-                                </div>
-
-                            </div>
+                            <h3 class="font-black text-[#001e40] text-base leading-tight">
+                                2 - 3 ngày
+                            </h3>
 
                         </div>
 
                     </div>
 
-                    {{-- PAYMENT --}}
+                </div>
 
-                    <div
-                        class="relative overflow-hidden rounded-[34px] bg-gradient-to-br from-[#eff6ff] via-white to-[#eef2ff] border border-white/60 shadow-[0_15px_60px_rgba(15,23,42,.06)] p-7 hover:-translate-y-1 transition duration-500 group">
+                <div class="rounded-3xl bg-white/80 backdrop-blur-2xl
+            border border-white/50 shadow-sm p-5 hover:border-blue-300 hover:shadow-[0_15px_30px_rgba(59,130,246,.04)] transition-all duration-300 flex items-center">
 
-                        {{-- LIGHT --}}
+                    <div class="flex items-center gap-4">
 
-                        <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-indigo-200/40 rounded-full blur-3xl"></div>
+                        <div class="w-12 h-12 rounded-2xl
+                    bg-violet-50 text-violet-600 border border-violet-100/50
+                    flex items-center justify-center flex-shrink-0">
 
-                        <div class="absolute top-0 right-0 w-56 h-56 bg-cyan-100/50 rounded-full blur-3xl"></div>
+                            <span class="material-symbols-outlined text-2xl">
+                                verified_user
+                            </span>
 
-                        {{-- FLOATING ORB --}}
-
-                        <div
-                            class="absolute top-6 right-6 w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 opacity-20 blur-xl animate-pulse">
                         </div>
 
-                        <div class="relative z-10">
+                        <div>
 
-                            {{-- HEADER --}}
+                            <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-0.5">
+                                Bảo mật
+                            </p>
 
-                            <div class="flex items-center gap-4 mb-7">
+                            <h3 class="font-black text-[#001e40] text-base leading-tight">
+                                SSL Protected
+                            </h3>
 
-                                <div
-                                    class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-500 text-white flex items-center justify-center shadow-lg">
+                        </div>
 
-                                    <span class="material-symbols-outlined text-2xl">
-                                        account_balance_wallet
-                                    </span>
+                    </div>
 
+                </div>
+
+            </div>
+
+            @if(in_array($order->order_status, ['pending', 'confirmed', 'processing']))
+                <div class="bg-white/80 backdrop-blur-2xl rounded-3xl border border-red-100 shadow-sm p-6 md:p-8 mb-6">
+                    <div class="flex items-start gap-4 mb-5">
+                        <div class="w-12 h-12 rounded-2xl bg-red-50 text-red-600 border border-red-100 flex items-center justify-center flex-shrink-0">
+                            <span class="material-symbols-outlined text-2xl">cancel</span>
+                        </div>
+                        <div>
+                            <p class="text-red-500 text-xs uppercase tracking-wider font-black mb-1">Huỷ đơn hàng</p>
+                            <h2 class="text-xl font-black text-slate-800">Chính sách hoàn tiền</h2>
+                            <p class="text-sm text-slate-500 mt-2 leading-6">
+                                Bạn có thể huỷ khi đơn còn ở trạng thái chờ xác nhận, đã xác nhận hoặc đang chuẩn bị.
+                                Đơn COD/chưa thanh toán không phát sinh hoàn tiền; đơn đã thanh toán online sẽ được hoàn về phương thức ban đầu trong 3-7 ngày làm việc.
+                            </p>
+                        </div>
+                    </div>
+
+                    <form action="{{ route('orders.cancel', $order->order_id) }}" method="POST" class="space-y-4">
+                        @csrf
+                        <textarea name="cancel_reason" rows="3" required minlength="5" maxlength="500"
+                            class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-100"
+                            placeholder="Nhập lý do huỷ đơn...">{{ old('cancel_reason') }}</textarea>
+                        <button type="submit"
+                            onclick="return confirm('Bạn chắc chắn muốn huỷ đơn hàng này?')"
+                            class="rounded-2xl bg-red-500 px-6 py-3 text-sm font-black uppercase tracking-wider text-white transition hover:bg-red-600">
+                            Xác nhận huỷ đơn
+                        </button>
+                    </form>
+                </div>
+            @endif
+
+            {{-- PRODUCTS --}}
+            <div class="bg-white/80 backdrop-blur-2xl rounded-3xl border border-white/50 shadow-sm p-6 md:p-8 mb-6 overflow-hidden">
+                <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100/70">
+                    <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 border border-blue-100/50 flex items-center justify-center flex-shrink-0">
+                        <span class="material-symbols-outlined text-2xl">package_2</span>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 text-xs uppercase tracking-wider font-bold">Purchased Items</p>
+                        <h2 class="text-xl font-black text-slate-800">Sản phẩm đã mua</h2>
+                    </div>
+                </div>
+
+                <div class="divide-y divide-slate-100/70">
+                    @foreach($order->items as $item)
+                        <div class="group flex flex-col md:flex-row items-start md:items-center justify-between py-5 first:pt-0 last:pb-0 gap-5 relative z-10">
+                            
+                            {{-- TRÁI: ẢNH & THÔNG TIN --}}
+                            <div class="flex items-center gap-5 flex-1 min-w-0">
+                                {{-- Ảnh --}}
+                                <div class="w-20 h-20 bg-slate-50 border border-slate-100 flex-shrink-0 flex items-center justify-center rounded-2xl overflow-hidden shadow-sm">
+                                    @if($item->image_url)
+                                        <img src="{{ asset($item->image_url) }}" alt="{{ $item->product_name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                                    @else
+                                        <div class="w-full h-full flex items-center justify-center bg-gray-50">
+                                            <span class="material-symbols-outlined text-3xl text-gray-300">inventory_2</span>
+                                        </div>
+                                    @endif
                                 </div>
 
-                                <div>
-
-                                    <p class="uppercase tracking-[3px] text-[11px] text-slate-400 mb-1">
-                                        PAYMENT
-                                    </p>
-
-                                    <h2 class="text-2xl font-black text-slate-800">
-                                        Thanh toán
-                                    </h2>
-
+                                {{-- Info --}}
+                                <div class="min-w-0 flex-1">
+                                    <h3 class="font-black text-[#001e40] text-base truncate leading-tight group-hover:text-blue-700 transition duration-300">
+                                        {{ $item->product_name }}
+                                    </h3>
+                                    
+                                    <div class="flex items-center gap-2 mt-2 flex-wrap">
+                                        @if($item->variant_info)
+                                            <span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                                                {{ $item->variant_info }}
+                                            </span>
+                                        @endif
+                                        
+                                        <span class="text-[10px] font-bold text-slate-400 font-mono">
+                                            Đơn giá: {{ number_format($item->unit_price, 0, ',', '.') }}₫
+                                        </span>
+                                    </div>
                                 </div>
-
                             </div>
 
-                            {{-- PRICE LIST --}}
-
-                            <div class="space-y-4">
-
-                                <div class="flex justify-between items-center rounded-2xl bg-white/70 px-5 py-4">
-
-                                    <span class="text-slate-500 text-sm">
-                                        Tạm tính
-                                    </span>
-
-                                    <span class="font-black text-slate-800">
-
-                                        {{ number_format($order->subtotal, 0, ',', '.') }}₫
-
-                                    </span>
-
-                                </div>
-
-                                <div class="flex justify-between items-center rounded-2xl bg-white/70 px-5 py-4">
-
-                                    <span class="text-slate-500 text-sm">
-                                        Vận chuyển
-                                    </span>
-
-                                    <span class="font-black text-slate-800">
-
-                                        {{ number_format($order->shipping_fee, 0, ',', '.') }}₫
-
-                                    </span>
-
-                                </div>
-
-                                <div class="flex justify-between items-center rounded-2xl bg-red-50 px-5 py-4">
-
-                                    <span class="text-red-400 text-sm">
-                                        Giảm giá
-                                    </span>
-
-                                    <span class="font-black text-red-500">
-
-                                        -{{ number_format($order->discount_amount, 0, ',', '.') }}₫
-
-                                    </span>
-
-                                </div>
-
+                            {{-- GIỮA: SỐ LƯỢNG --}}
+                            <div class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/50 flex-shrink-0">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Số lượng:</span>
+                                <span class="text-xs font-black text-[#001e40]">{{ $item->quantity }}</span>
                             </div>
 
-                            {{-- TOTAL CARD --}}
+                            {{-- PHẢI: THÀNH TIỀN --}}
+                            <div class="flex flex-col items-end flex-shrink-0 min-w-[120px]">
+                                <span class="text-[9px] uppercase tracking-widest text-slate-400 font-bold mb-0.5">Thành tiền</span>
+                                <h4 class="text-base font-black text-[#003366] leading-tight">
+                                    {{ number_format($item->subtotal, 0, ',', '.') }}₫
+                                </h4>
+                            </div>
+
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- RECEIVER INFO --}}
+
+            <div class="rounded-3xl bg-white/80 backdrop-blur-2xl
+border border-white/50 shadow-sm p-6 md:p-8 mb-6">
+
+                <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100/70">
+
+                    <div class="w-12 h-12 rounded-xl
+        bg-cyan-50 text-cyan-600 border border-cyan-100/50
+        flex items-center justify-center flex-shrink-0">
+
+                        <span class="material-symbols-outlined">
+                            location_on
+                        </span>
+
+                    </div>
+
+                    <div>
+
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-0.5">
+                            Receiver Information
+                        </p>
+
+                        <h2 class="text-xl font-black text-slate-800">
+                            Thông tin nhận hàng
+                        </h2>
+
+                    </div>
+
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-5">
+
+                    {{-- NAME --}}
+
+                    <div class="bg-slate-50/60 border border-slate-100 rounded-2xl p-4 hover:bg-slate-50 transition duration-300">
+
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">
+                            Người nhận
+                        </p>
+
+                        <h3 class="font-black text-[#001e40] text-base leading-tight">
+
+                            {{ $shippingAddress->full_name ?? 'Chưa cập nhật' }}
+
+                        </h3>
+
+                    </div>
+
+                    {{-- PHONE --}}
+
+                    <div class="bg-slate-50/60 border border-slate-100 rounded-2xl p-4 hover:bg-slate-50 transition duration-300">
+
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">
+                            Số điện thoại
+                        </p>
+
+                        <h3 class="font-black text-[#001e40] text-base leading-tight">
+
+                            {{ $shippingAddress->phone ?? 'Chưa cập nhật' }}
+
+                        </h3>
+
+                    </div>
+
+                    {{-- ADDRESS --}}
+
+                    <div class="bg-slate-50/60 border border-slate-100 rounded-2xl p-4 hover:bg-slate-50 transition duration-300">
+
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">
+                            Địa chỉ
+                        </p>
+
+                        <h3 class="font-black text-[#001e40] text-sm leading-relaxed">
+
+                            {{ $shippingAddress->street_address ?? '' }}
+
+                            @if(!empty($shippingAddress->ward))
+                                , {{ $shippingAddress->ward }}
+                            @endif
+
+                            @if(!empty($shippingAddress->district))
+                                , {{ $shippingAddress->district }}
+                            @endif
+
+                            @if(!empty($shippingAddress->province))
+                                , {{ $shippingAddress->province }}
+                            @endif
+
+                        </h3>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            {{-- INFO + PAYMENT --}}
+
+            <div class="grid lg:grid-cols-2 gap-6 mb-6">
+
+                {{-- ORDER INFO --}}
+
+                <div
+                    class="relative overflow-hidden rounded-3xl bg-white/80 backdrop-blur-2xl border border-white/50 shadow-sm p-6 md:p-8 hover:-translate-y-0.5 hover:border-blue-300 transition-all duration-300 group">
+
+                    {{-- GLOW --}}
+
+                    <div class="absolute -top-20 -right-20 w-56 h-56 bg-blue-200/20 rounded-full blur-3xl"></div>
+
+                    <div class="relative z-10">
+
+                        {{-- HEADER --}}
+
+                        <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100/70">
 
                             <div
-                                class="mt-6 relative overflow-hidden rounded-[28px] bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 p-6 shadow-[0_15px_50px_rgba(59,130,246,.35)]">
+                                class="w-12 h-12 rounded-xl bg-gradient-to-r from-[#003366] to-[#0F5BCC] text-white flex items-center justify-center shadow-md shadow-blue-500/10">
 
-                                {{-- LIGHT EFFECT --}}
-
-                                <div class="absolute -top-10 -right-10 w-40 h-40 bg-white/20 rounded-full blur-3xl"></div>
-
-                                <div class="absolute bottom-0 left-0 w-full h-[2px] bg-white/30"></div>
-
-                                <div class="relative z-10">
-
-                                    <p class="uppercase tracking-[4px] text-white/70 text-xs mb-3">
-                                        TOTAL PAYMENT
-                                    </p>
-
-                                    <h2 class="text-4xl md:text-5xl font-black text-white leading-tight">
-
-                                        {{ number_format($order->total_amount, 0, ',', '.') }}₫
-
-                                    </h2>
-
-                                </div>
-
-                            </div>
-
-                            {{-- SECURITY --}}
-
-                            <div class="mt-5 flex items-center gap-3 text-slate-500 text-sm">
-
-                                <span class="material-symbols-outlined text-green-500">
-                                    verified_user
+                                <span class="material-symbols-outlined text-2xl">
+                                    receipt_long
                                 </span>
 
-                                Thanh toán được bảo mật & mã hoá an toàn
-
                             </div>
-
-                        </div>
-
-                    </div>
-                    {{-- QR TRACKING --}}
-
-                    <div class="mt-8 rounded-[34px]
-        bg-white/75 backdrop-blur-2xl
-        border border-white/50 shadow-lg p-8">
-
-                        <div class="flex flex-col md:flex-row items-center justify-between gap-8">
 
                             <div>
 
-                                <p class="uppercase tracking-[4px]
-                    text-[11px] text-slate-400 mb-3">
-
-                                    SMART TRACKING
-
+                                <p class="uppercase tracking-[3px] text-[11px] text-slate-400 mb-1">
+                                    ORDER INFO
                                 </p>
 
-                                <h2 class="text-3xl font-black text-slate-800 mb-4">
-                                    Theo dõi đơn hàng realtime
+                                <h2 class="text-xl font-black text-slate-800 font-bold">
+                                    Thông tin đơn hàng
                                 </h2>
-
-                                <p class="text-slate-500 leading-8 max-w-xl">
-
-                                    Quét mã QR để xem trạng thái đơn hàng,
-                                    vị trí giao hàng và thời gian dự kiến.
-
-                                </p>
 
                             </div>
 
-                            <div class="w-44 h-44 rounded-[28px]
-                    bg-gradient-to-br from-blue-500 to-indigo-600
-                    p-4 shadow-2xl">
+                        </div>
 
-                                <div class="w-full h-full rounded-[22px]
-                        bg-white flex items-center justify-center">
+                        {{-- CONTENT --}}
 
-                                    <span class="material-symbols-outlined text-[90px] text-slate-800">
-                                        qr_code_2
-                                    </span>
+                        <div class="space-y-3">
+
+                            <div class="flex justify-between items-center bg-slate-50/60 border border-slate-100/70 rounded-2xl px-5 py-3.5">
+
+                                <span class="text-slate-500 text-sm">
+                                    Mã đơn
+                                </span>
+
+                                <span class="font-black text-slate-800">
+                                    #{{ $order->order_code }}
+                                </span>
+
+                            </div>
+
+                            <div class="flex justify-between items-center bg-slate-50/60 border border-slate-100/70 rounded-2xl px-5 py-3.5">
+
+                                <span class="text-slate-500 text-sm">
+                                    Ngày đặt
+                                </span>
+
+                                <span class="font-bold text-slate-800 text-sm">
+                                    {{ \Carbon\Carbon::parse($order->created_at)->format('d/m/Y H:i') }}
+                                </span>
+
+                            </div>
+
+                            <div class="flex justify-between items-center bg-slate-50/60 border border-slate-100/70 rounded-2xl px-5 py-3.5">
+
+                                <span class="text-slate-500 text-sm">
+                                    Thanh toán
+                                </span>
+
+                                <span class="uppercase font-black text-blue-600">
+                                    {{ $order->payment_method }}
+                                </span>
+
+                            </div>
+
+                            <div class="flex justify-between items-center bg-slate-50/60 border border-slate-100/70 rounded-2xl px-5 py-3.5">
+
+                                <span class="text-slate-500 text-sm">
+                                    Trạng thái
+                                </span>
+
+                                <div
+                                    class="px-3 py-1 rounded-xl bg-{{ $color === 'yellow' ? 'yellow-100 text-yellow-700' : ($color === 'rose' || $color === 'red' ? 'red-100 text-red-700' : ($color === 'blue' || $color === 'sky' ? 'blue-100 text-blue-700' : 'emerald-100 text-emerald-700')) }} font-bold text-xs uppercase">
+
+                                    {{ $status }}
 
                                 </div>
+
+                            </div>
+
+                        </div>
+
+                        {{-- MINI STATS --}}
+
+                        <div class="grid grid-cols-3 gap-3 mt-6">
+
+                            <div class="rounded-2xl bg-blue-50/50 border border-blue-100/50 p-3 text-center">
+
+                                <p class="text-[10px] uppercase font-bold text-slate-400 mb-1">
+                                    Sản phẩm
+                                </p>
+
+                                <h3 class="text-lg font-black text-blue-600">
+
+                                    {{ $order->items->count() }}
+
+                                </h3>
+
+                            </div>
+
+                            <div class="rounded-2xl bg-emerald-50/50 border border-emerald-100/50 p-3 text-center">
+
+                                <p class="text-[10px] uppercase font-bold text-slate-400 mb-1">
+                                    Voucher
+                                </p>
+
+                                <h3 class="text-lg font-black text-emerald-600">
+
+                                    {{ $order->discount_amount > 0 ? 'Có' : 'Không' }}
+
+                                </h3>
+
+                            </div>
+
+                            <div class="rounded-2xl bg-orange-50/50 border border-orange-100/50 p-3 text-center">
+
+                                <p class="text-[10px] uppercase font-bold text-slate-400 mb-1">
+                                    Phí ship
+                                </p>
+
+                                <h3 class="text-base font-black text-orange-500">
+
+                                    {{ number_format($order->shipping_fee, 0, ',', '.') }}₫
+
+                                </h3>
 
                             </div>
 
@@ -1121,7 +915,190 @@
                     </div>
 
                 </div>
+
+                {{-- PAYMENT --}}
+
+                <div
+                    class="relative overflow-hidden rounded-3xl bg-white/80 backdrop-blur-2xl border border-white/50 shadow-sm p-6 md:p-8 hover:-translate-y-0.5 hover:border-blue-300 transition-all duration-300 group">
+
+                    {{-- LIGHT --}}
+
+                    <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-indigo-200/20 rounded-full blur-3xl"></div>
+
+                    <div class="absolute top-0 right-0 w-56 h-56 bg-cyan-100/20 rounded-full blur-3xl"></div>
+
+                    <div class="relative z-10">
+
+                        {{-- HEADER --}}
+
+                        <div class="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100/70">
+
+                            <div
+                                class="w-12 h-12 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-md">
+
+                                <span class="material-symbols-outlined text-2xl">
+                                    account_balance_wallet
+                                </span>
+
+                            </div>
+
+                            <div>
+
+                                <p class="uppercase tracking-[3px] text-[11px] text-slate-400 mb-1">
+                                    PAYMENT
+                                </p>
+
+                                <h2 class="text-xl font-black text-slate-800 font-bold">
+                                    Thanh toán
+                                </h2>
+
+                            </div>
+
+                        </div>
+
+                        {{-- PRICE LIST --}}
+
+                        <div class="space-y-3">
+
+                            <div class="flex justify-between items-center bg-slate-50/60 border border-slate-100/70 rounded-2xl px-5 py-3.5">
+
+                                <span class="text-slate-500 text-sm">
+                                    Tạm tính
+                                </span>
+
+                                <span class="font-black text-slate-800">
+
+                                    {{ number_format($order->subtotal, 0, ',', '.') }}₫
+
+                                </span>
+
+                            </div>
+
+                            <div class="flex justify-between items-center bg-slate-50/60 border border-slate-100/70 rounded-2xl px-5 py-3.5">
+
+                                <span class="text-slate-500 text-sm">
+                                    Vận chuyển
+                                </span>
+
+                                <span class="font-black text-slate-800">
+
+                                    {{ number_format($order->shipping_fee, 0, ',', '.') }}₫
+
+                                </span>
+
+                            </div>
+
+                            <div class="flex justify-between items-center bg-red-50 border border-red-100/50 rounded-2xl px-5 py-3.5">
+
+                                <span class="text-red-500 text-sm font-bold">
+                                    Giảm giá
+                                </span>
+
+                                <span class="font-black text-red-600">
+
+                                    -{{ number_format($order->discount_amount, 0, ',', '.') }}₫
+
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                        {{-- TOTAL CARD --}}
+
+                        <div
+                            class="mt-6 relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#003366] to-[#0F5BCC] p-5 shadow-lg shadow-blue-500/10 border border-white/10">
+
+                            {{-- LIGHT EFFECT --}}
+
+                            <div class="absolute -top-10 -right-10 w-40 h-40 bg-white/20 rounded-full blur-3xl"></div>
+
+                            <div class="absolute bottom-0 left-0 w-full h-[2px] bg-white/30"></div>
+
+                            <div class="relative z-10">
+
+                                <p class="uppercase tracking-[4px] text-white/70 text-[10px] font-bold mb-2">
+                                    TOTAL PAYMENT
+                                </p>
+
+                                <h2 class="text-3xl md:text-4xl font-black text-white leading-tight">
+
+                                    {{ number_format($order->total_amount, 0, ',', '.') }}₫
+
+                                </h2>
+
+                            </div>
+
+                        </div>
+
+                        {{-- SECURITY --}}
+
+                        <div class="mt-4 flex items-center gap-2.5 text-slate-500 text-xs font-medium">
+
+                            <span class="material-symbols-outlined text-green-500 text-[18px]">
+                                verified_user
+                            </span>
+
+                            Thanh toán được bảo mật & mã hoá an toàn
+
+                        </div>
+
+                    </div>
+
+                </div>
+
             </div>
+
+            {{-- QR TRACKING --}}
+
+            <div class="rounded-3xl
+bg-white/80 backdrop-blur-2xl
+border border-white/50 shadow-sm p-6 md:p-8 mb-6">
+
+                <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+
+                    <div class="flex-1">
+
+                        <p class="uppercase tracking-[4px]
+            text-slate-400 text-xs font-bold mb-2">
+
+                            SMART TRACKING
+
+                        </p>
+
+                        <h2 class="text-2xl font-black text-slate-800 mb-3">
+                            Theo dõi đơn hàng realtime
+                        </h2>
+
+                        <p class="text-slate-500 leading-relaxed text-sm">
+
+                            Quét mã QR để xem trạng thái đơn hàng,
+                            vị trí giao hàng và thời gian dự kiến.
+
+                        </p>
+
+                    </div>
+
+                    <div class="w-36 h-36 rounded-2xl
+            bg-gradient-to-r from-[#003366] to-[#0F5BCC]
+            p-3 shadow-md shadow-blue-500/10 flex-shrink-0">
+
+                        <div class="w-full h-full rounded-xl
+                bg-white flex items-center justify-center">
+
+                            <span class="material-symbols-outlined text-[70px] text-slate-800">
+                                qr_code_2
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
 
     </main>
     {{-- FLOAT ACTIONS --}}
