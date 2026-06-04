@@ -8,7 +8,12 @@ class Brand extends Model
 {
     protected $table = 'brands';
     protected $primaryKey = 'brand_id';
-    public $timestamps = false;
+    public $timestamps = true;
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 
     protected $fillable = [
         'name',
@@ -18,4 +23,9 @@ class Brand extends Model
         'country',
         'is_active',
     ];
+
+    public function products()
+    {
+        return $this->hasMany(Product::class, 'brand_id', 'brand_id');
+    }
 }

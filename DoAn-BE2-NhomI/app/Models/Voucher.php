@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Voucher extends Model
 {
-    protected $table = 'vouchers';       // tên bảng trong DB
-    protected $primaryKey = 'voucher_id'; // nếu khóa chính không phải 'id'
-    public $timestamps = false;           // nếu bảng không có created_at, updated_at
+    protected $table = 'vouchers';
+    protected $primaryKey = 'voucher_id';
+    public $timestamps = true;
 
     protected $fillable = [
         'code',
@@ -20,6 +20,17 @@ class Voucher extends Model
         'used_count',
         'start_at',
         'end_at',
-        'is_active'
+        'is_active',
+        'updated_at',
+        'created_at',
+    ];
+
+    protected $casts = [
+        'start_at'   => 'datetime',
+        'end_at'     => 'datetime',
+        'updated_at' => 'datetime',
+        'created_at' => 'datetime',
+        'is_active'  => 'boolean',
     ];
 }
+
