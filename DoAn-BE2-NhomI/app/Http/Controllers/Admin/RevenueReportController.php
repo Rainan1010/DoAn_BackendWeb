@@ -26,6 +26,35 @@ class RevenueReportController extends Controller
         $to =
             request('to')
             ?? now()->format('Y-m-d');
+        if ($from > now()->toDateString()) {
+
+            return redirect()
+                ->route('admin.revenue_reports.index')
+                ->with(
+                    'error',
+                    'Ngày bắt đầu không được lớn hơn ngày hiện tại'
+                );
+        }
+
+        if ($to > now()->toDateString()) {
+
+            return redirect()
+                ->route('admin.revenue_reports.index')
+                ->with(
+                    'error',
+                    'Ngày kết thúc không được lớn hơn ngày hiện tại'
+                );
+        }
+
+        if ($to < $from) {
+
+            return redirect()
+                ->route('admin.revenue_reports.index')
+                ->with(
+                    'error',
+                    'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu'
+                );
+        }
         /*
         |--------------------------------------------------------------------------
         | QUERY ĐƠN ĐÃ THANH TOÁN
