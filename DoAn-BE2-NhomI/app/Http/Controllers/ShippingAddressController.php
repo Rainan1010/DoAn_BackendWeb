@@ -65,7 +65,7 @@ class ShippingAddressController extends Controller
     // =====================================================
     // FORM EDIT
     // =====================================================
-    public function edit($id)
+   public function edit($id)
     {
 
         $address =
@@ -96,7 +96,6 @@ class ShippingAddressController extends Controller
         );
 
     }
-
 
 
 
@@ -313,9 +312,11 @@ class ShippingAddressController extends Controller
 
             'ward' =>
                 'required',
-
-            'street_address' =>
-                'required|max:255',
+ 'street_address' => [
+    'required',
+    'max:255',
+    'regex:/^[\pL\pN\s\/\-\,\.]+$/u'
+],
 
         ], [
 
@@ -337,9 +338,9 @@ class ShippingAddressController extends Controller
             'ward.required' =>
                 'Vui lòng chọn phường/xã.',
 
-            'street_address.required' =>
-                'Vui lòng nhập địa chỉ cụ thể.',
-
+           'street_address.required' => 'Vui lòng nhập địa chỉ cụ thể.',
+'street_address.max' => 'Địa chỉ cụ thể không được vượt quá 255 ký tự.',
+'street_address.regex' => 'Địa chỉ cụ thể không được chứa ký tự đặc biệt.',
         ]);
 
 
@@ -519,7 +520,15 @@ class ShippingAddressController extends Controller
     // =====================================================
     public function update(Request $request, $id)
     {
+        if (!is_numeric($id)) {
 
+            return redirect()
+                ->route('addresses.index')
+                ->with(
+                    'error',
+                    'Địa chỉ không tồn tại.'
+                );
+        }
         $check =
             $this->validateAddress(
                 $request,
@@ -616,7 +625,15 @@ class ShippingAddressController extends Controller
 // =====================================================
     public function destroy($id)
     {
+        if (!is_numeric($id)) {
 
+            return redirect()
+                ->route('addresses.index')
+                ->with(
+                    'error',
+                    'Địa chỉ không tồn tại.'
+                );
+        }
         $address =
             ShippingAddress::where(
                 'user_id',
@@ -686,7 +703,15 @@ class ShippingAddressController extends Controller
 // =====================================================
     public function setDefault($id)
     {
+        if (!is_numeric($id)) {
 
+            return redirect()
+                ->route('addresses.index')
+                ->with(
+                    'error',
+                    'Địa chỉ không tồn tại.'
+                );
+        }
         $address =
             ShippingAddress::where(
                 'user_id',
