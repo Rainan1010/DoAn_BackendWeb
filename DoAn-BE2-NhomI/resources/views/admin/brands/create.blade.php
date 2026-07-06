@@ -1,8 +1,6 @@
 @extends('admin.layouts.app')
 
 @section('content')
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
 <div class="space-y-6 pb-10" x-data="{
     name: '',
     slug: '',
@@ -47,6 +45,26 @@
         <div class="lg:w-2/3">
             <form action="{{ route('admin.brands.store') }}" method="POST" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
                 @csrf
+
+                @if(session('error') || $errors->any())
+                    <div class="mb-6 flex flex-col gap-2 bg-red-50 border border-red-200 text-red-700 px-5 py-4 rounded-2xl shadow-sm">
+                        @if(session('error'))
+                            <div class="flex items-center gap-2 font-semibold text-sm">
+                                <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                <span>{{ session('error') }}</span>
+                            </div>
+                        @endif
+                        @if($errors->any())
+                            @foreach($errors->all() as $error)
+                                <div class="flex items-center gap-2 font-semibold text-sm">
+                                    <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                    <span>{{ $error }}</span>
+                                </div>
+                            @endforeach
+                        @endif
+                    </div>
+                @endif
+
                 <div class="flex items-center gap-2 mb-6">
                     <i data-lucide="edit" class="w-5 h-5 text-[#0A2540]"></i>
                     <h2 class="text-lg font-bold text-[#0A2540]">Thông tin cơ bản</h2>

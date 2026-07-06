@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-
+use App\Models\RevenueReport;
 class OrderStatisticController extends Controller
 {
     public function index(Request $request)
@@ -136,9 +136,9 @@ class OrderStatisticController extends Controller
         $shippingFees = \App\Models\ShippingFee::orderBy('province', 'asc')->get();
 
         $vouchers = \App\Models\Voucher::where('is_active', 1)
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->whereNull('end_at')
-                      ->orWhere('end_at', '>=', now());
+                    ->orWhere('end_at', '>=', now());
             })
             ->get();
 
@@ -153,10 +153,10 @@ class OrderStatisticController extends Controller
         }
 
         $users = \App\Models\User::where('role', 'user')
-            ->where(function($query) use ($search) {
+            ->where(function ($query) use ($search) {
                 $query->where('phone', 'like', "%{$search}%")
-                      ->orWhere('full_name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('full_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
             })
             ->limit(5)
             ->get();
@@ -303,7 +303,7 @@ class OrderStatisticController extends Controller
                     ->where('voucher_id', $voucherId)
                     ->lockForUpdate()
                     ->first();
-                
+
                 if (!$voucher) {
                     throw new \Exception('Voucher không tồn tại!');
                 }
@@ -393,13 +393,19 @@ class OrderStatisticController extends Controller
         DB::beginTransaction();
 
         try {
-            $order = \App\Models\Order::with('items')->findOrFail($id);
+            $order = \App\Models\Order::with('items')->lockForUpdate()->findOrFail($id);
             $oldStatus = $order->order_status;
             $newStatus = $request->order_status;
 
             $oldPaymentStatus = $order->payment_status;
             $newPaymentStatus = $request->payment_status;
-
+            if (
+                $order->payment_method === 'cod' &&
+                $newStatus === 'delivered' &&
+                $oldPaymentStatus !== 'paid'
+            ) {
+                $newPaymentStatus = 'paid';
+            }
             // 1. Xử lý hoàn kho khi hủy đơn hoặc trừ kho khi khôi phục đơn
             if ($newStatus == 'cancelled' && $oldStatus != 'cancelled') {
                 // Hoàn kho
@@ -464,6 +470,32 @@ class OrderStatisticController extends Controller
                         'transaction_id' => 'ADM-UPD-' . strtoupper($order->payment_method ?: 'cod') . '-' . time()
                     ]
                 );
+
+
+                $itemsSold = $order->items->sum('quantity');
+
+                $report = \App\Models\RevenueReport::firstOrCreate(
+                    [
+                        'report_date' => now()->toDateString()
+                    ],
+                    [
+                        'total_revenue' => 0,
+                        'total_orders' => 0,
+                        'total_items_sold' => 0,
+                        'avg_order_value' => 0,
+                    ]
+                );
+
+                $report->total_revenue += $order->total_amount;
+                $report->total_orders += 1;
+                $report->total_items_sold += $itemsSold;
+
+                $report->avg_order_value =
+                    $report->total_revenue / $report->total_orders;
+
+                $report->save();
+
+
             } elseif ($newPaymentStatus != 'paid' && $oldPaymentStatus == 'paid') {
                 $paidAt = null;
                 \App\Models\Payment::where('order_id', $order->order_id)
@@ -497,7 +529,7 @@ class OrderStatisticController extends Controller
     {
         DB::beginTransaction();
         try {
-            $order = \App\Models\Order::findOrFail($id);
+            $order = \App\Models\Order::lockForUpdate()->findOrFail($id);
             if ($order->order_status !== 'pending') {
                 return redirect()
                     ->route('admin.order-statistics.index')

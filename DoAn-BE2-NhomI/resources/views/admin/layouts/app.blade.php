@@ -103,7 +103,16 @@
                 class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.permissions.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
                 <i data-lucide="shield-check" class="w-5 h-5"></i> Phân quyền
             </a>
-
+            <a href="{{ route('admin.stock-logs.index') }}"
+                class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.stock-logs.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
+                <i data-lucide="history" class="w-5 h-5"></i>
+                Nhật ký kho hàng
+            </a>
+            <a href="{{ route('admin.login.history') }}"
+                class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.stock-logs.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
+                <i data-lucide="history" class="w-5 h-5"></i>
+               Lịch sử đăng nhập
+            </a>
             <a href="{{ route('home') }}"
                 class="flex items-center gap-3 px-4 py-3 text-sm font-medium {{ request()->routeIs('admin.backups.*') ? 'bg-white/20 text-white' : 'text-blue-200 hover:bg-white/10' }} rounded-lg transition-colors">
                 <i data-lucide="arrow-big-right" class="w-5 h-5"></i> Quay về Trang chủ
@@ -120,9 +129,12 @@
                     <p class="text-sm font-bold text-white">Administrator</p>
                     <p class="text-xs text-blue-300">Quản trị viên</p>
                 </div>
-                <button class="ml-auto text-blue-300 hover:text-white transition-colors">
+                <button onclick="event.preventDefault(); document.getElementById('admin-logout-form').submit();" class="ml-auto text-blue-300 hover:text-white transition-colors" title="Đăng xuất">
                     <i data-lucide="log-out" class="w-4 h-4"></i>
                 </button>
+                <form id="admin-logout-form" action="{{ route('logout') }}" method="POST" class="hidden">
+                    @csrf
+                </form>
             </div>
         </div>
     </aside>
@@ -134,24 +146,49 @@
             <div class="flex-1 max-w-xl relative">
                 @yield('header_search')
             </div>
-            <div class="flex items-center gap-4 text-gray-500">
-                <button><i data-lucide="bell" class="w-5 h-5"></i></button>
-                <button><i data-lucide="settings" class="w-5 h-5"></i></button>
-            </div>
+
         </header>
 
         <!-- Content -->
         <div class="flex-1 overflow-y-auto p-8 relative">
             @if(session('success'))
-                <div
-                    class="mb-4 p-4 bg-[#E2F6EA] text-[#0FAF62] rounded-lg font-medium text-sm flex items-center gap-2 shadow-sm border border-[#0FAF62]/20">
-                    <i data-lucide="check-circle" class="w-5 h-5"></i> {!! session('success') !!}
+                <div x-data="{ show: true }" x-show="show"
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0 -translate-y-2"
+                    x-transition:enter-end="opacity-100 translate-y-0"
+                    x-transition:leave="transition ease-in duration-200"
+                    x-transition:leave-start="opacity-100 translate-y-0"
+                    x-transition:leave-end="opacity-0 -translate-y-2"
+                    class="mb-6 flex items-center justify-between gap-3 bg-emerald-50 border border-emerald-200 text-emerald-700 px-5 py-4 rounded-2xl shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-5 h-5 shrink-0 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span class="text-sm font-semibold">{!! session('success') !!}</span>
+                    </div>
+                    <button @click="show = false" class="text-emerald-400 hover:text-emerald-600 transition-colors shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
                 </div>
             @endif
             @if(session('error'))
-                <div
-                    class="mb-4 p-4 bg-red-50 text-red-600 rounded-lg font-medium text-sm flex items-center gap-2 shadow-sm border border-red-200">
-                    <i data-lucide="alert-triangle" class="w-5 h-5"></i> {!! session('error') !!}
+                <div x-data="{ show: true }" x-show="show"
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0 -translate-y-2"
+                    x-transition:enter-end="opacity-100 translate-y-0"
+                    x-transition:leave="transition ease-in duration-200"
+                    x-transition:leave-start="opacity-100 translate-y-0"
+                    x-transition:leave-end="opacity-0 -translate-y-2"
+                    class="mb-6 flex items-start justify-between gap-3 bg-red-50 border border-red-200 text-red-700 px-5 py-4 rounded-2xl shadow-sm">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 mt-0.5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        <span class="text-sm font-semibold">{!! session('error') !!}</span>
+                    </div>
+                    <button @click="show = false" class="text-red-400 hover:text-red-600 transition-colors shrink-0 mt-0.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
                 </div>
             @endif
 

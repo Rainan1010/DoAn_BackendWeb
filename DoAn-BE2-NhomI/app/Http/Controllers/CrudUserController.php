@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\VerifyOTPMail;
-
+use App\Models\LoginHistory;
 class CrudUserController extends Controller
 {
     // =====================================================
@@ -25,12 +25,16 @@ class CrudUserController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
+            'email' => 'required|email|max:100',
+            'password' => 'required|min:6|max:50',
         ], [
             'email.required' => 'Vui lòng nhập email.',
             'email.email' => 'Định dạng email không hợp lệ.',
+            'email.max' => 'Email tối đa 100 ký tự.',
+
             'password.required' => 'Vui lòng nhập mật khẩu.',
+            'password.min' => 'Mật khẩu tối thiểu 6 ký tự.',
+            'password.max' => 'Mật khẩu tối đa 50 ký tự.',
         ]);
 
         $credentials = $request->only('email', 'password');
@@ -40,7 +44,13 @@ class CrudUserController extends Controller
             $request->session()->regenerate();
 
             $user = Auth::user();
-
+            LoginHistory::create([
+                'user_id' => $user->user_id,
+                'email' => $user->email,
+                'login_time' => now(),
+                'ip_address' => $request->ip(),
+                'status' => 'success',
+            ]);
             // Kiểm tra tài khoản bị khóa
             if ($user->is_active == 0) {
                 Auth::logout();
@@ -86,6 +96,9 @@ class CrudUserController extends Controller
             // Chuyển giỏ hàng session sang database sau khi đăng nhập thành công
             $this->mergeSessionCartToDatabase();
 
+            // Load database cart into session immediately so user has cart in session after login
+            (new \App\Http\Controllers\CartController())->syncCartSession();
+
             // Chuyển hướng theo vai trò
             if ($user->role === 'admin') {
                 return redirect('/admin/categories')
@@ -95,6 +108,13 @@ class CrudUserController extends Controller
             return redirect('/')
                 ->with('success', 'Đăng nhập thành công!');
         }
+        LoginHistory::create([
+            'user_id' => null,
+            'email' => $request->email,
+            'login_time' => now(),
+            'ip_address' => $request->ip(),
+            'status' => 'failed',
+        ]);
 
         return back()
             ->with('error', 'Tài khoản hoặc mật khẩu không chính xác.')
@@ -340,5 +360,169 @@ class CrudUserController extends Controller
 
         return redirect('/login')
             ->with('success', 'Đổi mật khẩu thành công! Vui lòng đăng nhập lại.');
+    }
+    // =====================================================
+    // HIỂN THỊ LOGIN HISTORY
+    // =====================================================
+
+    public function loginHistory(Request $request)
+    {
+        $request->validate([
+            'from_date' => [
+                'nullable',
+                'date',
+                'before_or_equal:today'
+            ],
+
+            'to_date' => [
+                'nullable',
+                'date',
+                'after_or_equal:from_date',
+                'before_or_equal:today'
+            ]
+        ], [
+            'from_date.before_or_equal' =>
+                'Ngày bắt đầu không được lớn hơn ngày hiện tại.',
+
+            'to_date.after_or_equal' =>
+                'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.',
+
+            'to_date.before_or_equal' =>
+                'Ngày kết thúc không được lớn hơn ngày hiện tại.'
+        ]);
+        $query = LoginHistory::with('user');
+
+        $fromDate = $request->input(
+            'from_date',
+            now()->toDateString()
+        );
+
+        $toDate = $request->input(
+            'to_date',
+            now()->toDateString()
+        );
+
+        $query->whereDate(
+            'login_time',
+            '>=',
+            $fromDate
+        );
+
+        $query->whereDate(
+            'login_time',
+            '<=',
+            $toDate
+        );
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $logs = $query
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return view(
+            'admin.login_history.index',
+            compact('logs')
+        );
+    }
+    public function logout(Request $request)
+    {
+        $user = Auth::user();
+
+        // Capture login history logout_time if available
+        if ($user) {
+            $history = LoginHistory::where(
+                'user_id',
+                $user->user_id
+            )
+                ->whereNull('logout_time')
+                ->latest()
+                ->first();
+
+            if ($history) {
+                $history->update([
+                    'logout_time' => now(),
+                ]);
+            }
+        }
+
+        // Preserve cart/session data before invalidating session
+        $cart = session()->get('cart', []);
+        $cartCount = session()->get('cart_count', 0);
+        $selectedCartIds = session()->get('selected_cart_ids', []);
+        $appliedVoucher = session()->get('applied_voucher', null);
+
+        // If session cart empty but user has DB cart, load it to restore for guest session
+        if (empty($cart) && $user) {
+            $userCart = DB::table('carts')->where('user_id', $user->user_id)->first();
+
+            if ($userCart) {
+                $items = DB::table('cart_items')
+                    ->join('product_variants', 'cart_items.variant_id', '=', 'product_variants.variant_id')
+                    ->join('products', 'product_variants.product_id', '=', 'products.product_id')
+                    ->leftJoin('product_images', function ($join) {
+                        $join->on('products.product_id', '=', 'product_images.product_id')
+                            ->where('product_images.is_primary', 1);
+                    })
+                    ->where('cart_items.cart_id', $userCart->cart_id)
+                    ->select(
+                        'cart_items.item_id',
+                        'cart_items.variant_id',
+                        'cart_items.quantity',
+                        'cart_items.price',
+                        'product_variants.product_id',
+                        'product_variants.attribute_values',
+                        'product_variants.stock_quantity',
+                        'products.name',
+                        'product_images.image_url'
+                    )
+                    ->get();
+
+                $cart = [];
+                $cartCount = 0;
+                $selectedCartIds = [];
+
+                foreach ($items as $item) {
+                    $cartKey = $item->product_id . '_variant_' . $item->variant_id;
+
+                    $cart[$cartKey] = [
+                        'product_id' => $item->product_id,
+                        'variant_id' => $item->variant_id,
+                        'name' => $item->name,
+                        'variant_name' => is_string($item->attribute_values) ? (is_array(json_decode($item->attribute_values, true)) ? implode(' - ', json_decode($item->attribute_values, true)) : $item->attribute_values) : $item->attribute_values,
+                        'quantity' => (int) $item->quantity,
+                        'price' => (float) $item->price,
+                        'stock_quantity' => (int) $item->stock_quantity,
+                        'image' => $item->image_url ?? 'images/default-product.png',
+                    ];
+
+                    $cartCount += (int) $item->quantity;
+                    $selectedCartIds[] = $cartKey;
+                }
+            }
+        }
+
+        // Perform logout and invalidate session
+        Auth::logout();
+
+        $request->session()->invalidate();
+
+        $request->session()->regenerateToken();
+
+        // Restore cart as guest session so user sees their cart after logout
+        if (!empty($cart)) {
+            session()->put('cart', $cart);
+            session()->put('cart_count', $cartCount);
+            session()->put('selected_cart_ids', $selectedCartIds);
+
+            if (!empty($appliedVoucher)) {
+                session()->put('applied_voucher', $appliedVoucher);
+            }
+        }
+
+        return redirect('/');
     }
 }
